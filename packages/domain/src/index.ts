@@ -16,6 +16,9 @@ export type BikeType = (typeof bikeTypes)[number];
 export const surfaceTypes = ["asphalt", "gravel", "dirt", "park_paths", "mixed"] as const;
 export type SurfaceType = (typeof surfaceTypes)[number];
 
+export const dropPolicies = ["no_drop", "drop"] as const;
+export type DropPolicy = (typeof dropPolicies)[number];
+
 export const tripFormats = ["no_drop", "drop", "training", "social", "family"] as const;
 export type TripFormat = (typeof tripFormats)[number];
 
@@ -31,9 +34,9 @@ export interface TripSummary {
   distanceKm: number;
   difficulty: DifficultyLevel;
   pace: PaceType;
-  bikeTypes: BikeType[];
-  surfaceTypes: SurfaceType[];
-  format: TripFormat;
+  bikeType: BikeType;
+  surfaceType: SurfaceType;
+  dropPolicy: DropPolicy;
   status: TripStatus;
   capacity: number;
   confirmedParticipants: number;

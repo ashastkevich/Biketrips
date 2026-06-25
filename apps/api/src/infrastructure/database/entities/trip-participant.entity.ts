@@ -1,4 +1,13 @@
-import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from "typeorm";
 import type { ParticipantStatus } from "@biketrips/domain";
 
 import { TripEntity } from "./trip.entity.js";
@@ -12,6 +21,15 @@ export class TripParticipantEntity {
 
   @Column({ type: "text" })
   status!: ParticipantStatus;
+
+  @Column({ type: "text" })
+  name!: string;
+
+  @Column({ name: "telegram_username", type: "text", nullable: true })
+  telegramUsername!: string | null;
+
+  @Column({ type: "text", nullable: true })
+  phone!: string | null;
 
   @Column({ type: "text", nullable: true })
   comment!: string | null;

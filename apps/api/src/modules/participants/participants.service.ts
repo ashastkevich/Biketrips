@@ -67,6 +67,9 @@ export class ParticipantsService {
         id: existing?.id,
         tripId,
         userId: dto.userId,
+        name: dto.name,
+        telegramUsername: dto.telegramUsername ?? null,
+        phone: dto.phone ?? null,
         comment: dto.comment ?? null,
         status,
       });

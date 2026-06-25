@@ -1,7 +1,10 @@
 import type { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
 import type { TripParticipantEntity } from "../../infrastructure/database/entities/trip-participant.entity.js";
 
-function countParticipants(participants: TripParticipantEntity[] | undefined, status: string): number {
+function countParticipants(
+  participants: TripParticipantEntity[] | undefined,
+  status: string
+): number {
   return participants?.filter((participant) => participant.status === status).length ?? 0;
 }
 
@@ -15,9 +18,9 @@ export function serializeTripSummary(trip: TripEntity) {
     distanceKm: Number(trip.distanceKm),
     difficulty: trip.difficulty,
     pace: trip.paceMax && trip.paceMax >= 28 ? "fast" : "steady",
-    bikeTypes: trip.bikeTypes,
-    surfaceTypes: trip.surfaceTypes,
-    format: trip.format,
+    bikeType: trip.bikeType,
+    surfaceType: trip.surfaceType,
+    dropPolicy: trip.dropPolicy,
     status: trip.status,
     capacity: trip.maxParticipants,
     confirmedParticipants: countParticipants(trip.participants, "confirmed"),
@@ -47,7 +50,9 @@ export function serializeTripDetail(trip: TripEntity) {
         id: participant.id,
         status: participant.status,
         userId: participant.userId,
-        name: participant.user?.name,
+        name: participant.name,
+        telegramUsername: participant.telegramUsername,
+        phone: participant.phone,
       })) ?? [],
     waitlist:
       trip.waitlistEntries?.map((entry) => ({

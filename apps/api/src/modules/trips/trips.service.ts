@@ -35,7 +35,7 @@ export class TripsService {
         new Brackets((builder) => {
           builder
             .where("city.slug = :city", { city: filters.city })
-      .orWhere("city.name ILIKE :cityName", { cityName: `%${filters.city}%` });
+            .orWhere("city.name ILIKE :cityName", { cityName: `%${filters.city}%` });
         })
       );
     }
@@ -45,7 +45,7 @@ export class TripsService {
     }
 
     if (filters.bikeType) {
-      query.andWhere("trip.bikeTypes LIKE :bikeType", { bikeType: `%${filters.bikeType}%` });
+      query.andWhere("trip.bikeType = :bikeType", { bikeType: filters.bikeType });
     }
 
     if (filters.dateFrom) {
@@ -99,7 +99,10 @@ export class TripsService {
     return this.tripsRepository.save(trip);
   }
 
-  async transition(id: string, status: Extract<TripStatus, "published" | "cancelled" | "finished">): Promise<TripEntity> {
+  async transition(
+    id: string,
+    status: Extract<TripStatus, "published" | "cancelled" | "finished">
+  ): Promise<TripEntity> {
     const trip = await this.getBySlugOrId(id);
     trip.status = status;
     const savedTrip = await this.tripsRepository.save(trip);
@@ -133,9 +136,9 @@ export class TripsService {
       paceMin: dto.paceMin ?? null,
       paceMax: dto.paceMax ?? null,
       difficulty: dto.difficulty,
-      bikeTypes: dto.bikeTypes,
-      surfaceTypes: dto.surfaceTypes,
-      format: dto.format,
+      bikeType: dto.bikeType,
+      surfaceType: dto.surfaceType,
+      dropPolicy: dto.dropPolicy,
       routeDescription: dto.routeDescription ?? null,
       equipmentRequirements: dto.equipmentRequirements ?? null,
       rules: dto.rules ?? null,
@@ -159,11 +162,12 @@ export class TripsService {
     if (dto.paceMin !== undefined) update.paceMin = dto.paceMin;
     if (dto.paceMax !== undefined) update.paceMax = dto.paceMax;
     if (dto.difficulty !== undefined) update.difficulty = dto.difficulty;
-    if (dto.bikeTypes !== undefined) update.bikeTypes = dto.bikeTypes;
-    if (dto.surfaceTypes !== undefined) update.surfaceTypes = dto.surfaceTypes;
-    if (dto.format !== undefined) update.format = dto.format;
+    if (dto.bikeType !== undefined) update.bikeType = dto.bikeType;
+    if (dto.surfaceType !== undefined) update.surfaceType = dto.surfaceType;
+    if (dto.dropPolicy !== undefined) update.dropPolicy = dto.dropPolicy;
     if (dto.routeDescription !== undefined) update.routeDescription = dto.routeDescription;
-    if (dto.equipmentRequirements !== undefined) update.equipmentRequirements = dto.equipmentRequirements;
+    if (dto.equipmentRequirements !== undefined)
+      update.equipmentRequirements = dto.equipmentRequirements;
     if (dto.rules !== undefined) update.rules = dto.rules;
     if (dto.maxParticipants !== undefined) update.maxParticipants = dto.maxParticipants;
     if (dto.registrationMode !== undefined) update.registrationMode = dto.registrationMode;

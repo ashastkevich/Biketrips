@@ -1,7 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import {
-  ArrayNotEmpty,
-  IsArray,
   IsDateString,
   IsIn,
   IsInt,
@@ -14,15 +12,15 @@ import {
 import {
   bikeTypes,
   difficultyLevels,
+  dropPolicies,
   registrationModes,
   surfaceTypes,
-  tripFormats,
   tripStatuses,
   type BikeType,
   type DifficultyLevel,
+  type DropPolicy,
   type RegistrationMode,
   type SurfaceType,
-  type TripFormat,
   type TripStatus,
 } from "@biketrips/domain";
 
@@ -74,21 +72,17 @@ export class CreateTripDto {
   @IsIn(difficultyLevels)
   difficulty!: DifficultyLevel;
 
-  @ApiProperty({ enum: bikeTypes, isArray: true })
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsIn(bikeTypes, { each: true })
-  bikeTypes!: BikeType[];
+  @ApiProperty({ enum: bikeTypes })
+  @IsIn(bikeTypes)
+  bikeType!: BikeType;
 
-  @ApiProperty({ enum: surfaceTypes, isArray: true })
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsIn(surfaceTypes, { each: true })
-  surfaceTypes!: SurfaceType[];
+  @ApiProperty({ enum: surfaceTypes })
+  @IsIn(surfaceTypes)
+  surfaceType!: SurfaceType;
 
-  @ApiProperty({ enum: tripFormats })
-  @IsIn(tripFormats)
-  format!: TripFormat;
+  @ApiProperty({ enum: dropPolicies })
+  @IsIn(dropPolicies)
+  dropPolicy!: DropPolicy;
 
   @ApiPropertyOptional()
   @IsOptional()

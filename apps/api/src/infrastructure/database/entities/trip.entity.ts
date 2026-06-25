@@ -12,9 +12,9 @@ import {
 import type {
   BikeType,
   DifficultyLevel,
+  DropPolicy,
   RegistrationMode,
   SurfaceType,
-  TripFormat,
   TripStatus,
 } from "@biketrips/domain";
 
@@ -60,14 +60,14 @@ export class TripEntity {
   @Column({ type: "text" })
   difficulty!: DifficultyLevel;
 
-  @Column({ name: "bike_types", type: "simple-array" })
-  bikeTypes!: BikeType[];
+  @Column({ name: "bike_type", type: "text" })
+  bikeType!: BikeType;
 
-  @Column({ name: "surface_types", type: "simple-array" })
-  surfaceTypes!: SurfaceType[];
+  @Column({ name: "surface_type", type: "text" })
+  surfaceType!: SurfaceType;
 
-  @Column({ type: "text" })
-  format!: TripFormat;
+  @Column({ name: "drop_policy", type: "text" })
+  dropPolicy!: DropPolicy;
 
   @Column({ name: "route_description", type: "text", nullable: true })
   routeDescription!: string | null;
