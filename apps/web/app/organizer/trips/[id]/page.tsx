@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { participantStatuses } from "@biketrips/domain";
 
@@ -6,6 +5,17 @@ import { AppTopbar, DataNotice, PageHeader, TripFacts } from "../../../lib/compo
 import { getOrganizerAuthState, getTrip, updateParticipantStatus, updateTripStatus } from "../../../lib/api";
 import { readParticipantStatus } from "../../../lib/form-data";
 import { participantStatusLabels, tripStatusLabels } from "../../../lib/labels";
+import {
+  Alert,
+  BackLink,
+  Button,
+  Card,
+  FormField,
+  LinkButton,
+  ParticipantRow,
+  SelectField,
+  TripStatusBadge,
+} from "../../../ui/components";
 
 interface OrganizerTripPageProps {
   params: Promise<{ id: string }>;
@@ -62,16 +72,16 @@ export default async function OrganizerTripPage({ params, searchParams }: Organi
   return (
     <main className="shell detail-shell">
       <AppTopbar />
-      <Link className="back-link" href="/organizer/trips">
+      <BackLink href="/organizer/trips">
         Все поездки
-      </Link>
+      </BackLink>
       <PageHeader
         eyebrow={`Статус: ${tripStatusLabels[trip.status]}`}
         title={trip.title}
         actions={
-          <Link className="button secondary" href={`/trips/${trip.slug}`}>
+          <LinkButton tone="secondary" href={`/trips/${trip.slug}`}>
             Публичная карточка
-          </Link>
+          </LinkButton>
         }
       >
         <p>{trip.description}</p>
@@ -79,45 +89,41 @@ export default async function OrganizerTripPage({ params, searchParams }: Organi
 
       <DataNotice source={result.source} error={result.error} />
       {getOrganizerAuthState() === "missing" ? (
-        <div className="notice" role="status">
+        <Alert title="Действия организатора недоступны" tone="warning">
           Для действий организатора нужен серверный `BIKETRIPS_ORGANIZER_TOKEN`.
-        </div>
+        </Alert>
       ) : null}
       {query.created ? (
-        <div className="notice success" role="status">
-          Черновик создан.
-        </div>
+        <Alert tone="success">Черновик создан.</Alert>
       ) : null}
       {query.updated ? (
-        <div className="notice success" role="status">
-          Изменения сохранены.
-        </div>
+        <Alert tone="success">Изменения сохранены.</Alert>
       ) : null}
       {error ? (
-        <div className="notice danger" role="alert">
-          {error}
-        </div>
+        <Alert title="Не удалось сохранить" tone="danger">{error}</Alert>
       ) : null}
-
       <section className="content-grid">
         <div className="stack">
-          <section className="panel" aria-labelledby="settings-title">
+          <Card className="content-card" padding="large">
+            <div className="section-title-row">
             <h2 id="settings-title">Публикация</h2>
+              <TripStatusBadge status={trip.status} />
+            </div>
             <TripFacts trip={trip} />
             <form action={statusAction} className="button-row">
-              <button className="button" name="action" value="publish" type="submit">
+              <Button name="action" value="publish" type="submit">
                 Опубликовать
-              </button>
-              <button className="button secondary" name="action" value="finish" type="submit">
+              </Button>
+              <Button tone="secondary" name="action" value="finish" type="submit">
                 Завершить
-              </button>
-              <button className="button danger-button" name="action" value="cancel" type="submit">
+              </Button>
+              <Button tone="danger" name="action" value="cancel" type="submit">
                 Отменить
-              </button>
+              </Button>
             </form>
-          </section>
+          </Card>
 
-          <section className="panel" aria-labelledby="updates-title">
+          <Card className="content-card" padding="large">
             <h2 id="updates-title">Обновления</h2>
             {trip.updates.length > 0 ? (
               <div className="update-list">
@@ -131,39 +137,35 @@ export default async function OrganizerTripPage({ params, searchParams }: Organi
             ) : (
               <p className="muted">Обновлений пока нет.</p>
             )}
-          </section>
+          </Card>
         </div>
 
-        <aside className="side-panel" aria-labelledby="requests-title">
+        <aside aria-labelledby="requests-title">
+          <Card className="side-panel" padding="large">
           <h2 id="requests-title">Заявки</h2>
           {trip.participants.length > 0 ? (
             <div className="participant-stack">
               {trip.participants.map((participant) => (
-                <form action={participantAction} className="participant-card" key={participant.id}>
+                <form action={participantAction} className="participant-request" key={participant.id}>
                   <input name="participantId" type="hidden" value={participant.id} />
-                  <div>
-                    <strong>{participant.name}</strong>
-                    <p>{participant.telegramUsername ? `@${participant.telegramUsername}` : "Telegram не указан"}</p>
-                  </div>
-                  <label>
-                    <span>Статус</span>
-                    <select name="status" defaultValue={participant.status}>
+                  <ParticipantRow participant={participant} />
+                  <FormField label="Статус">
+                    <SelectField name="status" defaultValue={participant.status}>
                       {participantStatuses.map((status) => (
                         <option key={status} value={status}>
                           {participantStatusLabels[status]}
                         </option>
                       ))}
-                    </select>
-                  </label>
-                  <button className="button secondary" type="submit">
-                    Сохранить
-                  </button>
+                    </SelectField>
+                  </FormField>
+                  <Button tone="secondary" size="small" type="submit">Сохранить</Button>
                 </form>
               ))}
             </div>
           ) : (
             <p className="muted">Новых заявок нет.</p>
           )}
+          </Card>
         </aside>
       </section>
     </main>

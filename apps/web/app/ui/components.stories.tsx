@@ -5,15 +5,18 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import type { BikeType, DifficultyLevel, SurfaceType } from "@biketrips/domain";
 
 import { demoTrips } from "../lib/demo-data";
+import { AppTopbar, getTripCardProps, PageHeader } from "../lib/components";
 import { bikeTypeLabels, difficultyLabels, surfaceLabels } from "../lib/labels";
 import {
   Alert,
+  BackLink,
   Button,
   CapacityIndicator,
   Card,
   Chip,
   DifficultyBadge,
   EmptyState,
+  FileField,
   FormField,
   IconButton,
   LinkButton,
@@ -23,9 +26,11 @@ import {
   SelectField,
   Skeleton,
   StickyActionBar,
+  Switch,
   TextareaField,
   TextField,
   TripMeta,
+  TripCard as TripCardComponent,
   TripStatusBadge,
 } from "./components";
 
@@ -107,8 +112,37 @@ export const FormControls: Story = {
         <FormField label="Описание" hint="Расскажите о маршруте и остановках">
           <TextareaField rows={4} defaultValue="Спокойный маршрут через парки и набережные." />
         </FormField>
+        <SwitchDemo />
+        <FileField label="Загрузить обложку" hint="JPEG, PNG или WebP" accept="image/*" />
       </div>
     </StorySection>
+  ),
+};
+
+export const Navigation: Story = {
+  render: () => (
+    <StorySection title="Навигация">
+      <div className="story-row">
+        <BackLink href="/">На главную</BackLink>
+        <LinkButton href="/trips/new">Создать поездку</LinkButton>
+      </div>
+    </StorySection>
+  ),
+};
+
+export const SiteShell: Story = {
+  render: () => (
+    <div className="story-column">
+      <AppTopbar />
+      <PageHeader
+        eyebrow="Поездки рядом"
+        title="Совместные велопоездки"
+        actions={<LinkButton href="/trips/new">Создать поездку</LinkButton>}
+      >
+        <p>Единая шапка, заголовок страницы и карточка результата.</p>
+      </PageHeader>
+      <TripCardComponent {...getTripCardProps(demoTrips[0]!)} />
+    </div>
   ),
 };
 
@@ -146,6 +180,25 @@ export const TripInformation: Story = {
         <CapacityIndicator capacity={18} confirmed={18} />
       </div>
     </StorySection>
+  ),
+};
+
+export const TripCard: Story = {
+  name: "TripCard",
+  render: () => (
+    <div style={{ maxWidth: 360 }}>
+      <TripCardComponent
+        title="Гравийный круг через Мещеру"
+        date="18.07.2026"
+        time="09:30"
+        startLocationName="МЦД Крюково, главный вход"
+        distanceKm={68}
+        difficulty="medium"
+        averageSpeed={21}
+        maxParticipants={12}
+        coverImage="/img/Photo2.jpg"
+      />
+    </div>
   ),
 };
 
@@ -279,6 +332,11 @@ function ChipDemo() {
       </div>
     </div>
   );
+}
+
+function SwitchDemo() {
+  const [checked, setChecked] = useState(true);
+  return <Switch label="Лимит мест" checked={checked} onChange={setChecked} />;
 }
 
 function RouteFilterDemo() {

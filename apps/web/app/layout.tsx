@@ -16,7 +16,9 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ru">
-      <body className={fontVariables}>{children}</body>
+      <body className={`${fontVariables} typography-theme storybook-outdoor-theme`}>
+        {children}
+      </body>
     </html>
   );
 }

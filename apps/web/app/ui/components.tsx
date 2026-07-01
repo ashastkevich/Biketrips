@@ -6,6 +6,7 @@ import type {
   ButtonHTMLAttributes,
   CSSProperties,
   InputHTMLAttributes,
+  RefObject,
   ReactNode,
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
@@ -167,7 +168,8 @@ export function RouteFilterBar({
   onChange: (value: RouteFilterValue) => void;
 }) {
   const [openFilter, setOpenFilter] = useState<"measure" | "difficulty" | "surface" | null>(null);
-  const filterBarRef = useRef<HTMLDivElement>(null);
+  const filterTriggersRef = useRef<HTMLDivElement>(null);
+  const filterPopoverRef = useRef<HTMLElement>(null);
   const difficultyOptions = [
     { value: "easy" as const, label: "Легкий" },
     { value: "medium" as const, label: "Средний" },
@@ -191,7 +193,14 @@ export function RouteFilterBar({
     if (!openFilter) return;
 
     function handlePointerDown(event: PointerEvent) {
-      if (!filterBarRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const trigger =
+        target instanceof Element ? target.closest(".route-filter-trigger") : null;
+      const clickedTrigger =
+        trigger !== null && filterTriggersRef.current?.contains(trigger);
+      const clickedPopover = filterPopoverRef.current?.contains(target);
+
+      if (!clickedTrigger && !clickedPopover) {
         setOpenFilter(null);
       }
     }
@@ -235,8 +244,12 @@ export function RouteFilterBar({
   }
 
   return (
-    <div className="route-filter-bar" ref={filterBarRef}>
-      <div className="route-filter-bar__triggers" aria-label="Фильтры маршрутов">
+    <div className="route-filter-bar">
+      <div
+        className="route-filter-bar__triggers"
+        aria-label="Фильтры маршрутов"
+        ref={filterTriggersRef}
+      >
         <FilterTrigger
           label="Дистанция / время"
           active={openFilter === "measure"}
@@ -263,7 +276,11 @@ export function RouteFilterBar({
       </div>
 
       {openFilter ? (
-        <section className="route-filter-popover" aria-label="Настройка фильтра">
+        <section
+          className="route-filter-popover"
+          aria-label="Настройка фильтра"
+          ref={filterPopoverRef}
+        >
           {openFilter === "measure" ? (
             <>
               <div className="route-filter-popover__heading">
@@ -528,15 +545,17 @@ export function FormField({
   error,
   required,
   children,
+  className,
 }: {
   label: string;
   hint?: string;
   error?: string;
   required?: boolean;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <label className={classes("ui-field", error && "has-error")}>
+    <label className={classes("ui-field", error && "has-error", className)}>
       <span className="ui-field__label">
         {label}
         {required ? <span aria-hidden="true"> *</span> : null}
@@ -545,6 +564,15 @@ export function FormField({
       {error ? <span className="ui-field__error">{error}</span> : null}
       {!error && hint ? <span className="ui-field__hint">{hint}</span> : null}
     </label>
+  );
+}
+
+export function BackLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link className="ui-back-link" href={href}>
+      <span aria-hidden="true">←</span>
+      {children}
+    </Link>
   );
 }
 
@@ -565,6 +593,51 @@ export function SelectField({
     <select className={classes("ui-input", "ui-select", className)} {...props}>
       {children}
     </select>
+  );
+}
+
+export function Switch({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="ui-switch">
+      <span className="ui-switch__label">{label}</span>
+      <input
+        type="checkbox"
+        role="switch"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+      <span className="ui-switch__track" aria-hidden="true" />
+    </label>
+  );
+}
+
+export function FileField({
+  label,
+  hint,
+  selected = false,
+  inputRef,
+  className,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  hint: string;
+  selected?: boolean;
+  inputRef?: RefObject<HTMLInputElement | null>;
+}) {
+  return (
+    <label className={classes("ui-file-field", selected && "is-selected", className)}>
+      <input ref={inputRef} type="file" {...props} />
+      <span>{label}</span>
+      <small>{hint}</small>
+    </label>
   );
 }
 
@@ -808,6 +881,59 @@ export function DifficultyBadge({ difficulty }: { difficulty: DifficultyLevel })
   };
 
   return <Badge tone={tones[difficulty]}>{difficultyLabels[difficulty]}</Badge>;
+}
+
+export interface TripCardProps {
+  title: string;
+  date: string;
+  time: string;
+  startLocationName: string;
+  distanceKm: string | number;
+  difficulty: DifficultyLevel;
+  averageSpeed: string | number;
+  maxParticipants?: string | number;
+  coverImage: string;
+  href?: string;
+}
+
+export function TripCard({
+  title,
+  date,
+  time,
+  startLocationName,
+  distanceKm,
+  difficulty,
+  averageSpeed,
+  maxParticipants,
+  coverImage,
+  href,
+}: TripCardProps) {
+  const titleContent = href ? <Link href={href}>{title}</Link> : title;
+
+  return (
+    <article className="trip-card">
+      <div
+        className="trip-card__cover"
+        style={{
+          backgroundImage: `linear-gradient(180deg, transparent, rgba(5, 18, 11, 0.52)), url("${coverImage}")`,
+        }}
+      >
+        <span>{distanceKm || "—"} км</span>
+      </div>
+      <div className="trip-card__body">
+        <p className="trip-card__date">
+          {date || "Выберите дату"} · {time || "—:—"}
+        </p>
+        <h2>{titleContent}</h2>
+        <p>{startLocationName || "Укажите место старта"}</p>
+        <div className="trip-card__tags">
+          <DifficultyBadge difficulty={difficulty} />
+          <span>{averageSpeed || "—"} км/ч</span>
+          {maxParticipants ? <span>{maxParticipants} мест</span> : null}
+        </div>
+      </div>
+    </article>
+  );
 }
 
 export function TripMeta({ trip }: { trip: Pick<TripSummary, "startDateTime" | "city" | "distanceKm"> }) {

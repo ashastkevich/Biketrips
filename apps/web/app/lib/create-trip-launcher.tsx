@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LinkButton } from "../ui/components";
 
 function PlusIcon() {
   return (
@@ -9,20 +9,21 @@ function PlusIcon() {
 }
 
 interface CreateTripLauncherProps {
-  className: string;
+  className?: string;
   compact?: boolean;
   label?: string;
+  tone?: "primary" | "secondary" | "ghost";
 }
 
 export function CreateTripLauncher({
   className,
-  compact = false,
   label = "Создать поездку",
+  tone = "primary",
 }: CreateTripLauncherProps) {
   return (
-    <Link className={className} href="/trips/new">
+    <LinkButton className={className} href="/trips/new" tone={tone}>
       <PlusIcon />
-      {compact ? <span>{label}</span> : label}
-    </Link>
+      {label}
+    </LinkButton>
   );
 }

@@ -1,22 +1,11 @@
 "use client";
 
-import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useMemo, useState } from "react";
 
-import { demoTrips } from "./lib/demo-data";
 import { getTripCardProps } from "./lib/components";
+import { demoTrips } from "./lib/demo-data";
 import { RouteFilterBar, TripCard } from "./ui/components";
 import type { RouteFilterValue } from "./ui/components";
-
-const meta = {
-  title: "Design System/Patterns/Найти поездку",
-  parameters: {
-    layout: "padded",
-  },
-} satisfies Meta;
-
-export default meta;
-type Story = StoryObj<typeof meta>;
 
 const initialFilters: RouteFilterValue = {
   measure: "distance",
@@ -28,12 +17,7 @@ const initialFilters: RouteFilterValue = {
   surface: ["asphalt", "gravel", "unpaved", "offroad"],
 };
 
-export const SearchAndResults: Story = {
-  name: "Фильтры и карточки",
-  render: () => <FindTripPattern />,
-};
-
-function FindTripPattern() {
+export function FindTripSection() {
   const [filters, setFilters] = useState<RouteFilterValue>(initialFilters);
 
   const filteredTrips = useMemo(
@@ -61,11 +45,11 @@ function FindTripPattern() {
   );
 
   return (
-    <main className="find-trip-pattern">
+    <section className="find-trip-pattern" id="rides" aria-labelledby="rides-title">
       <header className="find-trip-pattern__header">
         <div>
           <p className="eyebrow">Поездки рядом</p>
-          <h1>Найдите подходящую поездку</h1>
+          <h1 id="rides-title">Найдите подходящую поездку</h1>
           <p>Настройте маршрут, сложность и покрытие — карточки обновятся сразу.</p>
         </div>
         <strong>{filteredTrips.length} из {demoTrips.length}</strong>
@@ -85,6 +69,6 @@ function FindTripPattern() {
           <p>Попробуйте расширить диапазон или выбрать другие параметры.</p>
         </section>
       )}
-    </main>
+    </section>
   );
 }

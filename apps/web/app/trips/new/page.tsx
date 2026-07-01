@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createTrip, getOrganizerAuthState, updateTripStatus } from "../../lib/api";
 import { AppTopbar } from "../../lib/components";
 import { readTripInput } from "../../lib/form-data";
+import { Alert, BackLink } from "../../ui/components";
 import { TripCreationWizard } from "./trip-creation-wizard";
 
 async function createTripAction(formData: FormData) {
@@ -35,19 +35,17 @@ export default async function NewTripPage({ searchParams }: NewTripPageProps) {
   return (
     <main className="shell">
       <AppTopbar />
-      <Link className="back-link" href="/">
+      <BackLink href="/">
         На главную
-      </Link>
+      </BackLink>
       {!canPublish ? (
-        <div className="notice" role="status">
+        <Alert title="Публикация после входа" tone="warning">
           Форму можно заполнить без входа. Для публикации потребуется подтверждённый профиль
           организатора.
-        </div>
+        </Alert>
       ) : null}
       {error ? (
-        <div className="notice danger" role="alert">
-          {error}
-        </div>
+        <Alert title="Не удалось создать поездку" tone="danger">{error}</Alert>
       ) : null}
 
       <TripCreationWizard action={createTripAction} canPublish={canPublish} />

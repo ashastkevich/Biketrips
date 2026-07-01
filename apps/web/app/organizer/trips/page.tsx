@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import { AppTopbar, DataNotice, PageHeader, PlusIcon } from "../../lib/components";
 import { getTrips } from "../../lib/api";
-import { formatShortDate, tripStatusLabels } from "../../lib/labels";
+import { formatShortDate } from "../../lib/labels";
+import { Card, EmptyState, LinkButton, TripStatusBadge } from "../../ui/components";
 
 export default async function OrganizerTripsPage() {
   const result = await getTrips({ includeDrafts: true });
@@ -14,10 +15,10 @@ export default async function OrganizerTripsPage() {
         eyebrow="Кабинет организатора"
         title="Мои поездки"
         actions={
-          <Link className="button" href="/trips/new">
+          <LinkButton href="/trips/new">
             <PlusIcon />
             Создать поездку
-          </Link>
+          </LinkButton>
         }
       >
         <p>Управляйте публикацией, лимитом мест и заявками участников.</p>
@@ -26,7 +27,7 @@ export default async function OrganizerTripsPage() {
       <DataNotice source={result.source} error={result.error} />
 
       {result.data.length > 0 ? (
-        <div className="table-wrap panel">
+        <Card className="table-wrap" padding="none">
           <table>
             <thead>
               <tr>
@@ -47,7 +48,7 @@ export default async function OrganizerTripsPage() {
                   <td>
                     {trip.confirmedParticipants}/{trip.capacity}
                   </td>
-                  <td>{tripStatusLabels[trip.status]}</td>
+                  <td><TripStatusBadge status={trip.status} /></td>
                   <td>
                     <Link className="table-link" href={`/organizer/trips/${trip.id}`}>
                       Открыть
@@ -57,15 +58,14 @@ export default async function OrganizerTripsPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       ) : (
-        <section className="empty-state">
-          <h2>Поездок пока нет</h2>
-          <p>Создайте первую поездку, чтобы получить публичную ссылку.</p>
-          <Link className="button" href="/trips/new">
-            Создать поездку
-          </Link>
-        </section>
+        <EmptyState
+          title="Поездок пока нет"
+          action={<LinkButton href="/trips/new">Создать поездку</LinkButton>}
+        >
+          Создайте первую поездку, чтобы получить публичную ссылку.
+        </EmptyState>
       )}
     </main>
   );

@@ -1,10 +1,18 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { AppTopbar, DataNotice, PageHeader, ParticipantList, TripFacts } from "../../lib/components";
 import { getTrip, joinTrip } from "../../lib/api";
 import { readParticipantInput } from "../../lib/form-data";
 import { formatDateTime } from "../../lib/labels";
+import {
+  Alert,
+  BackLink,
+  Button,
+  Card,
+  FormField,
+  TextareaField,
+  TextField,
+} from "../../ui/components";
 
 interface TripPageProps {
   params: Promise<{ slug: string }>;
@@ -44,9 +52,9 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
   return (
     <main className="shell detail-shell">
       <AppTopbar />
-      <Link className="back-link" href="/">
+      <BackLink href="/">
         На главную
-      </Link>
+      </BackLink>
 
       <PageHeader eyebrow={`${trip.city} · ${formatDateTime(trip.startDateTime)}`} title={trip.title}>
         <p>{trip.description}</p>
@@ -54,24 +62,23 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
 
       <DataNotice source={result.source} error={result.error} />
       {hasFlag(query.joined) ? (
-        <div className="notice success" role="status">
-          Заявка отправлена. Организатор увидит ваши данные в списке участников.
-        </div>
+        <Alert title="Заявка отправлена" tone="success">
+          Организатор увидит ваши данные в списке участников.
+        </Alert>
       ) : null}
       {query.joinError ? (
-        <div className="notice danger" role="alert">
+        <Alert title="Не удалось записаться" tone="danger">
           {Array.isArray(query.joinError) ? query.joinError[0] : query.joinError}
-        </div>
+        </Alert>
       ) : null}
-
       <section className="content-grid">
         <div className="stack">
-          <section className="panel" aria-labelledby="facts-title">
+          <Card className="content-card" padding="large">
             <h2 id="facts-title">Параметры</h2>
             <TripFacts trip={trip} />
-          </section>
+          </Card>
 
-          <section className="panel" aria-labelledby="route-title">
+          <Card className="content-card" padding="large">
             <h2 id="route-title">Маршрут и условия</h2>
             <div className="rich-text">
               <p>{trip.routeDescription ?? "Организатор добавит описание маршрута позже."}</p>
@@ -80,15 +87,16 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
               <h3>Правила</h3>
               <p>{trip.rules ?? "Следуйте указаниям организатора и берегите группу."}</p>
             </div>
-          </section>
+          </Card>
 
-          <section className="panel" aria-labelledby="participants-title">
+          <Card className="content-card" padding="large">
             <h2 id="participants-title">Участники</h2>
             <ParticipantList trip={trip} />
-          </section>
+          </Card>
         </div>
 
-        <aside className="side-panel" aria-labelledby="join-title">
+        <aside aria-labelledby="join-title">
+          <Card className="side-panel" padding="large">
           <h2 id="join-title">Записаться</h2>
           <p className="muted">
             Мест занято: {trip.confirmedParticipants}/{trip.capacity}. Если лимит заполнен,
@@ -96,26 +104,21 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
           </p>
           <form action={joinAction} className="form">
             <input name="userId" type="hidden" value={`web-${trip.id}`} />
-            <label>
-              <span>Имя</span>
-              <input name="name" required minLength={2} placeholder="Алексей" />
-            </label>
-            <label>
-              <span>Telegram</span>
-              <input name="telegramUsername" placeholder="username" />
-            </label>
-            <label>
-              <span>Телефон</span>
-              <input name="phone" inputMode="tel" placeholder="+7..." />
-            </label>
-            <label>
-              <span>Комментарий</span>
-              <textarea name="comment" rows={4} placeholder="Опыт, вопросы, пожелания" />
-            </label>
-            <button className="button" type="submit">
-              Отправить заявку
-            </button>
+            <FormField label="Имя" required>
+              <TextField name="name" required minLength={2} placeholder="Алексей" />
+            </FormField>
+            <FormField label="Telegram">
+              <TextField name="telegramUsername" placeholder="username" />
+            </FormField>
+            <FormField label="Телефон">
+              <TextField name="phone" inputMode="tel" placeholder="+7..." />
+            </FormField>
+            <FormField label="Комментарий">
+              <TextareaField name="comment" rows={4} placeholder="Опыт, вопросы, пожелания" />
+            </FormField>
+            <Button type="submit">Отправить заявку</Button>
           </form>
+          </Card>
         </aside>
       </section>
     </main>

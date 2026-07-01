@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import type { ReactNode } from "react";
 import type { TripDetail, TripSummary } from "@biketrips/domain";
 
@@ -8,14 +7,17 @@ import {
   difficultyLabels,
   dropPolicyLabels,
   formatDateTime,
-  participantStatusLabels,
   paceLabels,
   registrationModeLabels,
   surfaceLabels,
   tripStatusLabels,
 } from "./labels";
 import { CreateTripLauncher } from "./create-trip-launcher";
-import { CapacityIndicator, DifficultyBadge, TripMeta } from "../ui/components";
+import {
+  Alert,
+  ParticipantRow,
+} from "../ui/components";
+import type { TripCardProps } from "../ui/components";
 
 interface DataNoticeProps {
   source: "api" | "demo";
@@ -26,9 +28,9 @@ export function DataNotice({ source, error }: DataNoticeProps) {
   if (source === "api") return null;
 
   return (
-    <div className="notice" role="status">
-      API сейчас недоступен, поэтому показаны демо-данные. {error ? `Причина: ${error}` : null}
-    </div>
+    <Alert title="Показаны демо-данные" tone="warning">
+      API сейчас недоступен.{error ? ` Причина: ${error}` : null}
+    </Alert>
   );
 }
 
@@ -110,7 +112,7 @@ export function AppTopbar() {
       <nav className="app-nav" aria-label="Навигация">
         <Link href="/">Поездки</Link>
         <Link href="/organizer/trips">Кабинет</Link>
-        <CreateTripLauncher className="section-create compact" compact label="Создать" />
+        <CreateTripLauncher compact label="Создать" />
       </nav>
     </header>
   );
@@ -136,29 +138,41 @@ export function PageHeader({ eyebrow, title, children, actions }: PageHeaderProp
   );
 }
 
-export function TripCard({ trip }: { trip: TripSummary }) {
-  const cardTone = getCardTone(trip);
-
-  return (
-    <article className={`ride-card ${cardTone}`}>
-      <Link className="ride-image" href={`/trips/${trip.slug}`} aria-label={trip.title}>
-        <Image src={getTripImage(trip)} alt="" fill sizes="(max-width: 680px) 100vw, 160px" />
-      </Link>
-      <div className="ride-main">
-        <div className="ride-title-row">
-          <h3>
-            <Link href={`/trips/${trip.slug}`}>{trip.title}</Link>
-          </h3>
-          <span className="ride-distance">{trip.distanceKm} км</span>
-        </div>
-        <TripMeta trip={trip} />
-        <div className="ride-footer">
-          <DifficultyBadge difficulty={trip.difficulty} />
-          <CapacityIndicator capacity={trip.capacity} confirmed={trip.confirmedParticipants} />
-        </div>
-      </div>
-    </article>
+export function getTripCardProps(
+  trip: TripSummary & Partial<Pick<TripDetail, "startLocationName" | "paceMin" | "paceMax">>,
+): TripCardProps {
+  const startDate = new Date(trip.startDateTime);
+  const date = startDate.toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const time = startDate.toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const paceFallback = {
+    relaxed: 18,
+    steady: 22,
+    fast: 26,
+    training: 30,
+  }[trip.pace];
+  const averageSpeed = Math.round(
+    ((trip.paceMin ?? paceFallback) + (trip.paceMax ?? paceFallback)) / 2,
   );
+
+  return {
+    title: trip.title,
+    date,
+    time,
+    startLocationName: trip.startLocationName ?? trip.city,
+    distanceKm: trip.distanceKm,
+    difficulty: trip.difficulty,
+    averageSpeed,
+    maxParticipants: trip.capacity,
+    coverImage: getTripImage(trip),
+    href: `/trips/${trip.slug}`,
+  };
 }
 
 export function TripFacts({ trip }: { trip: TripDetail }) {
@@ -187,25 +201,10 @@ export function ParticipantList({ trip }: { trip: TripDetail }) {
   }
 
   return (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Участник</th>
-            <th>Telegram</th>
-            <th>Статус</th>
-          </tr>
-        </thead>
-        <tbody>
-          {trip.participants.map((participant) => (
-            <tr key={participant.id}>
-              <td>{participant.name}</td>
-              <td>{participant.telegramUsername ? `@${participant.telegramUsername}` : "Не указан"}</td>
-              <td>{participantStatusLabels[participant.status]}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="participant-list">
+      {trip.participants.map((participant) => (
+        <ParticipantRow participant={participant} key={participant.id} />
+      ))}
     </div>
   );
 }
@@ -224,13 +223,6 @@ function getTripImage(trip: TripSummary): string {
   const images = ["/img/Photo1.jpg", "/img/Photo2.jpg", "/img/Photo3.jpg", "/img/Photo4.jpg"];
   const index = Math.abs(hashString(trip.id || trip.slug)) % images.length;
   return images[index] ?? fallbackImage;
-}
-
-function getCardTone(trip: TripSummary): string {
-  if (trip.difficulty === "hard") return "is-hard";
-  if (trip.pace === "fast" || trip.pace === "training") return "is-fast";
-  if (trip.difficulty === "easy") return "is-easy";
-  return "is-medium";
 }
 
 function hashString(value: string): number {

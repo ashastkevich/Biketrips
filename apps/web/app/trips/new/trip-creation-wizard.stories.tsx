@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { StartLocationPicker } from "./start-location-picker";
 import { TripCreationWizard } from "./trip-creation-wizard";
+import { FormField, TextField } from "../../ui/components";
 
 const meta = {
   title: "Design System/Patterns/Создание поездки",
@@ -58,10 +59,9 @@ function StartLocationPickerDemo() {
 
   return (
     <div style={{ maxWidth: 720 }}>
-      <label>
-        <span>Место старта</span>
-        <input readOnly value={location.name} />
-      </label>
+      <FormField label="Место старта">
+        <TextField readOnly value={location.name} />
+      </FormField>
       <div style={{ marginTop: 12 }}>
         <StartLocationPicker city="Москва" value={location} onChange={setLocation} />
       </div>

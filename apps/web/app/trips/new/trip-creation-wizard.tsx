@@ -8,16 +8,38 @@ import {
   difficultyLabels,
   surfaceLabels,
 } from "../../lib/labels";
-import { Button, Chip, DifficultyBadge, LinkButton } from "../../ui/components";
+import {
+  Button,
+  Card,
+  Chip,
+  Dialog,
+  FileField,
+  FormField,
+  LinkButton,
+  Stepper,
+  Switch,
+  TextareaField,
+  TextField,
+  TripCard,
+} from "../../ui/components";
 import { StartLocationPicker } from "./start-location-picker";
 
-const DRAFT_KEY = "biketrips:new-trip-draft:v1";
+const DRAFT_KEY = "biketrips:new-trip-draft:v2";
+const LEGACY_DRAFT_KEY = "biketrips:new-trip-draft:v1";
 const coverTemplates = [
   { src: "/img/Photo1.jpg", label: "Велосипедисты на лесной дороге" },
   { src: "/img/Photo2.jpg", label: "Группа в загородной поездке" },
   { src: "/img/Photo3.jpg", label: "Велосипедный маршрут" },
   { src: "/img/Photo4.jpg", label: "Совместная велопрогулка" },
 ];
+const suggestedTitleByBikeType: Record<BikeType, string> = {
+  city: "Городская поездка",
+  road: "Шоссейная поездка",
+  gravel: "Гравийная поездка",
+  mtb: "MTB-поездка",
+  hybrid: "Велопоездка",
+  any: "Велопоездка",
+};
 
 export interface TripDraft {
   title: string;
@@ -65,7 +87,7 @@ const initialDraft: TripDraft = {
   surfaceType: "mixed",
   surfaceTypes: ["mixed"],
   dropPolicy: "no_drop",
-  hasParticipantLimit: true,
+  hasParticipantLimit: false,
   maxParticipants: "12",
   registrationMode: "automatic",
   coverImage: "/img/Photo2.jpg",
@@ -81,55 +103,6 @@ interface TripCreationWizardProps {
   initialStep?: 1 | 2 | 3;
   initialValues?: Partial<TripDraft>;
   persistDraft?: boolean;
-}
-
-interface TripPreviewCardProps {
-  title: string;
-  date: string;
-  time: string;
-  startLocationName: string;
-  distanceKm: string | number;
-  difficulty: DifficultyLevel;
-  averageSpeed: string | number;
-  maxParticipants?: string | number;
-  coverImage: string;
-}
-
-export function TripPreviewCard({
-  title,
-  date,
-  time,
-  startLocationName,
-  distanceKm,
-  difficulty,
-  averageSpeed,
-  maxParticipants,
-  coverImage,
-}: TripPreviewCardProps) {
-  return (
-    <article className="preview-card">
-      <div
-        className="preview-cover"
-        style={{
-          backgroundImage: `linear-gradient(180deg, transparent, rgba(5, 18, 11, 0.52)), url("${coverImage}")`,
-        }}
-      >
-        <span>{distanceKm || "—"} км</span>
-      </div>
-      <div className="preview-body">
-        <p className="preview-date">
-          {date || "Выберите дату"} · {time || "—:—"}
-        </p>
-        <h2>{title}</h2>
-        <p>{startLocationName || "Укажите место старта"}</p>
-        <div className="preview-tags">
-          <DifficultyBadge difficulty={difficulty} />
-          <span>{averageSpeed || "—"} км/ч</span>
-          {maxParticipants ? <span>{maxParticipants} мест</span> : null}
-        </div>
-      </div>
-    </article>
-  );
 }
 
 export function TripCreationWizard({
@@ -152,13 +125,23 @@ export function TripCreationWizard({
   useEffect(() => {
     if (!persistDraft) return;
 
-    const saved = window.localStorage.getItem(DRAFT_KEY);
+    const saved =
+      window.localStorage.getItem(DRAFT_KEY) ??
+      window.localStorage.getItem(LEGACY_DRAFT_KEY);
     if (saved) {
       try {
-        setDraft({ ...initialDraft, ...(JSON.parse(saved) as Partial<TripDraft>) });
+        const savedDraft = JSON.parse(saved) as Partial<TripDraft>;
+        setDraft({
+          ...initialDraft,
+          ...savedDraft,
+          hasParticipantLimit: window.localStorage.getItem(DRAFT_KEY)
+            ? savedDraft.hasParticipantLimit ?? initialDraft.hasParticipantLimit
+            : initialDraft.hasParticipantLimit,
+        });
         setRestored(true);
       } catch {
         window.localStorage.removeItem(DRAFT_KEY);
+        window.localStorage.removeItem(LEGACY_DRAFT_KEY);
       }
     }
   }, [persistDraft]);
@@ -181,9 +164,10 @@ export function TripCreationWizard({
   );
 
   const suggestedTitle = useMemo(() => {
-    const bike = bikeTypeLabels[draft.bikeType as keyof typeof bikeTypeLabels] ?? "велосипедная";
+    const titlePrefix =
+      suggestedTitleByBikeType[draft.bikeType as BikeType] ?? suggestedTitleByBikeType.any;
     const distance = draft.distanceKm ? ` · ${draft.distanceKm} км` : "";
-    return `${bike} поездка${distance}`;
+    return `${titlePrefix}${distance}`;
   }, [draft.bikeType, draft.distanceKm]);
 
   function update<K extends keyof TripDraft>(key: K, value: TripDraft[K]) {
@@ -312,29 +296,18 @@ export function TripCreationWizard({
       <input name="coverImage" type="hidden" value={customCoverUrl ? "" : draft.coverImage} />
 
       <div className="wizard-main">
-        <ol className="wizard-progress" aria-label="Шаги создания поездки">
-          {["Когда и где", "Условия", "Публикация"].map((label, index) => {
-            const number = index + 1;
-            return (
-              <li className={number === step ? "is-current" : number < step ? "is-done" : ""} key={label}>
-                <button type="button" onClick={() => number < step && setStep(number)}>
-                  <span>{number < step ? "✓" : number}</span>
-                  {label}
-                </button>
-              </li>
-            );
-          })}
-        </ol>
+        <Stepper
+          steps={[
+            { id: "1", label: "Когда и где" },
+            { id: "2", label: "Условия" },
+            { id: "3", label: "Публикация" },
+          ]}
+          currentStep={String(step)}
+          saveStatus={restored ? "saved" : "idle"}
+          onStepChange={(stepId) => setStep(Number(stepId))}
+        />
 
-        {restored ? (
-          <div className="draft-status" role="status">
-            Восстановили ваш незавершённый черновик
-          </div>
-        ) : (
-          <div className="draft-status">Черновик сохраняется автоматически</div>
-        )}
-
-        <section className="panel wizard-panel">
+        <Card className="wizard-panel" padding="large">
           {step === 1 ? (
             <>
               <div className="wizard-heading">
@@ -343,48 +316,50 @@ export function TripCreationWizard({
                 <p>Начните с главного — участники сразу поймут, подходит ли им поездка.</p>
               </div>
               <div className="form-grid">
-                <label className="span-2">
-                  <span>Название</span>
-                  <input
+                <FormField
+                  className="span-2"
+                  label="Название"
+                  hint={!draft.title ? "Мы предложили название — его можно изменить" : undefined}
+                  required
+                >
+                  <TextField
                     name="title"
                     minLength={4}
                     required
                     value={title}
                     onChange={(event) => update("title", event.target.value)}
                   />
-                  {!draft.title ? (
-                    <small className="field-hint">Мы предложили название — его можно изменить</small>
-                  ) : null}
-                </label>
-                <label>
-                  <span>Дата</span>
-                  <input
+                </FormField>
+                <FormField label="Дата" required>
+                  <TextField
                     type="date"
                     required
                     value={draft.date}
                     onChange={(event) => update("date", event.target.value)}
                   />
-                </label>
-                <label>
-                  <span>Время старта</span>
-                  <input
+                </FormField>
+                <FormField label="Время старта" required>
+                  <TextField
                     type="time"
                     required
                     value={draft.time}
                     onChange={(event) => update("time", event.target.value)}
                   />
-                </label>
-                <label className="span-2">
-                  <span>Место старта</span>
-                  <input
+                </FormField>
+                <FormField
+                  className="span-2"
+                  label="Место старта"
+                  hint="Адрес обновится после выбора точки на карте"
+                  required
+                >
+                  <TextField
                     name="startLocationName"
                     required
                     readOnly
                     placeholder="Выберите точку на карте"
                     value={draft.startLocationName}
                   />
-                  <small className="field-hint">Адрес обновится после выбора точки на карте</small>
-                </label>
+                </FormField>
                 <div className="span-2">
                   <StartLocationPicker
                     city={draft.city}
@@ -400,9 +375,8 @@ export function TripCreationWizard({
                     }}
                   />
                 </div>
-                <label>
-                  <span>Дистанция, км</span>
-                  <input
+                <FormField label="Дистанция, км" required>
+                  <TextField
                     name="distanceKm"
                     type="number"
                     min="1"
@@ -411,17 +385,16 @@ export function TripCreationWizard({
                     value={draft.distanceKm}
                     onChange={(event) => update("distanceKm", event.target.value)}
                   />
-                </label>
-                <label>
-                  <span>Средняя скорость, км/ч</span>
-                  <input
+                </FormField>
+                <FormField label="Средняя скорость, км/ч" required>
+                  <TextField
                     type="number"
                     min="1"
                     required
                     value={draft.averageSpeed}
                     onChange={(event) => updateAverageSpeed(event.target.value)}
                   />
-                </label>
+                </FormField>
               </div>
             </>
           ) : null}
@@ -486,20 +459,14 @@ export function TripCreationWizard({
                   <input name="surfaceType" type="hidden" value={draft.surfaceType} />
                 </div>
                 <div className="participant-limit-field">
-                  <label className="switch-control">
-                    <span className="switch-control__copy">Лимит мест</span>
-                    <input
-                      type="checkbox"
-                      role="switch"
-                      checked={draft.hasParticipantLimit}
-                      onChange={(event) => update("hasParticipantLimit", event.target.checked)}
-                    />
-                    <span className="switch-control__track" aria-hidden="true" />
-                  </label>
+                  <Switch
+                    label="Лимит мест"
+                    checked={draft.hasParticipantLimit}
+                    onChange={(checked) => update("hasParticipantLimit", checked)}
+                  />
                   {draft.hasParticipantLimit ? (
-                    <label className="condition-field">
-                      <span>Количество мест</span>
-                      <input
+                    <FormField className="condition-field" label="Количество мест" required>
+                      <TextField
                         name="maxParticipants"
                         type="number"
                         min="1"
@@ -508,7 +475,7 @@ export function TripCreationWizard({
                         value={draft.maxParticipants}
                         onChange={(event) => update("maxParticipants", event.target.value)}
                       />
-                    </label>
+                    </FormField>
                   ) : (
                     <input name="maxParticipants" type="hidden" value="500" />
                   )}
@@ -547,26 +514,23 @@ export function TripCreationWizard({
                     </button>
                   ))}
                 </div>
-                <label className={`cover-upload${customCoverUrl ? " is-selected" : ""}`}>
-                  <input
-                    ref={coverFileRef}
-                    name="coverImageFile"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (!file) return;
-                      setCustomCoverUrl(URL.createObjectURL(file));
-                      setCustomCoverName(file.name);
-                    }}
-                  />
-                  <span>{customCoverName || "Загрузить свою"}</span>
-                  <small>{customCoverUrl ? "Своя обложка выбрана" : "JPEG, PNG или WebP"}</small>
-                </label>
+                <FileField
+                  inputRef={coverFileRef}
+                  name="coverImageFile"
+                  accept="image/jpeg,image/png,image/webp"
+                  selected={Boolean(customCoverUrl)}
+                  label={customCoverName || "Загрузить свою"}
+                  hint={customCoverUrl ? "Своя обложка выбрана" : "JPEG, PNG или WebP"}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    setCustomCoverUrl(URL.createObjectURL(file));
+                    setCustomCoverName(file.name);
+                  }}
+                />
               </fieldset>
-              <label>
-                <span>Краткое описание</span>
-                <textarea
+              <FormField label="Краткое описание" required>
+                <TextareaField
                   name="description"
                   required
                   minLength={20}
@@ -575,45 +539,43 @@ export function TripCreationWizard({
                   value={draft.description}
                   onChange={(event) => update("description", event.target.value)}
                 />
-              </label>
-              <button
+              </FormField>
+              <Button
                 className="details-toggle"
+                tone="ghost"
                 type="button"
                 aria-expanded={showDetails}
                 onClick={() => setShowDetails((current) => !current)}
               >
                 <span>Дополнительные детали</span>
                 <span>{showDetails ? "−" : "+"}</span>
-              </button>
+              </Button>
               {showDetails ? (
                 <div className="form-grid optional-fields">
-                  <label className="span-2">
-                    <span>Маршрут</span>
-                    <textarea
+                  <FormField className="span-2" label="Маршрут">
+                    <TextareaField
                       name="routeDescription"
                       rows={3}
                       value={draft.routeDescription}
                       onChange={(event) => update("routeDescription", event.target.value)}
                     />
-                  </label>
-                  <label>
-                    <span>Снаряжение</span>
-                    <textarea
+                  </FormField>
+                  <FormField label="Снаряжение">
+                    <TextareaField
                       name="equipmentRequirements"
                       rows={3}
                       value={draft.equipmentRequirements}
                       onChange={(event) => update("equipmentRequirements", event.target.value)}
                     />
-                  </label>
-                  <label>
-                    <span>Правила группы</span>
-                    <textarea
+                  </FormField>
+                  <FormField label="Правила группы">
+                    <TextareaField
                       name="rules"
                       rows={3}
                       value={draft.rules}
                       onChange={(event) => update("rules", event.target.value)}
                     />
-                  </label>
+                  </FormField>
                 </div>
               ) : (
                 <>
@@ -634,17 +596,26 @@ export function TripCreationWizard({
               <LinkButton href="/" tone="secondary">Отмена</LinkButton>
             )}
             {step < 3 ? (
-              <Button type="button" onClick={goNext}>Продолжить</Button>
+              <Button
+                key="next-step"
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  goNext();
+                }}
+              >
+                Продолжить
+              </Button>
             ) : (
-              <Button type="submit">Опубликовать поездку</Button>
+              <Button key="publish-trip" type="submit">Опубликовать поездку</Button>
             )}
           </div>
-        </section>
+        </Card>
       </div>
 
       <aside className="wizard-preview" aria-label="Предпросмотр поездки">
         <p className="preview-label">Так увидят участники</p>
-        <TripPreviewCard
+        <TripCard
           title={title}
           date={draft.date}
           time={draft.time}
@@ -656,30 +627,16 @@ export function TripCreationWizard({
           coverImage={selectedCover}
         />
       </aside>
-      {showAuth ? (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setShowAuth(false)}>
-          <div
-            className="create-modal auth-prompt"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="auth-prompt-title"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <button className="modal-close" type="button" aria-label="Закрыть" onClick={() => setShowAuth(false)}>
-              ×
-            </button>
-            <p className="eyebrow">Один короткий шаг</p>
-            <h2 id="auth-prompt-title">Подтвердите профиль</h2>
-            <p className="modal-copy">
-              Войдите через Telegram, чтобы опубликовать поездку и управлять участниками.
-              Заполненные данные уже сохранены.
-            </p>
-            <LinkButton className="auth-button" href="/auth/telegram?returnTo=/trips/new">
-              Продолжить через Telegram
-            </LinkButton>
-          </div>
-        </div>
-      ) : null}
+      <Dialog
+        open={showAuth}
+        title="Подтвердите профиль"
+        description="Войдите через Telegram, чтобы опубликовать поездку и управлять участниками. Заполненные данные уже сохранены."
+        onClose={() => setShowAuth(false)}
+      >
+        <LinkButton className="auth-button" href="/auth/telegram?returnTo=/trips/new">
+          Продолжить через Telegram
+        </LinkButton>
+      </Dialog>
     </form>
   );
 }
