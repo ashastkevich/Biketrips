@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { ReactNode } from "react";
-import { hasAvailablePlaces, type TripDetail, type TripSummary } from "@biketrips/domain";
+import type { TripDetail, TripSummary } from "@biketrips/domain";
 
 import {
   bikeTypeLabels,
@@ -14,6 +14,8 @@ import {
   surfaceLabels,
   tripStatusLabels,
 } from "./labels";
+import { CreateTripLauncher } from "./create-trip-launcher";
+import { CapacityIndicator, DifficultyBadge, TripMeta } from "../ui/components";
 
 interface DataNoticeProps {
   source: "api" | "demo";
@@ -68,14 +70,6 @@ export function PlusIcon() {
   );
 }
 
-export function BoltIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M13 2 4 14h7l-1 8 10-13h-7l1-7Z" />
-    </svg>
-  );
-}
-
 export function ClockIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -116,10 +110,7 @@ export function AppTopbar() {
       <nav className="app-nav" aria-label="Навигация">
         <Link href="/">Поездки</Link>
         <Link href="/organizer/trips">Кабинет</Link>
-        <Link className="section-create compact" href="/trips/new">
-          <PlusIcon />
-          Создать
-        </Link>
+        <CreateTripLauncher className="section-create compact" compact label="Создать" />
       </nav>
     </header>
   );
@@ -146,7 +137,6 @@ export function PageHeader({ eyebrow, title, children, actions }: PageHeaderProp
 }
 
 export function TripCard({ trip }: { trip: TripSummary }) {
-  const placesLabel = hasAvailablePlaces(trip) ? "Есть места" : "Лист ожидания";
   const cardTone = getCardTone(trip);
 
   return (
@@ -161,24 +151,10 @@ export function TripCard({ trip }: { trip: TripSummary }) {
           </h3>
           <span className="ride-distance">{trip.distanceKm} км</span>
         </div>
-        <div className="ride-details">
-          <span>
-            <ClockIcon />
-            {formatDateTime(trip.startDateTime)}
-          </span>
-          <span>
-            <PinIcon />
-            {trip.city}
-          </span>
-        </div>
+        <TripMeta trip={trip} />
         <div className="ride-footer">
-          <span className="difficulty">
-            <BoltIcon />
-            {difficultyLabels[trip.difficulty]}
-          </span>
-          <span className="spots">
-            {trip.confirmedParticipants} из {trip.capacity} мест · {placesLabel}
-          </span>
+          <DifficultyBadge difficulty={trip.difficulty} />
+          <CapacityIndicator capacity={trip.capacity} confirmed={trip.confirmedParticipants} />
         </div>
       </div>
     </article>
@@ -195,7 +171,7 @@ export function TripFacts({ trip }: { trip: TripDetail }) {
         label="Темп"
         value={trip.paceMin && trip.paceMax ? `${trip.paceMin}-${trip.paceMax} км/ч` : paceLabels[trip.pace]}
       />
-      <Metric label="Уровень" value={difficultyLabels[trip.difficulty]} />
+      <Metric label="Сложность маршрута" value={difficultyLabels[trip.difficulty]} />
       <Metric label="Велосипед" value={bikeTypeLabels[trip.bikeType]} />
       <Metric label="Покрытие" value={surfaceLabels[trip.surfaceType]} />
       <Metric label="Формат" value={dropPolicyLabels[trip.dropPolicy]} />
@@ -251,9 +227,9 @@ function getTripImage(trip: TripSummary): string {
 }
 
 function getCardTone(trip: TripSummary): string {
-  if (trip.difficulty === "sport" || trip.difficulty === "hard") return "is-sport";
+  if (trip.difficulty === "hard") return "is-hard";
   if (trip.pace === "fast" || trip.pace === "training") return "is-fast";
-  if (trip.difficulty === "beginner" || trip.difficulty === "easy") return "is-easy";
+  if (trip.difficulty === "easy") return "is-easy";
   return "is-medium";
 }
 

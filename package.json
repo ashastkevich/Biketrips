@@ -12,6 +12,8 @@
     "dev:web": "npm run dev -w @biketrips/web",
     "dev:api": "npm run dev -w @biketrips/api",
     "dev:bot": "npm run dev -w @biketrips/bot",
+    "storybook": "npm run storybook -w @biketrips/web",
+    "build:storybook": "npm run build-storybook -w @biketrips/web",
     "build": "npm run build --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write .",

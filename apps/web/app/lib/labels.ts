@@ -10,11 +10,9 @@ import type {
 } from "@biketrips/domain";
 
 export const difficultyLabels: Record<DifficultyLevel, string> = {
-  beginner: "Новичкам",
-  easy: "Легко",
-  medium: "Средне",
-  hard: "Сложно",
-  sport: "Спорт",
+  easy: "Легкий",
+  medium: "Средний",
+  hard: "Сложный",
 };
 
 export const paceLabels: Record<PaceType, string> = {

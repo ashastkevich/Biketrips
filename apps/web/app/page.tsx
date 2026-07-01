@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { BikeType, DifficultyLevel, TripFilters } from "@biketrips/domain";
 
-import { ArrowIcon, Brand, DataNotice, PlusIcon, TripCard } from "./lib/components";
+import { ArrowIcon, Brand, DataNotice, TripCard } from "./lib/components";
 import { getTrips } from "./lib/api";
 import { bikeTypeLabels, difficultyLabels } from "./lib/labels";
+import { CreateTripLauncher } from "./lib/create-trip-launcher";
 
 interface HomePageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -35,10 +36,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <a className="nav-link" href="#how">
               Как это работает
             </a>
-            <Link className="create-button" href="/trips/new">
-              <PlusIcon />
-              <span>Создать</span>
-            </Link>
+            <CreateTripLauncher className="create-button" compact label="Создать" />
           </nav>
         </header>
 
@@ -53,10 +51,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               <ArrowIcon />
               Найти поездку
             </a>
-            <Link className="secondary-button" href="/trips/new">
-              <PlusIcon />
-              Создать поездку
-            </Link>
+            <CreateTripLauncher className="secondary-button" />
           </div>
         </div>
       </section>
@@ -71,10 +66,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 маршрута и свободные места.
               </p>
             </div>
-            <Link className="section-create" href="/trips/new">
-              <PlusIcon />
-              Создать поездку
-            </Link>
+            <CreateTripLauncher className="section-create" />
           </div>
 
           <DataNotice source={result.source} error={result.error} />
@@ -89,7 +81,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               <input name="dateFrom" type="date" defaultValue={filters.dateFrom ?? ""} />
             </label>
             <label className="filter-field">
-              <span>Уровень</span>
+              <span>Сложность маршрута</span>
               <select name="difficulty" defaultValue={filters.difficulty ?? ""}>
                 <option value="">Любой</option>
                 {Object.entries(difficultyLabels).map(([value, label]) => (
@@ -128,10 +120,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <section className="empty-state">
               <h2>Поездок по этим фильтрам нет</h2>
               <p>Попробуйте убрать часть условий или создайте первую поездку для своего города.</p>
-              <Link className="section-create" href="/trips/new">
-                <PlusIcon />
-                Создать поездку
-              </Link>
+              <CreateTripLauncher className="section-create" />
             </section>
           )}
         </section>

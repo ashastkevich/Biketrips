@@ -4,7 +4,7 @@ export type TripStatus = (typeof tripStatuses)[number];
 export const participantStatuses = ["pending", "confirmed", "waitlisted", "cancelled"] as const;
 export type ParticipantStatus = (typeof participantStatuses)[number];
 
-export const difficultyLevels = ["beginner", "easy", "medium", "hard", "sport"] as const;
+export const difficultyLevels = ["easy", "medium", "hard"] as const;
 export type DifficultyLevel = (typeof difficultyLevels)[number];
 
 export const paceTypes = ["relaxed", "steady", "fast", "training"] as const;

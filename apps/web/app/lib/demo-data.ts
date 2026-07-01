@@ -110,7 +110,7 @@ export const demoTrips: TripDetail[] = [
     city: "Казань",
     startDateTime: "2026-07-09T07:30:00+03:00",
     distanceKm: 54,
-    difficulty: "sport",
+    difficulty: "hard",
     pace: "training",
     bikeType: "road",
     surfaceType: "asphalt",

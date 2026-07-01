@@ -10,6 +10,8 @@ export default tseslint.config(
       "coverage/**",
       "dist/**",
       "**/dist/**",
+      "storybook-static/**",
+      "**/storybook-static/**",
       "node_modules/**",
       "**/next-env.d.ts",
     ],
