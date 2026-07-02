@@ -894,6 +894,7 @@ export interface TripCardProps {
   maxParticipants?: string | number;
   coverImage: string;
   href?: string;
+  onOpen?: () => void;
 }
 
 export function TripCard({
@@ -907,11 +908,24 @@ export function TripCard({
   maxParticipants,
   coverImage,
   href,
+  onOpen,
 }: TripCardProps) {
-  const titleContent = href ? <Link href={href}>{title}</Link> : title;
+  const titleContent = href && !onOpen ? <Link href={href}>{title}</Link> : title;
 
   return (
-    <article className="trip-card">
+    <article
+      className={classes("trip-card", onOpen && "trip-card--interactive")}
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label={onOpen ? `Открыть поездку «${title}»` : undefined}
+      onClick={onOpen}
+      onKeyDown={onOpen ? (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      } : undefined}
+    >
       <div
         className="trip-card__cover"
         style={{

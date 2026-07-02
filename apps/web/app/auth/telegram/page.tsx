@@ -1,7 +1,18 @@
 import { AppTopbar, PageHeader } from "../../lib/components";
-import { BackLink, Card, LinkButton } from "../../ui/components";
+import { BackLink, Card } from "../../ui/components";
+import { TelegramLogin } from "./telegram-login";
 
-export default function TelegramAuthPage() {
+interface TelegramAuthPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function TelegramAuthPage({ searchParams }: TelegramAuthPageProps) {
+  const query = await searchParams;
+  const returnToValue = Array.isArray(query.returnTo) ? query.returnTo[0] : query.returnTo;
+  const returnTo = returnToValue?.startsWith("/") && !returnToValue.startsWith("//")
+    ? returnToValue
+    : "/";
+
   return (
     <main className="shell narrow-shell">
       <AppTopbar />
@@ -10,21 +21,16 @@ export default function TelegramAuthPage() {
       </BackLink>
       <PageHeader eyebrow="Telegram" title="Вход и привязка">
         <p>
-          Этот экран зарезервирован под Telegram Login Widget. После подключения бота он будет
-          получать подпись Telegram, отправлять ее в API и возвращать пользователя к поездке.
+          Подтвердите вход в защищённом окне Telegram. После авторизации вы вернётесь на сайт.
         </p>
       </PageHeader>
 
       <Card className="auth-card" padding="large">
         <h2 id="auth-title">Telegram-аккаунт</h2>
-        <div className="telegram-placeholder" aria-hidden="true">
-          TG
-        </div>
-        <p className="muted">
-          Пока виджет не настроен, локальный organizer-токен можно передать через серверную
-          переменную окружения.
-        </p>
-        <LinkButton href="/">Вернуться к поездкам</LinkButton>
+        <TelegramLogin
+          botUsername={process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
+          returnTo={returnTo}
+        />
       </Card>
     </main>
   );

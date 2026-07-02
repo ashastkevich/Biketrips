@@ -102,3 +102,12 @@ export const StepThreePublication: Story = {
     initialValues: filledTrip,
   },
 };
+
+export const AuthorizationRequired: Story = {
+  name: "3. Публикация / Требуется вход",
+  args: {
+    canPublish: false,
+    initialStep: 3,
+    initialValues: filledTrip,
+  },
+};

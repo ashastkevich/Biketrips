@@ -12,7 +12,6 @@ import {
   Button,
   Card,
   Chip,
-  Dialog,
   FileField,
   FormField,
   LinkButton,
@@ -22,6 +21,7 @@ import {
   TextField,
   TripCard,
 } from "../../ui/components";
+import { AuthOptions, type AuthProvider } from "../../ui/auth-options";
 import { StartLocationPicker } from "./start-location-picker";
 
 const DRAFT_KEY = "biketrips:new-trip-draft:v2";
@@ -268,6 +268,10 @@ export function TripCreationWizard({
     setStep((current) => Math.max(1, current - 1));
     setStepError("");
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function startAuthorization(provider: AuthProvider) {
+    window.location.assign(`/auth/${provider}?returnTo=/trips/new`);
   }
 
   const title = draft.title || suggestedTitle;
@@ -627,16 +631,22 @@ export function TripCreationWizard({
           coverImage={selectedCover}
         />
       </aside>
-      <Dialog
-        open={showAuth}
-        title="Подтвердите профиль"
-        description="Войдите через Telegram, чтобы опубликовать поездку и управлять участниками. Заполненные данные уже сохранены."
-        onClose={() => setShowAuth(false)}
-      >
-        <LinkButton className="auth-button" href="/auth/telegram?returnTo=/trips/new">
-          Продолжить через Telegram
-        </LinkButton>
-      </Dialog>
+      {showAuth ? (
+        <div
+          className="ui-dialog-backdrop auth-options-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="auth-options-title"
+          onMouseDown={() => setShowAuth(false)}
+        >
+          <div onMouseDown={(event) => event.stopPropagation()}>
+            <AuthOptions
+              onClose={() => setShowAuth(false)}
+              onSelect={startAuthorization}
+            />
+          </div>
+        </div>
+      ) : null}
     </form>
   );
 }

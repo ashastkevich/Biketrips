@@ -1,4 +1,4 @@
-import { createHmac, createHash } from "node:crypto";
+import { createHmac, createHash, timingSafeEqual } from "node:crypto";
 
 import { BadRequestException, Injectable } from "@nestjs/common";
 import jwt from "jsonwebtoken";
@@ -7,6 +7,8 @@ type TokenPayload = {
   sub: string;
   name?: string;
 };
+
+const TELEGRAM_AUTH_MAX_AGE_SECONDS = 24 * 60 * 60;
 
 @Injectable()
 export class AuthService {
@@ -31,6 +33,17 @@ export class AuthService {
       throw new BadRequestException("Telegram auth hash is required");
     }
 
+    const authDate = Number(data.auth_date);
+    const now = Math.floor(Date.now() / 1000);
+
+    if (
+      !Number.isInteger(authDate) ||
+      authDate > now + 60 ||
+      now - authDate > TELEGRAM_AUTH_MAX_AGE_SECONDS
+    ) {
+      throw new BadRequestException("Telegram auth payload has expired");
+    }
+
     const checkString = Object.entries(data)
       .filter(([key, value]) => key !== "hash" && value !== undefined)
       .sort(([left], [right]) => left.localeCompare(right))
@@ -38,8 +51,13 @@ export class AuthService {
       .join("\n");
     const secretKey = createHash("sha256").update(botToken).digest();
     const expectedHash = createHmac("sha256", secretKey).update(checkString).digest("hex");
+    const receivedHashBuffer = Buffer.from(receivedHash, "hex");
+    const expectedHashBuffer = Buffer.from(expectedHash, "hex");
 
-    if (expectedHash !== receivedHash) {
+    if (
+      receivedHashBuffer.length !== expectedHashBuffer.length ||
+      !timingSafeEqual(receivedHashBuffer, expectedHashBuffer)
+    ) {
       throw new BadRequestException("Invalid Telegram auth payload");
     }
 

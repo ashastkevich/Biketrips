@@ -1,4 +1,5 @@
 import { BikeTripsApiClient } from "@biketrips/api-client";
+import { cookies } from "next/headers";
 import type {
   CreateParticipantInput,
   CreateTripInput,
@@ -13,11 +14,17 @@ import { demoTrips, toTripSummary } from "./demo-data";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const organizerToken = process.env.BIKETRIPS_ORGANIZER_TOKEN;
+const authCookieName = "biketrips_session";
 
-function createClient(): BikeTripsApiClient {
+async function getAuthToken(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get(authCookieName)?.value ?? organizerToken;
+}
+
+async function createClient(): Promise<BikeTripsApiClient> {
   return new BikeTripsApiClient({
     baseUrl: apiUrl,
-    authToken: organizerToken,
+    authToken: await getAuthToken(),
     fetcher: (input, init) => fetch(input, { ...init, cache: "no-store" }),
   });
 }
@@ -41,7 +48,8 @@ export interface DataResult<TData> {
 
 export async function getTrips(filters: TripFilters = {}): Promise<DataResult<TripSummary[]>> {
   try {
-    const trips = await createClient().listTrips(filters);
+    const client = await createClient();
+    const trips = await client.listTrips(filters);
     return { data: trips, source: "api" };
   } catch (error) {
     const summaries = demoTrips.map(toTripSummary).filter((trip) => matchesFilters(trip, filters));
@@ -51,7 +59,8 @@ export async function getTrips(filters: TripFilters = {}): Promise<DataResult<Tr
 
 export async function getTrip(slugOrId: string): Promise<DataResult<TripDetail | null>> {
   try {
-    const trip = await createClient().getTrip(slugOrId);
+    const client = await createClient();
+    const trip = await client.getTrip(slugOrId);
     return { data: trip, source: "api" };
   } catch (error) {
     const trip = demoTrips.find((item) => item.slug === slugOrId || item.id === slugOrId) ?? null;
@@ -60,21 +69,23 @@ export async function getTrip(slugOrId: string): Promise<DataResult<TripDetail |
 }
 
 export async function createTrip(input: CreateTripInput): Promise<TripDetail> {
-  return createClient().createTrip(input);
+  const client = await createClient();
+  return client.createTrip(input);
 }
 
 export async function joinTrip(
   tripId: string,
   input: CreateParticipantInput
 ): Promise<TripParticipant> {
-  return createClient().joinTrip(tripId, input);
+  const client = await createClient();
+  return client.joinTrip(tripId, input);
 }
 
 export async function updateTripStatus(
   tripId: string,
   action: "publish" | "cancel" | "finish"
 ): Promise<TripDetail> {
-  const client = createClient();
+  const client = await createClient();
 
   if (action === "publish") return client.publishTrip(tripId);
   if (action === "cancel") return client.cancelTrip(tripId);
@@ -87,11 +98,21 @@ export async function updateParticipantStatus(
   participantId: string,
   status: ParticipantStatus
 ): Promise<TripParticipant> {
-  return createClient().updateParticipantStatus(tripId, participantId, status);
+  const client = await createClient();
+  return client.updateParticipantStatus(tripId, participantId, status);
 }
 
-export function getOrganizerAuthState(): "configured" | "missing" {
-  return organizerToken ? "configured" : "missing";
+export async function getOrganizerAuthState(): Promise<"configured" | "missing"> {
+  const token = await getAuthToken();
+
+  if (!token) return "missing";
+
+  const response = await fetch(`${apiUrl}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  }).catch(() => null);
+
+  return response?.ok ? "configured" : "missing";
 }
 
 function getErrorMessage(error: unknown): string {

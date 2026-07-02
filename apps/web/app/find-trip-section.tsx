@@ -5,7 +5,9 @@ import { useMemo, useState } from "react";
 import { getTripCardProps } from "./lib/components";
 import { demoTrips } from "./lib/demo-data";
 import { RouteFilterBar, TripCard } from "./ui/components";
+import { TripDetailsModal } from "./ui/trip-details-modal";
 import type { RouteFilterValue } from "./ui/components";
+import type { TripDetail } from "@biketrips/domain";
 
 const initialFilters: RouteFilterValue = {
   measure: "distance",
@@ -19,6 +21,7 @@ const initialFilters: RouteFilterValue = {
 
 export function FindTripSection() {
   const [filters, setFilters] = useState<RouteFilterValue>(initialFilters);
+  const [selectedTrip, setSelectedTrip] = useState<TripDetail | null>(null);
 
   const filteredTrips = useMemo(
     () =>
@@ -60,7 +63,12 @@ export function FindTripSection() {
       {filteredTrips.length > 0 ? (
         <section className="results" aria-label="Найденные поездки">
           {filteredTrips.map((trip) => (
-            <TripCard {...getTripCardProps(trip)} key={trip.id} />
+            <TripCard
+              {...getTripCardProps(trip)}
+              href={undefined}
+              key={trip.id}
+              onOpen={() => setSelectedTrip(trip)}
+            />
           ))}
         </section>
       ) : (
@@ -69,6 +77,16 @@ export function FindTripSection() {
           <p>Попробуйте расширить диапазон или выбрать другие параметры.</p>
         </section>
       )}
+
+      {selectedTrip ? (
+        <TripDetailsModal
+          open
+          trip={selectedTrip}
+          coverImage={getTripCardProps(selectedTrip).coverImage}
+          hasParticipantLimit={selectedTrip.capacity < 500}
+          onClose={() => setSelectedTrip(null)}
+        />
+      ) : null}
     </section>
   );
 }

@@ -30,11 +30,11 @@ interface NewTripPageProps {
 export default async function NewTripPage({ searchParams }: NewTripPageProps) {
   const query = await searchParams;
   const error = Array.isArray(query.error) ? query.error[0] : query.error;
-  const canPublish = getOrganizerAuthState() === "configured";
+  const canPublish = (await getOrganizerAuthState()) === "configured";
 
   return (
     <main className="shell">
-      <AppTopbar />
+      <AppTopbar showNavigation={false} />
       <BackLink href="/">
         На главную
       </BackLink>

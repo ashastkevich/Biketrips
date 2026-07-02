@@ -88,7 +88,7 @@ export default async function OrganizerTripPage({ params, searchParams }: Organi
       </PageHeader>
 
       <DataNotice source={result.source} error={result.error} />
-      {getOrganizerAuthState() === "missing" ? (
+      {(await getOrganizerAuthState()) === "missing" ? (
         <Alert title="Действия организатора недоступны" tone="warning">
           Для действий организатора нужен серверный `BIKETRIPS_ORGANIZER_TOKEN`.
         </Alert>

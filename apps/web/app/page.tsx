@@ -1,22 +1,23 @@
 import { FindTripSection } from "./find-trip-section";
+import { HomeAuthControl } from "./home-auth-control";
+import { getOrganizerAuthState } from "./lib/api";
 import { ArrowIcon, Brand } from "./lib/components";
 import { CreateTripLauncher } from "./lib/create-trip-launcher";
 import { LinkButton } from "./ui/components";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const isAuthorized = (await getOrganizerAuthState()) === "configured";
+
   return (
     <>
       <section className="hero" aria-labelledby="hero-title">
         <header className="page topbar">
           <Brand tone="light" />
           <nav className="nav" aria-label="Навигация">
-            <a className="nav-link" href="#rides">
-              Поездки
-            </a>
             <a className="nav-link" href="#how">
               Как это работает
             </a>
-            <CreateTripLauncher compact label="Создать" />
+            <HomeAuthControl isAuthorized={isAuthorized} />
           </nav>
         </header>
 

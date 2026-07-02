@@ -1,8 +1,9 @@
-import { Body, Controller, Post } from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { IsOptional, IsString } from "class-validator";
 
 import { AuthService } from "./auth.service.js";
+import { JwtAuthGuard } from "./jwt-auth.guard.js";
 
 class TelegramLoginDto {
   @IsString()
@@ -19,6 +20,14 @@ class TelegramLoginDto {
   @IsOptional()
   @IsString()
   last_name?: string;
+
+  @IsOptional()
+  @IsString()
+  photo_url?: string;
+
+  @IsOptional()
+  @IsString()
+  allows_write_to_pm?: string;
 
   @IsString()
   auth_date!: string;
@@ -50,4 +59,16 @@ export class AuthController {
   async devLogin(@Body() dto: DevLoginDto) {
     return this.authService.issueToken({ sub: dto.userId, name: dto.name ?? "Local organizer" });
   }
+
+  @Get("me")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async me(@Req() request: { user: TokenPayload }) {
+    return request.user;
+  }
+}
+
+interface TokenPayload {
+  sub: string;
+  name?: string;
 }
