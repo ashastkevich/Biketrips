@@ -4,7 +4,7 @@ export type TripStatus = (typeof tripStatuses)[number];
 export const participantStatuses = ["pending", "confirmed", "waitlisted", "cancelled"] as const;
 export type ParticipantStatus = (typeof participantStatuses)[number];
 
-export const difficultyLevels = ["easy", "medium", "hard"] as const;
+export const difficultyLevels = ["beginner", "easy", "medium", "hard", "sport"] as const;
 export type DifficultyLevel = (typeof difficultyLevels)[number];
 
 export const paceTypes = ["relaxed", "steady", "fast", "training"] as const;
@@ -13,8 +13,16 @@ export type PaceType = (typeof paceTypes)[number];
 export const bikeTypes = ["city", "road", "gravel", "mtb", "hybrid", "any"] as const;
 export type BikeType = (typeof bikeTypes)[number];
 
-export const surfaceTypes = ["asphalt", "gravel", "dirt", "park_paths", "mixed"] as const;
-export type SurfaceType = (typeof surfaceTypes)[number];
+export const unpavedSurfaceDetails = [
+  "hardpack",
+  "gravel",
+  "crushed_stone",
+  "sand",
+  "forest_trails",
+  "mud",
+  "concrete_slabs",
+] as const;
+export type UnpavedSurfaceDetail = (typeof unpavedSurfaceDetails)[number];
 
 export const dropPolicies = ["no_drop", "drop"] as const;
 export type DropPolicy = (typeof dropPolicies)[number];
@@ -35,7 +43,9 @@ export interface TripSummary {
   difficulty: DifficultyLevel;
   pace: PaceType;
   bikeType: BikeType;
-  surfaceType: SurfaceType;
+  asphaltPercent: number;
+  unpavedPercent: number;
+  unpavedSurfaceDetails: UnpavedSurfaceDetail[];
   dropPolicy: DropPolicy;
   status: TripStatus;
   capacity: number;
@@ -101,7 +111,9 @@ export interface CreateTripInput {
   paceMax?: number;
   difficulty: DifficultyLevel;
   bikeType: BikeType;
-  surfaceType: SurfaceType;
+  asphaltPercent: number;
+  unpavedPercent: number;
+  unpavedSurfaceDetails?: UnpavedSurfaceDetail[];
   dropPolicy: DropPolicy;
   routeDescription?: string;
   equipmentRequirements?: string;

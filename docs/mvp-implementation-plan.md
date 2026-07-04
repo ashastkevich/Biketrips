@@ -155,7 +155,9 @@ pace_min
 pace_max
 difficulty
 bike_type
-surface_type
+asphalt_percent
+unpaved_percent
+unpaved_surface_details
 drop_policy
 route_description
 equipment_requirements

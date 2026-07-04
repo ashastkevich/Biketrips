@@ -7,9 +7,10 @@ import type { TripDetail } from "@biketrips/domain";
 import {
   bikeTypeLabels,
   difficultyLabels,
-  surfaceLabels,
+  formatSurfaceComposition,
+  unpavedSurfaceDetailLabels,
 } from "../lib/labels";
-import { Button, CapacityIndicator, TextField } from "./components";
+import { Button, CapacityIndicator, CloseButton, TextField } from "./components";
 
 export interface TripDetailsModalProps {
   open: boolean;
@@ -92,10 +93,12 @@ export function TripDetailsModal({
         ref={dialogRef}
         tabIndex={-1}
       >
-        <button className="trip-details-modal__close" type="button" onClick={onClose}>
-          <span aria-hidden="true">×</span>
-          <span className="sr-only">Закрыть карточку поездки</span>
-        </button>
+        <CloseButton
+          className="trip-details-modal__close"
+          label="Закрыть карточку поездки"
+          tone="dark"
+          onClick={onClose}
+        />
 
         <div className="trip-details-modal__hero">
           <img src={coverImage} alt="" />
@@ -117,7 +120,11 @@ export function TripDetailsModal({
               <Fact icon="↔" label="Дистанция" value={`${trip.distanceKm} км`} />
               <Fact icon="◷" label="Темп" value={trip.paceMin && trip.paceMax ? `${trip.paceMin}–${trip.paceMax} км/ч` : "Свободный"} />
               <Fact icon="◉" label="Велосипед" value={bikeTypeLabels[trip.bikeType]} />
-              <Fact icon="≈" label="Покрытие" value={surfaceLabels[trip.surfaceType]} />
+              <Fact
+                icon="≈"
+                label="Покрытие"
+                value={formatSurfaceComposition(trip.asphaltPercent, trip.unpavedPercent)}
+              />
             </div>
 
             <section className="trip-details-section">
@@ -130,6 +137,16 @@ export function TripDetailsModal({
               <div className="trip-details-disclosure__body">
                 <p>{trip.routeDescription ?? "Организатор уточнит маршрут перед стартом."}</p>
                 <dl>
+                  {trip.unpavedSurfaceDetails.length > 0 ? (
+                    <div>
+                      <dt>Грунтовая часть</dt>
+                      <dd>
+                        {trip.unpavedSurfaceDetails
+                          .map((detail) => unpavedSurfaceDetailLabels[detail])
+                          .join(", ")}
+                      </dd>
+                    </div>
+                  ) : null}
                   <div><dt>Что взять</dt><dd>{trip.equipmentRequirements ?? "Исправный велосипед и воду."}</dd></div>
                   <div><dt>Правила группы</dt><dd>{trip.rules ?? "Следуем указаниям организатора и бережём группу."}</dd></div>
                 </dl>

@@ -38,7 +38,7 @@ export default async function HomePage() {
       </section>
 
       <main>
-        <div className="page section search-section">
+        <div className="page section search-section" id="rides">
           <FindTripSection />
         </div>
 

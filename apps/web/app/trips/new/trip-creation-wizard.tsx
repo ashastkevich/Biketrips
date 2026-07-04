@@ -1,17 +1,18 @@
 "use client";
 
-import type { BikeType, DifficultyLevel, SurfaceType } from "@biketrips/domain";
+import type {
+  BikeType,
+  DifficultyLevel,
+  UnpavedSurfaceDetail,
+} from "@biketrips/domain";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  bikeTypeLabels,
-  difficultyLabels,
-  surfaceLabels,
-} from "../../lib/labels";
+import { unpavedSurfaceDetailLabels } from "../../lib/labels";
 import {
   Button,
   Card,
   Chip,
+  DifficultySelect,
   FileField,
   FormField,
   LinkButton,
@@ -24,8 +25,7 @@ import {
 import { AuthOptions, type AuthProvider } from "../../ui/auth-options";
 import { StartLocationPicker } from "./start-location-picker";
 
-const DRAFT_KEY = "biketrips:new-trip-draft:v2";
-const LEGACY_DRAFT_KEY = "biketrips:new-trip-draft:v1";
+const DRAFT_KEY = "biketrips:new-trip-draft:v5";
 const coverTemplates = [
   { src: "/img/Photo1.jpg", label: "Велосипедисты на лесной дороге" },
   { src: "/img/Photo2.jpg", label: "Группа в загородной поездке" },
@@ -56,8 +56,9 @@ export interface TripDraft {
   difficulty: string;
   bikeType: string;
   bikeTypes: BikeType[];
-  surfaceType: string;
-  surfaceTypes: SurfaceType[];
+  asphaltPercent: string;
+  unpavedPercent: string;
+  unpavedSurfaceDetails: UnpavedSurfaceDetail[];
   dropPolicy: string;
   hasParticipantLimit: boolean;
   maxParticipants: string;
@@ -84,8 +85,9 @@ const initialDraft: TripDraft = {
   difficulty: "medium",
   bikeType: "any",
   bikeTypes: ["any"],
-  surfaceType: "mixed",
-  surfaceTypes: ["mixed"],
+  asphaltPercent: "100",
+  unpavedPercent: "0",
+  unpavedSurfaceDetails: [],
   dropPolicy: "no_drop",
   hasParticipantLimit: false,
   maxParticipants: "12",
@@ -125,23 +127,19 @@ export function TripCreationWizard({
   useEffect(() => {
     if (!persistDraft) return;
 
-    const saved =
-      window.localStorage.getItem(DRAFT_KEY) ??
-      window.localStorage.getItem(LEGACY_DRAFT_KEY);
+    const saved = window.localStorage.getItem(DRAFT_KEY);
     if (saved) {
       try {
         const savedDraft = JSON.parse(saved) as Partial<TripDraft>;
         setDraft({
           ...initialDraft,
           ...savedDraft,
-          hasParticipantLimit: window.localStorage.getItem(DRAFT_KEY)
-            ? savedDraft.hasParticipantLimit ?? initialDraft.hasParticipantLimit
-            : initialDraft.hasParticipantLimit,
+          hasParticipantLimit:
+            savedDraft.hasParticipantLimit ?? initialDraft.hasParticipantLimit,
         });
         setRestored(true);
       } catch {
         window.localStorage.removeItem(DRAFT_KEY);
-        window.localStorage.removeItem(LEGACY_DRAFT_KEY);
       }
     }
   }, [persistDraft]);
@@ -185,60 +183,25 @@ export function TripCreationWizard({
     setStepError("");
   }
 
-  function toggleBikeType(value: BikeType) {
-    setDraft((current) => {
-      if (value === "any") {
-        return { ...current, bikeType: "any", bikeTypes: ["any"] };
-      }
-
-      const concreteTypes = (Object.keys(bikeTypeLabels) as BikeType[]).filter(
-        (type) => type !== "any",
-      );
-      const selectedConcreteTypes = current.bikeTypes.filter((type) => type !== "any");
-      const nextConcreteTypes = selectedConcreteTypes.includes(value)
-        ? selectedConcreteTypes.filter((type) => type !== value)
-        : [...selectedConcreteTypes, value];
-
-      if (nextConcreteTypes.length === 0) {
-        return { ...current, bikeType: "any", bikeTypes: ["any"] };
-      }
-
-      const allTypesSelected = nextConcreteTypes.length === concreteTypes.length;
-      return {
-        ...current,
-        bikeType: nextConcreteTypes.length === 1 ? nextConcreteTypes[0]! : "any",
-        bikeTypes: allTypesSelected ? [...nextConcreteTypes, "any"] : nextConcreteTypes,
-      };
-    });
+  function updateAsphaltPercent(rawValue: string) {
+    const asphaltPercent = Math.min(100, Math.max(0, Number(rawValue) || 0));
+    setDraft((current) => ({
+      ...current,
+      asphaltPercent: String(asphaltPercent),
+      unpavedPercent: String(100 - asphaltPercent),
+      unpavedSurfaceDetails:
+        asphaltPercent === 100 ? [] : current.unpavedSurfaceDetails,
+    }));
     setStepError("");
   }
 
-  function toggleSurfaceType(value: SurfaceType) {
-    setDraft((current) => {
-      if (value === "mixed") {
-        return { ...current, surfaceType: "mixed", surfaceTypes: ["mixed"] };
-      }
-
-      const concreteTypes = (Object.keys(surfaceLabels) as SurfaceType[]).filter(
-        (type) => type !== "mixed",
-      );
-      const selectedConcreteTypes = current.surfaceTypes.filter((type) => type !== "mixed");
-      const nextConcreteTypes = selectedConcreteTypes.includes(value)
-        ? selectedConcreteTypes.filter((type) => type !== value)
-        : [...selectedConcreteTypes, value];
-
-      if (nextConcreteTypes.length === 0) {
-        return { ...current, surfaceType: "mixed", surfaceTypes: ["mixed"] };
-      }
-
-      const allTypesSelected = nextConcreteTypes.length === concreteTypes.length;
-      return {
-        ...current,
-        surfaceType: nextConcreteTypes.length === 1 ? nextConcreteTypes[0]! : "mixed",
-        surfaceTypes: allTypesSelected ? [...nextConcreteTypes, "mixed"] : nextConcreteTypes,
-      };
-    });
-    setStepError("");
+  function toggleUnpavedSurfaceDetail(value: UnpavedSurfaceDetail) {
+    setDraft((current) => ({
+      ...current,
+      unpavedSurfaceDetails: current.unpavedSurfaceDetails.includes(value)
+        ? current.unpavedSurfaceDetails.filter((detail) => detail !== value)
+        : [...current.unpavedSurfaceDetails, value],
+    }));
   }
 
   function validateStep(currentStep: number): boolean {
@@ -411,56 +374,91 @@ export function TripCreationWizard({
                 <p>Темп и покрытие помогут собрать совместимую группу.</p>
               </div>
               <div className="form-grid conditions-form">
+                <input name="bikeType" type="hidden" value={draft.bikeType} />
                 <div className="condition-field">
                   <span>Сложность маршрута</span>
-                  <div className="condition-chips" role="group" aria-label="Сложность маршрута">
-                    {(Object.entries(difficultyLabels) as Array<[DifficultyLevel, string]>).map(
-                      ([value, label]) => (
-                        <Chip
-                          key={value}
-                          selected={draft.difficulty === value}
-                          onClick={() => update("difficulty", value)}
-                        >
-                          {label}
-                        </Chip>
-                      ),
-                    )}
-                  </div>
-                  <input name="difficulty" type="hidden" value={draft.difficulty} />
+                  <DifficultySelect
+                    name="difficulty"
+                    value={draft.difficulty as DifficultyLevel}
+                    onChange={(value) => update("difficulty", value)}
+                  />
                 </div>
-                <div className="condition-field">
-                  <span>Велосипед</span>
-                  <div className="condition-chips" role="group" aria-label="Подходящие велосипеды">
-                    {(Object.entries(bikeTypeLabels) as Array<[BikeType, string]>).map(
-                      ([value, label]) => (
-                        <Chip
-                          key={value}
-                          selected={draft.bikeTypes.includes(value)}
-                          onClick={() => toggleBikeType(value)}
-                        >
-                          {label}
-                        </Chip>
-                      ),
-                    )}
-                  </div>
-                  <input name="bikeType" type="hidden" value={draft.bikeType} />
-                </div>
-                <div className="condition-field">
+                <div className="condition-field surface-condition-field">
                   <span>Покрытие</span>
-                  <div className="condition-chips" role="group" aria-label="Покрытие маршрута">
-                    {(Object.entries(surfaceLabels) as Array<[SurfaceType, string]>).map(
-                      ([value, label]) => (
-                        <Chip
-                          key={value}
-                          selected={draft.surfaceTypes.includes(value)}
-                          onClick={() => toggleSurfaceType(value)}
-                        >
-                          {label}
-                        </Chip>
-                      ),
-                    )}
+                  <div className="surface-composition">
+                    <div className="surface-composition__fields">
+                      <FormField label="Грунт">
+                        <div className="surface-percent-field">
+                          <TextField
+                            name="unpavedPercent"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={draft.unpavedPercent}
+                            onChange={(event) =>
+                              updateAsphaltPercent(String(100 - Number(event.target.value)))
+                            }
+                          />
+                          <span>%</span>
+                        </div>
+                      </FormField>
+                      <FormField label="Асфальт">
+                        <div className="surface-percent-field">
+                          <TextField
+                            name="asphaltPercent"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={draft.asphaltPercent}
+                            onChange={(event) => updateAsphaltPercent(event.target.value)}
+                          />
+                          <span>%</span>
+                        </div>
+                      </FormField>
+                    </div>
+                    <div className="surface-composition__range-wrap">
+                      <span className="surface-composition__range-track" aria-hidden="true">
+                        <span style={{ width: `${draft.asphaltPercent}%` }} />
+                      </span>
+                      <input
+                        className="surface-composition__range"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="10"
+                        aria-label="Доля асфальта на маршруте"
+                        aria-valuetext={`${draft.asphaltPercent}% асфальта, ${draft.unpavedPercent}% грунта`}
+                        value={draft.asphaltPercent}
+                        onChange={(event) => updateAsphaltPercent(event.target.value)}
+                      />
+                    </div>
                   </div>
-                  <input name="surfaceType" type="hidden" value={draft.surfaceType} />
+                  {Number(draft.unpavedPercent) > 0 ? (
+                    <div className="unpaved-details">
+                      <span>Что встретится на грунтовой части? <small>Необязательно</small></span>
+                      <div className="condition-chips" role="group" aria-label="Уточнение грунтовой части">
+                        {(Object.entries(unpavedSurfaceDetailLabels) as Array<
+                          [UnpavedSurfaceDetail, string]
+                        >).map(([value, label]) => (
+                          <Chip
+                            key={value}
+                            selected={draft.unpavedSurfaceDetails.includes(value)}
+                            onClick={() => toggleUnpavedSurfaceDetail(value)}
+                          >
+                            {label}
+                          </Chip>
+                        ))}
+                      </div>
+                      {draft.unpavedSurfaceDetails.map((detail) => (
+                        <input
+                          name="unpavedSurfaceDetails"
+                          type="hidden"
+                          value={detail}
+                          key={detail}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="participant-limit-field">
                   <Switch

@@ -14,7 +14,7 @@ import type {
   DifficultyLevel,
   DropPolicy,
   RegistrationMode,
-  SurfaceType,
+  UnpavedSurfaceDetail,
   TripStatus,
 } from "@biketrips/domain";
 
@@ -63,8 +63,14 @@ export class TripEntity {
   @Column({ name: "bike_type", type: "text" })
   bikeType!: BikeType;
 
-  @Column({ name: "surface_type", type: "text" })
-  surfaceType!: SurfaceType;
+  @Column({ name: "asphalt_percent", type: "integer" })
+  asphaltPercent!: number;
+
+  @Column({ name: "unpaved_percent", type: "integer" })
+  unpavedPercent!: number;
+
+  @Column({ name: "unpaved_surface_details", type: "text", array: true, default: "{}" })
+  unpavedSurfaceDetails!: UnpavedSurfaceDetail[];
 
   @Column({ name: "drop_policy", type: "text" })
   dropPolicy!: DropPolicy;

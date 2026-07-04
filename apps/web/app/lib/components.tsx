@@ -9,7 +9,7 @@ import {
   formatDateTime,
   paceLabels,
   registrationModeLabels,
-  surfaceLabels,
+  formatSurfaceComposition,
   tripStatusLabels,
 } from "./labels";
 import { CreateTripLauncher } from "./create-trip-launcher";
@@ -113,6 +113,7 @@ export function AppTopbar({ showNavigation = true }: { showNavigation?: boolean 
         <nav className="app-nav" aria-label="Навигация">
           <Link href="/">Поездки</Link>
           <Link href="/organizer/trips">Кабинет</Link>
+          <Link href="/profile">Профиль</Link>
           <CreateTripLauncher compact label="Создать" />
         </nav>
       ) : null}
@@ -189,7 +190,10 @@ export function TripFacts({ trip }: { trip: TripDetail }) {
       />
       <Metric label="Сложность маршрута" value={difficultyLabels[trip.difficulty]} />
       <Metric label="Велосипед" value={bikeTypeLabels[trip.bikeType]} />
-      <Metric label="Покрытие" value={surfaceLabels[trip.surfaceType]} />
+      <Metric
+        label="Покрытие"
+        value={formatSurfaceComposition(trip.asphaltPercent, trip.unpavedPercent)}
+      />
       <Metric label="Формат" value={dropPolicyLabels[trip.dropPolicy]} />
       <Metric label="Запись" value={registrationModeLabels[trip.registrationMode]} />
       <Metric label="Статус" value={tripStatusLabels[trip.status]} />

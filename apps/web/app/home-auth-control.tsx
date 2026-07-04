@@ -31,7 +31,7 @@ export function HomeAuthControl({ isAuthorized }: { isAuthorized: boolean }) {
 
   if (isAuthorized) {
     return (
-      <Link className="create-button" href="/organizer/trips">
+      <Link className="create-button" href="/profile">
         Профиль
       </Link>
     );

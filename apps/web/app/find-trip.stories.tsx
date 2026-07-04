@@ -24,8 +24,8 @@ const initialFilters: RouteFilterValue = {
   distanceToKm: 200,
   durationFromHours: 0,
   durationToHours: 12,
-  difficulty: ["easy", "medium", "hard"],
-  surface: ["asphalt", "gravel", "unpaved", "offroad"],
+  difficulty: ["beginner", "easy", "medium", "hard", "sport"],
+  surface: "any",
 };
 
 export const SearchAndResults: Story = {
@@ -49,11 +49,15 @@ function FindTripPattern() {
               durationHours <= filters.durationToHours;
         const matchesDifficulty = filters.difficulty.includes(trip.difficulty);
         const matchesSurface =
-          trip.surfaceType === "mixed"
-            ? filters.surface.length > 1
-            : trip.surfaceType === "dirt" || trip.surfaceType === "park_paths"
-              ? filters.surface.includes("unpaved")
-              : filters.surface.includes(trip.surfaceType);
+          filters.surface === "any" ||
+          (filters.surface === "asphalt_only" && trip.unpavedPercent === 0) ||
+          (filters.surface === "mostly_asphalt" &&
+            trip.unpavedPercent > 0 &&
+            trip.unpavedPercent <= 30) ||
+          (filters.surface === "mixed" &&
+            trip.unpavedPercent > 30 &&
+            trip.unpavedPercent < 70) ||
+          (filters.surface === "mostly_unpaved" && trip.unpavedPercent >= 70);
 
         return matchesMeasure && matchesDifficulty && matchesSurface;
       }),

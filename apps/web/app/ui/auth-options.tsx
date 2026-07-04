@@ -1,5 +1,7 @@
 "use client";
 
+import { CloseButton } from "./components";
+
 export type AuthProvider = "telegram" | "phone" | "email" | "vk" | "yandex";
 
 export interface AuthOptionsProps {
@@ -65,17 +67,12 @@ export function AuthOptions({ onSelect, onClose }: AuthOptionsProps) {
   return (
     <section className="auth-options" aria-labelledby="auth-options-title">
       {onClose ? (
-        <button
+        <CloseButton
           className="ui-dialog__close"
-          type="button"
-          aria-label="Закрыть"
           onClick={onClose}
-        >
-          ×
-        </button>
+        />
       ) : null}
       <div className="auth-options__header">
-        <p className="eyebrow">BikeTrips</p>
         <h2 id="auth-options-title">Войти</h2>
         <p>Выберите удобный способ. Это займёт меньше минуты.</p>
       </div>

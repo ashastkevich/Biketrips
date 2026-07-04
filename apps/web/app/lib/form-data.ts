@@ -6,7 +6,7 @@ import type {
   DropPolicy,
   ParticipantStatus,
   RegistrationMode,
-  SurfaceType,
+  UnpavedSurfaceDetail,
 } from "@biketrips/domain";
 
 export function readString(formData: FormData, name: string): string {
@@ -56,7 +56,9 @@ export function readTripInput(formData: FormData): CreateTripInput {
     paceMax: readOptionalNumber(formData, "paceMax"),
     difficulty: readString(formData, "difficulty") as DifficultyLevel,
     bikeType: readString(formData, "bikeType") as BikeType,
-    surfaceType: readString(formData, "surfaceType") as SurfaceType,
+    asphaltPercent: readNumber(formData, "asphaltPercent"),
+    unpavedPercent: readNumber(formData, "unpavedPercent"),
+    unpavedSurfaceDetails: formData.getAll("unpavedSurfaceDetails") as UnpavedSurfaceDetail[],
     dropPolicy: readString(formData, "dropPolicy") as DropPolicy,
     routeDescription: readOptionalString(formData, "routeDescription"),
     equipmentRequirements: readOptionalString(formData, "equipmentRequirements"),

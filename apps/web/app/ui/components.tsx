@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type {
   ButtonHTMLAttributes,
   CSSProperties,
@@ -23,6 +23,7 @@ import type {
 
 import {
   bikeTypeLabels,
+  difficultyDescriptions,
   difficultyLabels,
   formatDateTime,
   participantStatusLabels,
@@ -110,6 +111,27 @@ export function IconButton({
   );
 }
 
+export function CloseButton({
+  label = "Закрыть",
+  tone = "secondary",
+  ...props
+}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "aria-label"> & {
+  label?: string;
+  tone?: "secondary" | "dark";
+}) {
+  return (
+    <IconButton label={label} tone={tone} {...props}>
+      <svg
+        className="ui-close-button__icon"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path d="m6 6 12 12M18 6 6 18" />
+      </svg>
+    </IconButton>
+  );
+}
+
 type BadgeTone = "neutral" | "brand" | "success" | "warning" | "danger" | "info";
 
 export function Badge({
@@ -156,8 +178,8 @@ export interface RouteFilterValue {
   distanceToKm: number;
   durationFromHours: number;
   durationToHours: number;
-  difficulty: Array<"easy" | "medium" | "hard">;
-  surface: Array<"asphalt" | "gravel" | "unpaved" | "offroad">;
+  difficulty: DifficultyLevel[];
+  surface: "any" | "asphalt_only" | "mostly_asphalt" | "mixed" | "mostly_unpaved";
 }
 
 export function RouteFilterBar({
@@ -171,15 +193,38 @@ export function RouteFilterBar({
   const filterTriggersRef = useRef<HTMLDivElement>(null);
   const filterPopoverRef = useRef<HTMLElement>(null);
   const difficultyOptions = [
-    { value: "easy" as const, label: "Легкий" },
-    { value: "medium" as const, label: "Средний" },
-    { value: "hard" as const, label: "Сложный" },
+    {
+      value: "beginner" as const,
+      label: difficultyLabels.beginner,
+      description: difficultyDescriptions.beginner,
+    },
+    {
+      value: "easy" as const,
+      label: difficultyLabels.easy,
+      description: difficultyDescriptions.easy,
+    },
+    {
+      value: "medium" as const,
+      label: difficultyLabels.medium,
+      description: difficultyDescriptions.medium,
+    },
+    {
+      value: "hard" as const,
+      label: difficultyLabels.hard,
+      description: difficultyDescriptions.hard,
+    },
+    {
+      value: "sport" as const,
+      label: difficultyLabels.sport,
+      description: difficultyDescriptions.sport,
+    },
   ];
   const surfaceOptions = [
-    { value: "asphalt" as const, label: "Асфальт", icon: "━" },
-    { value: "gravel" as const, label: "Гравий", icon: "∙∙" },
-    { value: "unpaved" as const, label: "Грунт", icon: "≈" },
-    { value: "offroad" as const, label: "Бездорожье", icon: "⌁" },
+    { value: "any" as const, label: "Неважно", description: "Любое соотношение покрытия" },
+    { value: "asphalt_only" as const, label: "Только асфальт", description: "Без грунтовых участков" },
+    { value: "mostly_asphalt" as const, label: "В основном асфальт", description: "Грунта до 30%" },
+    { value: "mixed" as const, label: "Смешанный маршрут", description: "Грунта от 31% до 69%" },
+    { value: "mostly_unpaved" as const, label: "В основном грунт", description: "Грунта от 70%" },
   ];
   const measureMin = 0;
   const measureMax = value.measure === "distance" ? 200 : 12;
@@ -236,13 +281,6 @@ export function RouteFilterBar({
     onChange({ ...value, difficulty });
   }
 
-  function toggleSurface(option: RouteFilterValue["surface"][number]) {
-    const surface = value.surface.includes(option)
-      ? value.surface.filter((item) => item !== option)
-      : [...value.surface, option];
-    onChange({ ...value, surface });
-  }
-
   return (
     <div className="route-filter-bar">
       <div
@@ -270,7 +308,7 @@ export function RouteFilterBar({
         <FilterTrigger
           label="Покрытие"
           active={openFilter === "surface"}
-          filtered={value.surface.length !== surfaceOptions.length}
+          filtered={value.surface !== "any"}
           onClick={() => toggleFilter("surface")}
         />
       </div>
@@ -398,7 +436,12 @@ export function RouteFilterBar({
                       className={`route-difficulty-option__level is-${option.value}`}
                       aria-hidden="true"
                     />
-                    <span className="route-difficulty-option__label">{option.label}</span>
+                    <span className="route-difficulty-option__copy">
+                      <span className="route-difficulty-option__label">{option.label}</span>
+                      <span className="route-difficulty-option__description">
+                        {option.description}
+                      </span>
+                    </span>
                     <input
                       type="checkbox"
                       checked={value.difficulty.includes(option.value)}
@@ -415,14 +458,16 @@ export function RouteFilterBar({
             <div className="route-filter-options route-filter-options--surface">
               {surfaceOptions.map((option) => (
                 <button
-                  className={classes("route-filter-option", value.surface.includes(option.value) && "is-selected")}
+                  className={classes("route-filter-option", value.surface === option.value && "is-selected")}
                   type="button"
-                  aria-pressed={value.surface.includes(option.value)}
-                  onClick={() => toggleSurface(option.value)}
+                  aria-pressed={value.surface === option.value}
+                  onClick={() => onChange({ ...value, surface: option.value })}
                   key={option.value}
                 >
-                  <span className="route-filter-option__surface">{option.icon}</span>
-                  <strong>{option.label}</strong>
+                  <span>
+                    <strong>{option.label}</strong>
+                    <small>{option.description}</small>
+                  </span>
                   <span className="route-filter-option__check">✓</span>
                 </button>
               ))}
@@ -442,7 +487,7 @@ export function RouteFilterBar({
                   : openFilter === "difficulty"
                   ? value.difficulty.length === difficultyOptions.length
                   : openFilter === "surface"
-                    ? value.surface.length === surfaceOptions.length
+                    ? value.surface === "any"
                     : false
               }
               onClick={() =>
@@ -458,7 +503,7 @@ export function RouteFilterBar({
                       : value.difficulty,
                   surface:
                     openFilter === "surface"
-                      ? surfaceOptions.map((option) => option.value)
+                      ? "any"
                       : value.surface,
                 })
               }
@@ -593,6 +638,97 @@ export function SelectField({
     <select className={classes("ui-input", "ui-select", className)} {...props}>
       {children}
     </select>
+  );
+}
+
+export function DifficultySelect({
+  value,
+  onChange,
+  name,
+}: {
+  value: DifficultyLevel;
+  onChange: (value: DifficultyLevel) => void;
+  name?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
+  const options = Object.entries(difficultyLabels) as Array<[DifficultyLevel, string]>;
+
+  useEffect(() => {
+    if (!open) return;
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <div className="ui-difficulty-select" ref={rootRef}>
+      {name ? <input name={name} type="hidden" value={value} /> : null}
+      <button
+        className="ui-difficulty-select__trigger"
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={listboxId}
+        aria-label={`Сложность маршрута: ${difficultyLabels[value]}`}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className={`ui-difficulty-select__marker is-${value}`} aria-hidden="true" />
+        <span className="ui-difficulty-select__trigger-copy">
+          <strong>{difficultyLabels[value]}</strong>
+          <span>{difficultyDescriptions[value]}</span>
+        </span>
+        <span className="ui-difficulty-select__chevron" aria-hidden="true">
+          ⌄
+        </span>
+      </button>
+      {open ? (
+        <div
+          className="ui-difficulty-select__menu"
+          id={listboxId}
+          role="listbox"
+          aria-label="Сложность маршрута"
+        >
+          {options.map(([option, label]) => (
+            <button
+              className={classes(
+                "ui-difficulty-select__option",
+                option === value && "is-selected",
+              )}
+              key={option}
+              type="button"
+              role="option"
+              aria-selected={option === value}
+              onClick={() => {
+                onChange(option);
+                setOpen(false);
+              }}
+            >
+              <span className={`ui-difficulty-select__marker is-${option}`} aria-hidden="true" />
+              <span className="ui-difficulty-select__option-copy">
+                <strong>{label}</strong>
+                <span>{difficultyDescriptions[option]}</span>
+              </span>
+              <span className="ui-difficulty-select__check" aria-hidden="true">
+                {option === value ? "✓" : ""}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -811,7 +947,7 @@ export function Dialog({
         aria-describedby={description ? "ui-dialog-description" : undefined}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <button className="ui-dialog__close" type="button" aria-label="Закрыть" onClick={onClose}>×</button>
+        <CloseButton className="ui-dialog__close" onClick={onClose} />
         <h2 id="ui-dialog-title">{title}</h2>
         {description ? <p id="ui-dialog-description">{description}</p> : null}
         {children}
@@ -875,9 +1011,11 @@ export function ParticipationStatusBadge({ status }: { status: ParticipantStatus
 
 export function DifficultyBadge({ difficulty }: { difficulty: DifficultyLevel }) {
   const tones: Record<DifficultyLevel, BadgeTone> = {
+    beginner: "info",
     easy: "success",
     medium: "warning",
     hard: "danger",
+    sport: "brand",
   };
 
   return <Badge tone={tones[difficulty]}>{difficultyLabels[difficulty]}</Badge>;

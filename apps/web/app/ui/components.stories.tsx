@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import type { BikeType, DifficultyLevel, SurfaceType } from "@biketrips/domain";
+import type { BikeType, DifficultyLevel, UnpavedSurfaceDetail } from "@biketrips/domain";
 
 import { demoTrips } from "../lib/demo-data";
 import { AppTopbar, getTripCardProps, PageHeader } from "../lib/components";
-import { bikeTypeLabels, difficultyLabels, surfaceLabels } from "../lib/labels";
+import {
+  bikeTypeLabels,
+  difficultyLabels,
+  unpavedSurfaceDetailLabels,
+} from "../lib/labels";
 import {
   Alert,
   BackLink,
@@ -14,7 +18,9 @@ import {
   CapacityIndicator,
   Card,
   Chip,
+  CloseButton,
   DifficultyBadge,
+  DifficultySelect,
   EmptyState,
   FileField,
   FormField,
@@ -57,6 +63,10 @@ export const Actions: Story = {
         <LinkButton href="/trips/new">Создать поездку</LinkButton>
         <IconButton label="Поделиться">↗</IconButton>
         <IconButton label="Добавить" tone="dark">+</IconButton>
+        <CloseButton />
+        <div style={{ padding: 16, background: "#344125", borderRadius: 16 }}>
+          <CloseButton tone="dark" />
+        </div>
       </div>
     </StorySection>
   ),
@@ -117,6 +127,11 @@ export const FormControls: Story = {
       </div>
     </StorySection>
   ),
+};
+
+export const DifficultyDropdown: Story = {
+  name: "Выпадающий список сложности",
+  render: () => <DifficultySelectDemo />,
 };
 
 export const Navigation: Story = {
@@ -262,32 +277,19 @@ function StorySection({ title, children }: { title: string; children: React.Reac
 function ChipDemo() {
   const [selected, setSelected] = useState<BikeType>("gravel");
   const [difficulty, setDifficulty] = useState<DifficultyLevel>("medium");
-  const [surfaces, setSurfaces] = useState<SurfaceType[]>(["mixed"]);
+  const [surfaces, setSurfaces] = useState<UnpavedSurfaceDetail[]>(["gravel"]);
   const bikeOptions = Object.entries(bikeTypeLabels) as Array<[BikeType, string]>;
   const difficultyOptions = Object.entries(difficultyLabels) as Array<[DifficultyLevel, string]>;
-  const surfaceOptions = Object.entries(surfaceLabels) as Array<[SurfaceType, string]>;
+  const surfaceOptions = Object.entries(unpavedSurfaceDetailLabels) as Array<
+    [UnpavedSurfaceDetail, string]
+  >;
 
-  function toggleSurface(value: SurfaceType) {
-    if (value === "mixed") {
-      setSurfaces(["mixed"]);
-      return;
-    }
-
-    const concreteTypes = (Object.keys(surfaceLabels) as SurfaceType[]).filter(
-      (surface) => surface !== "mixed",
+  function toggleSurface(value: UnpavedSurfaceDetail) {
+    setSurfaces((current) =>
+      current.includes(value)
+        ? current.filter((surface) => surface !== value)
+        : [...current, value],
     );
-    const selectedConcrete = surfaces.filter((surface) => surface !== "mixed");
-    const next = selectedConcrete.includes(value)
-      ? selectedConcrete.filter((surface) => surface !== value)
-      : [...selectedConcrete, value];
-
-    if (next.length === 0) {
-      setSurfaces(["mixed"]);
-      return;
-    }
-
-    const allSelected = next.length === concreteTypes.length;
-    setSurfaces(allSelected ? [...next, "mixed"] : next);
   }
 
   return (
@@ -317,7 +319,7 @@ function ChipDemo() {
         </div>
       </div>
       <div className="story-chip-group">
-        <strong>Покрытие</strong>
+        <strong>Уточнение грунтовой части</strong>
         <div className="story-row">
           {surfaceOptions.map(([value, label]) => (
             <Chip
@@ -334,6 +336,20 @@ function ChipDemo() {
   );
 }
 
+function DifficultySelectDemo() {
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>("medium");
+
+  return (
+    <StorySection title="Сложность маршрута">
+      <div style={{ width: "min(520px, 100%)" }}>
+        <FormField label="Сложность маршрута">
+          <DifficultySelect value={difficulty} onChange={setDifficulty} />
+        </FormField>
+      </div>
+    </StorySection>
+  );
+}
+
 function SwitchDemo() {
   const [checked, setChecked] = useState(true);
   return <Switch label="Лимит мест" checked={checked} onChange={setChecked} />;
@@ -346,8 +362,8 @@ function RouteFilterDemo() {
     distanceToKm: 200,
     durationFromHours: 0,
     durationToHours: 12,
-    difficulty: ["easy", "medium", "hard"],
-    surface: ["asphalt", "gravel", "unpaved", "offroad"],
+    difficulty: ["beginner", "easy", "medium", "hard", "sport"],
+    surface: "any",
   });
 
   return (

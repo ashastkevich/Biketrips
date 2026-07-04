@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import {
   IsDateString,
+  IsArray,
   IsIn,
   IsInt,
   IsNumber,
@@ -14,13 +15,13 @@ import {
   difficultyLevels,
   dropPolicies,
   registrationModes,
-  surfaceTypes,
+  unpavedSurfaceDetails,
   tripStatuses,
   type BikeType,
   type DifficultyLevel,
   type DropPolicy,
   type RegistrationMode,
-  type SurfaceType,
+  type UnpavedSurfaceDetail,
   type TripStatus,
 } from "@biketrips/domain";
 
@@ -76,9 +77,23 @@ export class CreateTripDto {
   @IsIn(bikeTypes)
   bikeType!: BikeType;
 
-  @ApiProperty({ enum: surfaceTypes })
-  @IsIn(surfaceTypes)
-  surfaceType!: SurfaceType;
+  @ApiProperty({ minimum: 0, maximum: 100, example: 70 })
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  asphaltPercent!: number;
+
+  @ApiProperty({ minimum: 0, maximum: 100, example: 30 })
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  unpavedPercent!: number;
+
+  @ApiPropertyOptional({ enum: unpavedSurfaceDetails, isArray: true })
+  @IsOptional()
+  @IsArray()
+  @IsIn(unpavedSurfaceDetails, { each: true })
+  unpavedSurfaceDetails?: UnpavedSurfaceDetail[];
 
   @ApiProperty({ enum: dropPolicies })
   @IsIn(dropPolicies)

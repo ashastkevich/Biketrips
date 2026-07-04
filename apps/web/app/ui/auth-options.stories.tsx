@@ -11,6 +11,7 @@ const meta = {
   },
   args: {
     onSelect: fn(),
+    onClose: fn(),
   },
 } satisfies Meta<typeof AuthOptions>;
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Brackets, Repository } from "typeorm";
 import type { TripStatus } from "@biketrips/domain";
@@ -84,6 +84,7 @@ export class TripsService {
   }
 
   async create(dto: CreateTripDto): Promise<TripEntity> {
+    this.validateSurfaceComposition(dto.asphaltPercent, dto.unpavedPercent);
     const trip = this.tripsRepository.create({
       ...this.mapWritableFields(dto),
       status: "draft",
@@ -95,6 +96,10 @@ export class TripsService {
 
   async update(id: string, dto: UpdateTripDto): Promise<TripEntity> {
     const trip = await this.getBySlugOrId(id);
+    this.validateSurfaceComposition(
+      dto.asphaltPercent ?? trip.asphaltPercent,
+      dto.unpavedPercent ?? trip.unpavedPercent
+    );
     Object.assign(trip, this.mapUpdateFields(dto), dto.status ? { status: dto.status } : {});
     return this.tripsRepository.save(trip);
   }
@@ -137,7 +142,9 @@ export class TripsService {
       paceMax: dto.paceMax ?? null,
       difficulty: dto.difficulty,
       bikeType: dto.bikeType,
-      surfaceType: dto.surfaceType,
+      asphaltPercent: dto.asphaltPercent,
+      unpavedPercent: dto.unpavedPercent,
+      unpavedSurfaceDetails: dto.unpavedSurfaceDetails ?? [],
       dropPolicy: dto.dropPolicy,
       routeDescription: dto.routeDescription ?? null,
       equipmentRequirements: dto.equipmentRequirements ?? null,
@@ -147,6 +154,12 @@ export class TripsService {
       organizerId: dto.organizerId,
       cityId: dto.cityId,
     };
+  }
+
+  private validateSurfaceComposition(asphaltPercent: number, unpavedPercent: number): void {
+    if (asphaltPercent + unpavedPercent !== 100) {
+      throw new BadRequestException("Asphalt and unpaved percentages must add up to 100");
+    }
   }
 
   private mapUpdateFields(dto: UpdateTripDto): Partial<TripEntity> {
@@ -163,7 +176,10 @@ export class TripsService {
     if (dto.paceMax !== undefined) update.paceMax = dto.paceMax;
     if (dto.difficulty !== undefined) update.difficulty = dto.difficulty;
     if (dto.bikeType !== undefined) update.bikeType = dto.bikeType;
-    if (dto.surfaceType !== undefined) update.surfaceType = dto.surfaceType;
+    if (dto.asphaltPercent !== undefined) update.asphaltPercent = dto.asphaltPercent;
+    if (dto.unpavedPercent !== undefined) update.unpavedPercent = dto.unpavedPercent;
+    if (dto.unpavedSurfaceDetails !== undefined)
+      update.unpavedSurfaceDetails = dto.unpavedSurfaceDetails;
     if (dto.dropPolicy !== undefined) update.dropPolicy = dto.dropPolicy;
     if (dto.routeDescription !== undefined) update.routeDescription = dto.routeDescription;
     if (dto.equipmentRequirements !== undefined)

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
+import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 import { DataSource, IsNull, Repository } from "typeorm";
 import type { ParticipantStatus } from "@biketrips/domain";
 
@@ -13,6 +13,7 @@ import { decideRegistrationStatus } from "./registration-policy.js";
 @Injectable()
 export class ParticipantsService {
   constructor(
+    @InjectDataSource()
     private readonly dataSource: DataSource,
     @InjectRepository(TripEntity)
     private readonly tripsRepository: Repository<TripEntity>,

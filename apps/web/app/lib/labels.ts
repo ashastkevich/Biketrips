@@ -5,14 +5,24 @@ import type {
   ParticipantStatus,
   PaceType,
   RegistrationMode,
-  SurfaceType,
   TripStatus,
+  UnpavedSurfaceDetail,
 } from "@biketrips/domain";
 
 export const difficultyLabels: Record<DifficultyLevel, string> = {
+  beginner: "Для новичков",
   easy: "Легкий",
   medium: "Средний",
   hard: "Сложный",
+  sport: "Спортивный",
+};
+
+export const difficultyDescriptions: Record<DifficultyLevel, string> = {
+  beginner: "Короткий простой маршрут, спокойный темп и частые остановки",
+  easy: "Небольшая нагрузка и минимум подъемов",
+  medium: "Для тех, кто регулярно катается; возможны подъемы и сложные участки",
+  hard: "Большая дистанция, заметный набор высоты",
+  sport: "Высокая интенсивность и быстрый темп; нужна хорошая подготовка",
 };
 
 export const paceLabels: Record<PaceType, string> = {
@@ -31,13 +41,21 @@ export const bikeTypeLabels: Record<BikeType, string> = {
   any: "Любой",
 };
 
-export const surfaceLabels: Record<SurfaceType, string> = {
-  asphalt: "Асфальт",
-  gravel: "Грейдер",
-  dirt: "Грунт",
-  park_paths: "Парки",
-  mixed: "Смешанное",
+export const unpavedSurfaceDetailLabels: Record<UnpavedSurfaceDetail, string> = {
+  hardpack: "Укатанный грунт",
+  gravel: "Гравий",
+  crushed_stone: "Щебень",
+  sand: "Песок",
+  forest_trails: "Лесные тропы",
+  mud: "Грязь",
+  concrete_slabs: "Бетонные плиты",
 };
+
+export function formatSurfaceComposition(asphaltPercent: number, unpavedPercent: number): string {
+  if (unpavedPercent === 0) return "100% асфальт";
+  if (asphaltPercent === 0) return "100% грунт";
+  return `${asphaltPercent}% асфальт · ${unpavedPercent}% грунт`;
+}
 
 export const dropPolicyLabels: Record<DropPolicy, string> = {
   no_drop: "No-drop",
