@@ -1,8 +1,11 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsIn, IsOptional, IsString } from "class-validator";
+import { userRoles } from "@biketrips/domain";
+import type { UserRole } from "@biketrips/domain";
 
 import { AuthService } from "./auth.service.js";
+import type { TokenPayload } from "./auth.service.js";
 import { JwtAuthGuard } from "./jwt-auth.guard.js";
 
 class TelegramLoginDto {
@@ -43,12 +46,24 @@ class DevLoginDto {
   @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsIn(userRoles)
+  role?: UserRole;
+
+  @IsOptional()
+  @IsBoolean()
+  phoneVerified?: boolean;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
 }
 
 @ApiTags("auth")
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
   @Post("telegram")
   async telegramLogin(@Body() dto: TelegramLoginDto) {
@@ -57,7 +72,13 @@ export class AuthController {
 
   @Post("dev-login")
   async devLogin(@Body() dto: DevLoginDto) {
-    return this.authService.issueToken({ sub: dto.userId, name: dto.name ?? "Local organizer" });
+    return this.authService.issueToken({
+      sub: dto.userId,
+      name: dto.name ?? "Local user",
+      role: dto.role ?? "user",
+      phone: dto.phone,
+      phoneVerified: dto.phoneVerified ?? false,
+    });
   }
 
   @Get("me")
@@ -66,9 +87,4 @@ export class AuthController {
   async me(@Req() request: { user: TokenPayload }) {
     return request.user;
   }
-}
-
-interface TokenPayload {
-  sub: string;
-  name?: string;
 }

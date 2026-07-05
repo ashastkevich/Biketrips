@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import type { TripDetail, TripSummary } from "@biketrips/domain";
 
 import {
-  bikeTypeLabels,
   difficultyLabels,
   dropPolicyLabels,
   formatDateTime,
@@ -13,6 +12,7 @@ import {
   tripStatusLabels,
 } from "./labels";
 import { CreateTripLauncher } from "./create-trip-launcher";
+import { ProfileMenu } from "../home-auth-control";
 import {
   Alert,
   ParticipantRow,
@@ -20,7 +20,7 @@ import {
 import type { TripCardProps } from "../ui/components";
 
 interface DataNoticeProps {
-  source: "api" | "demo";
+  source: "api" | "unavailable";
   error?: string;
 }
 
@@ -28,8 +28,8 @@ export function DataNotice({ source, error }: DataNoticeProps) {
   if (source === "api") return null;
 
   return (
-    <Alert title="Показаны демо-данные" tone="warning">
-      API сейчас недоступен.{error ? ` Причина: ${error}` : null}
+    <Alert title="Не удалось загрузить данные" tone="warning">
+      Сервис поездок сейчас недоступен.{error ? ` Причина: ${error}` : null}
     </Alert>
   );
 }
@@ -113,10 +113,10 @@ export function AppTopbar({ showNavigation = true }: { showNavigation?: boolean 
         <nav className="app-nav" aria-label="Навигация">
           <Link href="/">Поездки</Link>
           <Link href="/organizer/trips">Кабинет</Link>
-          <Link href="/profile">Профиль</Link>
           <CreateTripLauncher compact label="Создать" />
+          <ProfileMenu tone="dark" />
         </nav>
-      ) : null}
+      ) : <ProfileMenu tone="dark" />}
     </header>
   );
 }
@@ -172,7 +172,7 @@ export function getTripCardProps(
     distanceKm: trip.distanceKm,
     difficulty: trip.difficulty,
     averageSpeed,
-    maxParticipants: trip.capacity,
+    maxParticipants: trip.capacity ?? undefined,
     coverImage: getTripImage(trip),
     href: `/trips/${trip.slug}`,
   };
@@ -189,7 +189,6 @@ export function TripFacts({ trip }: { trip: TripDetail }) {
         value={trip.paceMin && trip.paceMax ? `${trip.paceMin}-${trip.paceMax} км/ч` : paceLabels[trip.pace]}
       />
       <Metric label="Сложность маршрута" value={difficultyLabels[trip.difficulty]} />
-      <Metric label="Велосипед" value={bikeTypeLabels[trip.bikeType]} />
       <Metric
         label="Покрытие"
         value={formatSurfaceComposition(trip.asphaltPercent, trip.unpavedPercent)}
@@ -224,13 +223,6 @@ export function Metric({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function getTripImage(trip: TripSummary): string {
-  const fallbackImage = "/img/Photo1.jpg";
-  const images = ["/img/Photo1.jpg", "/img/Photo2.jpg", "/img/Photo3.jpg", "/img/Photo4.jpg"];
-  const index = Math.abs(hashString(trip.id || trip.slug)) % images.length;
-  return images[index] ?? fallbackImage;
-}
-
-function hashString(value: string): number {
-  return value.split("").reduce((hash, char) => hash + char.charCodeAt(0), 0);
+function getTripImage(trip: TripSummary): string | undefined {
+  return trip.coverImage ?? undefined;
 }

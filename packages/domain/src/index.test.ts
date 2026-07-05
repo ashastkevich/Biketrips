@@ -16,4 +16,8 @@ describe("hasAvailablePlaces", () => {
   it("returns false when capacity is full", () => {
     expect(hasAvailablePlaces({ capacity: 12, confirmedParticipants: 12 })).toBe(false);
   });
+
+  it("returns true when the trip has no participant limit", () => {
+    expect(hasAvailablePlaces({ capacity: null, confirmedParticipants: 500 })).toBe(true);
+  });
 });

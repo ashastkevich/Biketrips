@@ -114,16 +114,22 @@ export class CreateTripDto {
   @IsString()
   rules?: string;
 
-  @ApiProperty({ minimum: 1, maximum: 500 })
+  @ApiPropertyOptional({ minimum: 1, maximum: 500, nullable: true })
+  @IsOptional()
   @IsInt()
   @Min(1)
   @Max(500)
-  maxParticipants!: number;
+  maxParticipants?: number | null;
 
   @ApiProperty({ enum: registrationModes, default: "automatic" })
   @IsOptional()
   @IsIn(registrationModes)
   registrationMode?: RegistrationMode;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  coverImage?: string;
 
   @ApiProperty()
   @IsString()

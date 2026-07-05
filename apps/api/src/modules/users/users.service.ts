@@ -29,4 +29,15 @@ export class UsersService {
       })
     );
   }
+
+  async update(
+    id: string,
+    input: { name: string; email?: string; phoneNumber?: string },
+  ): Promise<UserEntity> {
+    const user = await this.get(id);
+    user.name = input.name;
+    user.email = input.email?.trim() || null;
+    user.phoneNumber = input.phoneNumber?.trim() || null;
+    return this.usersRepository.save(user);
+  }
 }

@@ -1,11 +1,13 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 import { DataSource, IsNull, Repository } from "typeorm";
 import type { ParticipantStatus } from "@biketrips/domain";
+import { isUUID } from "class-validator";
 
 import { TripParticipantEntity } from "../../infrastructure/database/entities/trip-participant.entity.js";
 import { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
 import { WaitlistEntryEntity } from "../../infrastructure/database/entities/waitlist-entry.entity.js";
+import { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
 import { NotificationsService } from "../notifications/notifications.service.js";
 import type { CreateParticipantDto } from "./dto/participant.dto.js";
 import { decideRegistrationStatus } from "./registration-policy.js";
@@ -21,6 +23,7 @@ export class ParticipantsService {
     private readonly participantsRepository: Repository<TripParticipantEntity>,
     @InjectRepository(WaitlistEntryEntity)
     private readonly waitlistRepository: Repository<WaitlistEntryEntity>,
+    @Inject(NotificationsService)
     private readonly notificationsService: NotificationsService
   ) {}
 
@@ -33,10 +36,28 @@ export class ParticipantsService {
   }
 
   async joinTrip(tripId: string, dto: CreateParticipantDto): Promise<TripParticipantEntity> {
+    if (!isUUID(tripId)) {
+      throw new NotFoundException("Trip not found");
+    }
+
     return this.dataSource.transaction(async (manager) => {
+      let user = await manager.findOne(UserEntity, { where: { id: dto.userId } });
+      if (!user) {
+        user = await manager.save(
+          manager.create(UserEntity, {
+            id: dto.userId,
+            name: dto.name,
+            email: null,
+            avatarUrl: null,
+            role: "user",
+            phoneNumber: null,
+            phoneVerifiedAt: null,
+          }),
+        );
+      }
+
       const trip = await manager.findOne(TripEntity, {
         where: { id: tripId },
-        relations: { participants: true },
         lock: { mode: "pessimistic_write" },
       });
 
@@ -54,6 +75,10 @@ export class ParticipantsService {
 
       if (existing && existing.status !== "cancelled") {
         throw new BadRequestException("User is already registered for this trip");
+      }
+
+      if (existing) {
+        await manager.delete(WaitlistEntryEntity, { tripId, userId: dto.userId });
       }
 
       const confirmedParticipants = await manager.count(TripParticipantEntity, {
@@ -91,6 +116,42 @@ export class ParticipantsService {
     });
   }
 
+  async getForUser(
+    tripId: string,
+    userId: string,
+  ): Promise<TripParticipantEntity | null> {
+    if (!isUUID(tripId)) {
+      return null;
+    }
+
+    return this.participantsRepository.findOne({
+      where: { tripId, userId },
+    });
+  }
+
+  async cancelForUser(tripId: string, userId: string): Promise<TripParticipantEntity> {
+    if (!isUUID(tripId)) {
+      throw new NotFoundException("Active registration not found");
+    }
+
+    const participant = await this.getForUser(tripId, userId);
+
+    if (!participant || participant.status === "cancelled") {
+      throw new NotFoundException("Active registration not found");
+    }
+
+    const previousStatus = participant.status;
+    participant.status = "cancelled";
+    const savedParticipant = await this.participantsRepository.save(participant);
+
+    await this.waitlistRepository.delete({ tripId, userId });
+    if (previousStatus === "confirmed") {
+      await this.promoteNextWaitlistParticipant(tripId);
+    }
+
+    return savedParticipant;
+  }
+
   async updateStatus(
     tripId: string,
     participantId: string,
@@ -126,7 +187,7 @@ export class ParticipantsService {
       where: { tripId, status: "confirmed" },
     });
 
-    if (confirmedParticipants >= trip.maxParticipants) {
+    if (trip.maxParticipants !== null && confirmedParticipants >= trip.maxParticipants) {
       return;
     }
 

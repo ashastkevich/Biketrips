@@ -1,10 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Brackets, Repository } from "typeorm";
 import type { TripStatus } from "@biketrips/domain";
 
 import { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
 import { TripUpdateEntity } from "../../infrastructure/database/entities/trip-update.entity.js";
+import { OrganizerEntity } from "../../infrastructure/database/entities/organizer.entity.js";
+import { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
 import { NotificationsService } from "../notifications/notifications.service.js";
 import type { CreateTripDto, TripFiltersDto, UpdateTripDto } from "./dto/trip.dto.js";
 
@@ -15,6 +17,11 @@ export class TripsService {
     private readonly tripsRepository: Repository<TripEntity>,
     @InjectRepository(TripUpdateEntity)
     private readonly tripUpdatesRepository: Repository<TripUpdateEntity>,
+    @InjectRepository(OrganizerEntity)
+    private readonly organizersRepository: Repository<OrganizerEntity>,
+    @InjectRepository(UserEntity)
+    private readonly usersRepository: Repository<UserEntity>,
+    @Inject(NotificationsService)
     private readonly notificationsService: NotificationsService
   ) {}
 
@@ -23,6 +30,7 @@ export class TripsService {
       .createQueryBuilder("trip")
       .leftJoinAndSelect("trip.city", "city")
       .leftJoinAndSelect("trip.organizer", "organizer")
+      .leftJoinAndSelect("organizer.user", "organizerUser")
       .leftJoinAndSelect("trip.participants", "participants")
       .orderBy("trip.startAt", "ASC");
 
@@ -60,11 +68,15 @@ export class TripsService {
   }
 
   async getBySlugOrId(slugOrId: string): Promise<TripEntity> {
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        slugOrId,
+      );
     const trip = await this.tripsRepository.findOne({
-      where: [{ id: slugOrId }, { publicSlug: slugOrId }],
+      where: isUuid ? { id: slugOrId } : { publicSlug: slugOrId },
       relations: {
         city: true,
-        organizer: true,
+        organizer: { user: true },
         participants: { user: true },
         waitlistEntries: { user: true },
         updates: true,
@@ -83,15 +95,66 @@ export class TripsService {
     return trip;
   }
 
-  async create(dto: CreateTripDto): Promise<TripEntity> {
+  async create(
+    dto: CreateTripDto,
+    actor: {
+      id: string;
+      name?: string;
+      role: "user" | "admin";
+      phone?: string;
+      phoneVerified: boolean;
+    },
+  ): Promise<TripEntity> {
     this.validateSurfaceComposition(dto.asphaltPercent, dto.unpavedPercent);
+    const organizer = await this.getOrCreateOrganizer(actor);
     const trip = this.tripsRepository.create({
       ...this.mapWritableFields(dto),
+      organizerId: organizer.id,
       status: "draft",
       publicSlug: await this.createUniqueSlug(dto.title),
     });
 
-    return this.tripsRepository.save(trip);
+    const savedTrip = await this.tripsRepository.save(trip);
+    return this.getBySlugOrId(savedTrip.id);
+  }
+
+  private async getOrCreateOrganizer(actor: {
+    id: string;
+    name?: string;
+    role: "user" | "admin";
+    phone?: string;
+    phoneVerified: boolean;
+  }): Promise<OrganizerEntity> {
+    let user = await this.usersRepository.findOne({ where: { id: actor.id } });
+
+    if (!user) {
+      user = await this.usersRepository.save(
+        this.usersRepository.create({
+          id: actor.id,
+          name: actor.name ?? "Организатор BikeTrips",
+          email: null,
+          role: actor.role,
+          phoneNumber: actor.phone ?? null,
+          phoneVerifiedAt: actor.phoneVerified ? new Date() : null,
+          avatarUrl: null,
+        }),
+      );
+    }
+
+    const existingOrganizer = await this.organizersRepository.findOne({
+      where: { userId: user.id },
+    });
+    if (existingOrganizer) return existingOrganizer;
+
+    return this.organizersRepository.save(
+      this.organizersRepository.create({
+        userId: user.id,
+        displayName: actor.name ?? user.name,
+        bio: null,
+        contactUrl: null,
+        isVerified: false,
+      }),
+    );
   }
 
   async update(id: string, dto: UpdateTripDto): Promise<TripEntity> {
@@ -149,8 +212,9 @@ export class TripsService {
       routeDescription: dto.routeDescription ?? null,
       equipmentRequirements: dto.equipmentRequirements ?? null,
       rules: dto.rules ?? null,
-      maxParticipants: dto.maxParticipants,
+      maxParticipants: dto.maxParticipants ?? null,
       registrationMode: dto.registrationMode ?? "automatic",
+      coverImage: dto.coverImage ?? null,
       organizerId: dto.organizerId,
       cityId: dto.cityId,
     };
@@ -187,6 +251,7 @@ export class TripsService {
     if (dto.rules !== undefined) update.rules = dto.rules;
     if (dto.maxParticipants !== undefined) update.maxParticipants = dto.maxParticipants;
     if (dto.registrationMode !== undefined) update.registrationMode = dto.registrationMode;
+    if (dto.coverImage !== undefined) update.coverImage = dto.coverImage;
     if (dto.organizerId !== undefined) update.organizerId = dto.organizerId;
     if (dto.cityId !== undefined) update.cityId = dto.cityId;
 

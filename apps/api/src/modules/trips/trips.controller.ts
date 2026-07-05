@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
+import { TripCreatorGuard } from "../auth/access.guards.js";
 import { ParticipantsService } from "../participants/participants.service.js";
 import { CreateParticipantDto, UpdateParticipantStatusDto } from "../participants/dto/participant.dto.js";
 import { CreateTripDto, TripFiltersDto, UpdateTripDto } from "./dto/trip.dto.js";
@@ -12,7 +13,9 @@ import { serializeTripDetail, serializeTripSummary } from "./trips.serializer.js
 @Controller("trips")
 export class TripsController {
   constructor(
+    @Inject(TripsService)
     private readonly tripsService: TripsService,
+    @Inject(ParticipantsService)
     private readonly participantsService: ParticipantsService
   ) {}
 
@@ -28,54 +31,95 @@ export class TripsController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, TripCreatorGuard)
   @ApiBearerAuth()
-  async create(@Body() dto: CreateTripDto) {
-    return serializeTripDetail(await this.tripsService.create(dto));
+  async create(
+    @Body() dto: CreateTripDto,
+    @Req() request: {
+      user: {
+        id: string;
+        name?: string;
+        role: "user" | "admin";
+        phone?: string;
+        phoneVerified: boolean;
+      };
+    },
+  ) {
+    return serializeTripDetail(await this.tripsService.create(dto, request.user));
   }
 
   @Patch(":id")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, TripCreatorGuard)
   @ApiBearerAuth()
   async update(@Param("id") id: string, @Body() dto: UpdateTripDto) {
     return serializeTripDetail(await this.tripsService.update(id, dto));
   }
 
   @Post(":id/publish")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, TripCreatorGuard)
   @ApiBearerAuth()
   async publish(@Param("id") id: string) {
     return serializeTripDetail(await this.tripsService.transition(id, "published"));
   }
 
   @Post(":id/cancel")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, TripCreatorGuard)
   @ApiBearerAuth()
   async cancel(@Param("id") id: string) {
     return serializeTripDetail(await this.tripsService.transition(id, "cancelled"));
   }
 
   @Post(":id/finish")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, TripCreatorGuard)
   @ApiBearerAuth()
   async finish(@Param("id") id: string) {
     return serializeTripDetail(await this.tripsService.transition(id, "finished"));
   }
 
   @Post(":id/participants")
-  async join(@Param("id") id: string, @Body() dto: CreateParticipantDto) {
-    return this.participantsService.joinTrip(id, dto);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async join(
+    @Param("id") id: string,
+    @Req() request: { user: { id: string; name?: string } },
+    @Body() dto: Pick<CreateParticipantDto, "comment">,
+  ) {
+    return this.participantsService.joinTrip(id, {
+      userId: request.user.id,
+      name: request.user.name ?? "Участник BikeTrips",
+      comment: dto.comment,
+    });
+  }
+
+  @Get(":id/participation")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async participation(
+    @Param("id") id: string,
+    @Req() request: { user: { id: string } },
+  ) {
+    return this.participantsService.getForUser(id, request.user.id);
+  }
+
+  @Delete(":id/participants/me")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async cancelParticipation(
+    @Param("id") id: string,
+    @Req() request: { user: { id: string } },
+  ) {
+    return this.participantsService.cancelForUser(id, request.user.id);
   }
 
   @Get(":id/participants")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, TripCreatorGuard)
   @ApiBearerAuth()
   async listParticipants(@Param("id") id: string) {
     return this.participantsService.listForTrip(id);
   }
 
   @Patch(":id/participants/:participantId")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, TripCreatorGuard)
   @ApiBearerAuth()
   async updateParticipant(
     @Param("id") id: string,

@@ -26,6 +26,7 @@ export function serializeTripSummary(trip: TripEntity) {
     status: trip.status,
     capacity: trip.maxParticipants,
     confirmedParticipants: countParticipants(trip.participants, "confirmed"),
+    coverImage: trip.coverImage,
   };
 }
 
@@ -44,7 +45,8 @@ export function serializeTripDetail(trip: TripEntity) {
     registrationMode: trip.registrationMode,
     organizer: {
       id: trip.organizer.id,
-      displayName: trip.organizer.displayName,
+      userId: trip.organizer.userId,
+      displayName: trip.organizer.user?.name ?? trip.organizer.displayName,
       isVerified: trip.organizer.isVerified,
     },
     participants:

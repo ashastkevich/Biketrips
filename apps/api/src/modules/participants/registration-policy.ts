@@ -2,10 +2,10 @@ import type { ParticipantStatus, RegistrationMode } from "@biketrips/domain";
 
 export function decideRegistrationStatus(input: {
   confirmedParticipants: number;
-  capacity: number;
+  capacity: number | null;
   registrationMode: RegistrationMode;
 }): ParticipantStatus {
-  if (input.confirmedParticipants >= input.capacity) {
+  if (input.capacity !== null && input.confirmedParticipants >= input.capacity) {
     return "waitlisted";
   }
 

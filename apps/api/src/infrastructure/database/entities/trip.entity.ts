@@ -84,11 +84,14 @@ export class TripEntity {
   @Column({ type: "text", nullable: true })
   rules!: string | null;
 
-  @Column({ name: "max_participants", type: "integer" })
-  maxParticipants!: number;
+  @Column({ name: "max_participants", type: "integer", nullable: true })
+  maxParticipants!: number | null;
 
   @Column({ name: "registration_mode", type: "text", default: "automatic" })
   registrationMode!: RegistrationMode;
+
+  @Column({ name: "cover_image", type: "text", nullable: true })
+  coverImage!: string | null;
 
   @Column({ type: "text", default: "draft" })
   status!: TripStatus;

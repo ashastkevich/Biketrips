@@ -1,41 +1,57 @@
 import Link from "next/link";
 
-import { AppTopbar, ClockIcon, PinIcon } from "../lib/components";
-import { demoTrips } from "../lib/demo-data";
-import { difficultyLabels, formatShortDate } from "../lib/labels";
-import { Badge, LinkButton } from "../ui/components";
-import { ProfileEditor } from "./profile-editor";
+import { AppTopbar } from "../lib/components";
+import { LinkButton } from "../ui/components";
+import { UpcomingTrips } from "./upcoming-trips";
+import { getCurrentUser, getTripDetails } from "../lib/api";
+import { ProfileAccount } from "./profile-account";
 
-const upcomingTrips = demoTrips.filter((trip) => trip.status === "published").slice(0, 2);
+export default async function ProfilePage() {
+  const [user, tripsResult] = await Promise.all([
+    getCurrentUser(),
+    getTripDetails(),
+  ]);
+  const isAuthenticated = user !== null;
+  const upcomingTrips = tripsResult.data.slice(0, 2);
+  const name = user?.name ?? "Гость";
+  const initials = name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 
-export default function ProfilePage() {
   return (
     <main className="shell profile-page">
       <AppTopbar />
 
       <header className="profile-hero">
         <div className="profile-avatar" aria-hidden="true">
-          АМ
+          {initials || "Г"}
         </div>
         <div className="profile-identity">
           <div className="profile-name-row">
-            <h1>Алексей Морозов</h1>
-            <Badge tone="success" dot>
-              Профиль подтверждён
-            </Badge>
+            <h1>{name}</h1>
           </div>
-          <p>@aleksei_ride · Москва</p>
-          <div className="profile-stat-row" aria-label="Статистика профиля">
-            <span><strong>12</strong> поездок</span>
-            <span><strong>286</strong> км вместе</span>
-            <span><strong>2</strong> организовано</span>
-          </div>
+          <p>{user ? "Профиль пользователя" : "Авторизация не выполнена"}</p>
         </div>
       </header>
 
       <div className="profile-layout">
         <div className="profile-main">
-          <ProfileEditor />
+          {user ? (
+            <ProfileAccount initialUser={user} />
+          ) : (
+            <section className="profile-card" aria-labelledby="profile-data-title">
+              <div className="profile-card__heading">
+                <div>
+                  <p className="profile-section-label">Учётная запись</p>
+                  <h2 id="profile-data-title">Данные пользователя</h2>
+                </div>
+              </div>
+              <p>Войдите, чтобы увидеть данные учётной записи.</p>
+            </section>
+          )}
 
           <section className="profile-card" aria-labelledby="upcoming-title">
             <div className="profile-card__heading">
@@ -48,44 +64,15 @@ export default function ProfilePage() {
               </Link>
             </div>
 
-            <div className="profile-trip-list">
-              {upcomingTrips.map((trip, index) => (
-                <Link className="profile-trip" href={`/trips/${trip.slug}`} key={trip.id}>
-                  <div
-                    className="profile-trip__cover"
-                    style={{ backgroundImage: `url("/img/Photo${index + 1}.jpg")` }}
-                    aria-hidden="true"
-                  />
-                  <div className="profile-trip__copy">
-                    <p>{formatShortDate(trip.startDateTime)}</p>
-                    <h3>{trip.title}</h3>
-                    <div>
-                      <span><PinIcon /> {trip.city}</span>
-                      <span><ClockIcon /> {trip.distanceKm} км</span>
-                    </div>
-                  </div>
-                  <Badge tone={trip.difficulty === "easy" ? "success" : "warning"}>
-                    {difficultyLabels[trip.difficulty]}
-                  </Badge>
-                </Link>
-              ))}
-            </div>
+            <UpcomingTrips
+              trips={upcomingTrips}
+              isAuthenticated={isAuthenticated}
+              currentUserId={user?.id}
+            />
           </section>
         </div>
 
         <aside className="profile-sidebar">
-          <section className="profile-card profile-completeness">
-            <div className="profile-completeness__head">
-              <h2>Профиль заполнен</h2>
-              <strong>85%</strong>
-            </div>
-            <div className="profile-progress" aria-label="Профиль заполнен на 85%">
-              <span />
-            </div>
-            <p>Добавьте фотографию — участникам будет проще узнать вас на старте.</p>
-            <button type="button" className="profile-text-button">Загрузить фото</button>
-          </section>
-
           <section className="profile-card profile-organizer-card">
             <span className="profile-organizer-card__icon" aria-hidden="true">↗</span>
             <h2>Организуете поездки?</h2>
@@ -94,12 +81,6 @@ export default function ProfilePage() {
               Открыть кабинет
             </LinkButton>
           </section>
-
-          <nav className="profile-settings" aria-label="Настройки профиля">
-            <a href="#notifications">Уведомления <span>›</span></a>
-            <a href="#privacy">Приватность <span>›</span></a>
-            <a href="#logout">Выйти <span>›</span></a>
-          </nav>
         </aside>
       </div>
     </main>

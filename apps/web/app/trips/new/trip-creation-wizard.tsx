@@ -1,7 +1,6 @@
 "use client";
 
 import type {
-  BikeType,
   DifficultyLevel,
   UnpavedSurfaceDetail,
 } from "@biketrips/domain";
@@ -32,15 +31,7 @@ const coverTemplates = [
   { src: "/img/Photo3.jpg", label: "Велосипедный маршрут" },
   { src: "/img/Photo4.jpg", label: "Совместная велопрогулка" },
 ];
-const suggestedTitleByBikeType: Record<BikeType, string> = {
-  city: "Городская поездка",
-  road: "Шоссейная поездка",
-  gravel: "Гравийная поездка",
-  mtb: "MTB-поездка",
-  hybrid: "Велопоездка",
-  any: "Велопоездка",
-};
-
+const defaultCoverImage = coverTemplates[1]!.src;
 export interface TripDraft {
   title: string;
   city: string;
@@ -54,8 +45,6 @@ export interface TripDraft {
   paceMin: string;
   paceMax: string;
   difficulty: string;
-  bikeType: string;
-  bikeTypes: BikeType[];
   asphaltPercent: string;
   unpavedPercent: string;
   unpavedSurfaceDetails: UnpavedSurfaceDetail[];
@@ -83,8 +72,6 @@ const initialDraft: TripDraft = {
   paceMin: "18",
   paceMax: "24",
   difficulty: "medium",
-  bikeType: "any",
-  bikeTypes: ["any"],
   asphaltPercent: "100",
   unpavedPercent: "0",
   unpavedSurfaceDetails: [],
@@ -92,7 +79,7 @@ const initialDraft: TripDraft = {
   hasParticipantLimit: false,
   maxParticipants: "12",
   registrationMode: "automatic",
-  coverImage: "/img/Photo2.jpg",
+  coverImage: defaultCoverImage,
   description: "",
   routeDescription: "",
   equipmentRequirements: "",
@@ -102,6 +89,7 @@ const initialDraft: TripDraft = {
 interface TripCreationWizardProps {
   action: (formData: FormData) => void | Promise<void>;
   canPublish: boolean;
+  isRegistered?: boolean;
   initialStep?: 1 | 2 | 3;
   initialValues?: Partial<TripDraft>;
   persistDraft?: boolean;
@@ -110,6 +98,7 @@ interface TripCreationWizardProps {
 export function TripCreationWizard({
   action,
   canPublish,
+  isRegistered = false,
   initialStep = 1,
   initialValues,
   persistDraft = true,
@@ -162,11 +151,9 @@ export function TripCreationWizard({
   );
 
   const suggestedTitle = useMemo(() => {
-    const titlePrefix =
-      suggestedTitleByBikeType[draft.bikeType as BikeType] ?? suggestedTitleByBikeType.any;
     const distance = draft.distanceKm ? ` · ${draft.distanceKm} км` : "";
-    return `${titlePrefix}${distance}`;
-  }, [draft.bikeType, draft.distanceKm]);
+    return `Велопоездка${distance}`;
+  }, [draft.distanceKm]);
 
   function update<K extends keyof TripDraft>(key: K, value: TripDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -239,7 +226,7 @@ export function TripCreationWizard({
 
   const title = draft.title || suggestedTitle;
   const startAt = draft.date && draft.time ? `${draft.date}T${draft.time}` : "";
-  const selectedCover = customCoverUrl || draft.coverImage;
+  const selectedCover = customCoverUrl || draft.coverImage || defaultCoverImage;
 
   return (
     <form
@@ -248,19 +235,37 @@ export function TripCreationWizard({
       onSubmit={(event) => {
         if (!canPublish) {
           event.preventDefault();
-          setShowAuth(true);
+          if (isRegistered) {
+            window.location.assign("/profile?verifyPhone=1");
+          } else {
+            setShowAuth(true);
+          }
         }
       }}
     >
-      <input name="organizerId" type="hidden" value="demo-organizer-1" />
-      <input name="cityId" type="hidden" value="demo-city-moscow" />
+      <input name="organizerId" type="hidden" value="30000000-0000-4000-8000-000000000001" />
+      <input name="cityId" type="hidden" value="10000000-0000-4000-8000-000000000001" />
+      <input name="title" type="hidden" value={title} />
       <input name="startAt" type="hidden" value={startAt} />
+      <input name="startLocationName" type="hidden" value={draft.startLocationName} />
       <input name="startLat" type="hidden" value={draft.startLat} />
       <input name="startLng" type="hidden" value={draft.startLng} />
+      <input name="distanceKm" type="hidden" value={draft.distanceKm} />
       <input name="paceMin" type="hidden" value={draft.paceMin} />
       <input name="paceMax" type="hidden" value={draft.paceMax} />
+      <input name="difficulty" type="hidden" value={draft.difficulty} />
+      <input name="bikeType" type="hidden" value="any" />
+      <input name="asphaltPercent" type="hidden" value={draft.asphaltPercent} />
+      <input name="unpavedPercent" type="hidden" value={draft.unpavedPercent} />
+      {draft.unpavedSurfaceDetails.map((detail) => (
+        <input name="unpavedSurfaceDetails" type="hidden" value={detail} key={detail} />
+      ))}
       <input name="dropPolicy" type="hidden" value={draft.dropPolicy} />
-      <input name="coverImage" type="hidden" value={customCoverUrl ? "" : draft.coverImage} />
+      {draft.hasParticipantLimit ? (
+        <input name="maxParticipants" type="hidden" value={draft.maxParticipants} />
+      ) : null}
+      <input name="registrationMode" type="hidden" value={draft.registrationMode} />
+      <input name="coverImage" type="hidden" value={customCoverUrl ? "" : selectedCover} />
 
       <div className="wizard-main">
         <Stepper
@@ -374,7 +379,7 @@ export function TripCreationWizard({
                 <p>Темп и покрытие помогут собрать совместимую группу.</p>
               </div>
               <div className="form-grid conditions-form">
-                <input name="bikeType" type="hidden" value={draft.bikeType} />
+                <input name="bikeType" type="hidden" value="any" />
                 <div className="condition-field">
                   <span>Сложность маршрута</span>
                   <DifficultySelect
@@ -478,9 +483,7 @@ export function TripCreationWizard({
                         onChange={(event) => update("maxParticipants", event.target.value)}
                       />
                     </FormField>
-                  ) : (
-                    <input name="maxParticipants" type="hidden" value="500" />
-                  )}
+                  ) : null}
                 </div>
                 <input name="registrationMode" type="hidden" value={draft.registrationMode} />
               </div>
@@ -499,11 +502,11 @@ export function TripCreationWizard({
                 <div className="cover-templates">
                   {coverTemplates.map((cover) => (
                     <button
-                      className={draft.coverImage === cover.src && !customCoverUrl ? "is-selected" : ""}
+                      className={selectedCover === cover.src && !customCoverUrl ? "is-selected" : ""}
                       type="button"
                       key={cover.src}
                       aria-label={cover.label}
-                      aria-pressed={draft.coverImage === cover.src && !customCoverUrl}
+                      aria-pressed={selectedCover === cover.src && !customCoverUrl}
                       style={{ backgroundImage: `url("${cover.src}")` }}
                       onClick={() => {
                         setCustomCoverUrl("");

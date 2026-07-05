@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { DataSource } from "typeorm";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
+import { AdminGuard } from "../auth/access.guards.js";
 
 @ApiTags("admin")
 @Controller("admin")
@@ -10,7 +11,7 @@ export class AdminController {
   constructor(private readonly dataSource: DataSource) {}
 
   @Get("health")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   async health() {
     return {

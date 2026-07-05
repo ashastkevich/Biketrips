@@ -10,6 +10,26 @@ export type DifficultyLevel = (typeof difficultyLevels)[number];
 export const paceTypes = ["relaxed", "steady", "fast", "training"] as const;
 export type PaceType = (typeof paceTypes)[number];
 
+export const userRoles = ["user", "admin"] as const;
+export type UserRole = (typeof userRoles)[number];
+
+export interface AuthenticatedUser {
+  id: string;
+  role: UserRole;
+  phone?: string;
+  phoneVerified: boolean;
+}
+
+export function canJoinTrips(user: AuthenticatedUser | null): boolean {
+  return user !== null;
+}
+
+export function canCreateTrips(user: AuthenticatedUser | null): boolean {
+  return user?.role === "admin" ||
+    user?.phoneVerified === true ||
+    Boolean(user?.phone?.trim());
+}
+
 export const bikeTypes = ["city", "road", "gravel", "mtb", "hybrid", "any"] as const;
 export type BikeType = (typeof bikeTypes)[number];
 
@@ -48,8 +68,9 @@ export interface TripSummary {
   unpavedSurfaceDetails: UnpavedSurfaceDetail[];
   dropPolicy: DropPolicy;
   status: TripStatus;
-  capacity: number;
+  capacity: number | null;
   confirmedParticipants: number;
+  coverImage: string | null;
 }
 
 export interface TripParticipant {
@@ -78,6 +99,7 @@ export interface TripUpdate {
 
 export interface TripOrganizer {
   id: string;
+  userId: string;
   displayName: string;
   isVerified: boolean;
 }
@@ -118,8 +140,9 @@ export interface CreateTripInput {
   routeDescription?: string;
   equipmentRequirements?: string;
   rules?: string;
-  maxParticipants: number;
+  maxParticipants?: number | null;
   registrationMode?: RegistrationMode;
+  coverImage?: string;
   organizerId: string;
   cityId: string;
 }
@@ -144,5 +167,5 @@ export interface CreateParticipantInput {
 export function hasAvailablePlaces(
   trip: Pick<TripSummary, "capacity" | "confirmedParticipants">
 ): boolean {
-  return trip.confirmedParticipants < trip.capacity;
+  return trip.capacity === null || trip.confirmedParticipants < trip.capacity;
 }

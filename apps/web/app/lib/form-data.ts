@@ -63,8 +63,9 @@ export function readTripInput(formData: FormData): CreateTripInput {
     routeDescription: readOptionalString(formData, "routeDescription"),
     equipmentRequirements: readOptionalString(formData, "equipmentRequirements"),
     rules: readOptionalString(formData, "rules"),
-    maxParticipants: readNumber(formData, "maxParticipants"),
+    maxParticipants: readOptionalNumber(formData, "maxParticipants"),
     registrationMode: readString(formData, "registrationMode") as RegistrationMode,
+    coverImage: readOptionalString(formData, "coverImage"),
     organizerId: readString(formData, "organizerId"),
     cityId: readString(formData, "cityId"),
   };

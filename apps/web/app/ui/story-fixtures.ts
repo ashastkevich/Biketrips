@@ -1,8 +1,8 @@
 import type { TripDetail, TripSummary } from "@biketrips/domain";
 
-export const demoTrips: TripDetail[] = [
+export const storyTrips: TripDetail[] = [
   {
-    id: "demo-trip-1",
+    id: "40000000-0000-4000-8000-000000000001",
     slug: "moscow-evening-gravel",
     title: "Вечерний gravel по паркам",
     city: "Москва",
@@ -18,6 +18,7 @@ export const demoTrips: TripDetail[] = [
     status: "published",
     capacity: 14,
     confirmedParticipants: 8,
+    coverImage: "/img/Photo2.jpg",
     description:
       "Ровный вечерний маршрут через парки и спокойные набережные. Подойдет тем, кто уверенно держит 22-24 км/ч и хочет прокатиться без гонки.",
     startLocationName: "Парк Победы, главный вход",
@@ -31,6 +32,7 @@ export const demoTrips: TripDetail[] = [
     registrationMode: "automatic",
     organizer: {
       id: "demo-organizer-1",
+      userId: "demo-user-1",
       displayName: "RideMate Moscow",
       isVerified: true,
     },
@@ -63,7 +65,7 @@ export const demoTrips: TripDetail[] = [
     ],
   },
   {
-    id: "demo-trip-2",
+    id: "40000000-0000-4000-8000-000000000002",
     slug: "spb-ladoga-social",
     title: "Ладожский социальный круг",
     city: "Санкт-Петербург",
@@ -79,6 +81,7 @@ export const demoTrips: TripDetail[] = [
     status: "published",
     capacity: 18,
     confirmedParticipants: 18,
+    coverImage: "/img/Photo3.jpg",
     description:
       "Дневная поездка в разговорном темпе с остановкой на кофе. Хороший вариант для первой длинной групповой покатушки.",
     startLocationName: "Финляндский вокзал",
@@ -92,6 +95,7 @@ export const demoTrips: TripDetail[] = [
     registrationMode: "manual",
     organizer: {
       id: "demo-organizer-2",
+      userId: "demo-user-2",
       displayName: "Северный велоклуб",
       isVerified: false,
     },
@@ -108,7 +112,7 @@ export const demoTrips: TripDetail[] = [
     updates: [],
   },
   {
-    id: "demo-trip-3",
+    id: "40000000-0000-4000-8000-000000000003",
     slug: "kazan-training-loop",
     title: "Темповая тренировка за городом",
     city: "Казань",
@@ -124,6 +128,7 @@ export const demoTrips: TripDetail[] = [
     status: "draft",
     capacity: 10,
     confirmedParticipants: 4,
+    coverImage: "/img/Photo1.jpg",
     description: "Утренняя тренировка с ровными сменами и коротким разбором после финиша.",
     startLocationName: "Компрессорный, парковка",
     startLat: null,
@@ -136,6 +141,7 @@ export const demoTrips: TripDetail[] = [
     registrationMode: "manual",
     organizer: {
       id: "demo-organizer-1",
+      userId: "demo-user-1",
       displayName: "RideMate Moscow",
       isVerified: true,
     },

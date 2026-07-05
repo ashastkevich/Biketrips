@@ -4,7 +4,7 @@ import { useState } from "react";
 import { fn } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { demoTrips } from "../lib/demo-data";
+import { storyTrips } from "./story-fixtures";
 import { Button } from "./components";
 import { TripDetailsModal } from "./trip-details-modal";
 
@@ -14,8 +14,9 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: {
     open: true,
-    trip: demoTrips[0]!,
+    trip: storyTrips[0]!,
     coverImage: "/img/Photo2.jpg",
+    currentUserId: undefined,
     onClose: fn(),
     onJoin: fn(),
   },
@@ -29,13 +30,13 @@ export const Available: Story = { name: "Есть свободные места"
 export const Unlimited: Story = {
   name: "Без лимита участников",
   args: {
-    hasParticipantLimit: false,
+    trip: { ...storyTrips[0]!, capacity: null },
   },
 };
 
 export const Waitlist: Story = {
   name: "Лист ожидания",
-  args: { trip: demoTrips[1]!, coverImage: "/img/Photo3.jpg" },
+  args: { trip: storyTrips[1]!, coverImage: "/img/Photo3.jpg" },
 };
 
 export const Interactive: Story = {

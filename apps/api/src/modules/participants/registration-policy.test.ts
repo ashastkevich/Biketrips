@@ -32,4 +32,14 @@ describe("decideRegistrationStatus", () => {
       })
     ).toBe("waitlisted");
   });
+
+  it("confirms participants when the trip has no participant limit", () => {
+    expect(
+      decideRegistrationStatus({
+        confirmedParticipants: 500,
+        capacity: null,
+        registrationMode: "automatic",
+      })
+    ).toBe("confirmed");
+  });
 });

@@ -3,7 +3,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useMemo, useState } from "react";
 
-import { demoTrips } from "./lib/demo-data";
+import { storyTrips } from "./ui/story-fixtures";
 import { getTripCardProps } from "./lib/components";
 import { RouteFilterBar, TripCard } from "./ui/components";
 import type { RouteFilterValue } from "./ui/components";
@@ -38,7 +38,7 @@ function FindTripPattern() {
 
   const filteredTrips = useMemo(
     () =>
-      demoTrips.filter((trip) => {
+      storyTrips.filter((trip) => {
         const averageSpeed = ((trip.paceMin ?? 20) + (trip.paceMax ?? 20)) / 2;
         const durationHours = trip.distanceKm / averageSpeed;
         const matchesMeasure =
@@ -53,11 +53,11 @@ function FindTripPattern() {
           (filters.surface === "asphalt_only" && trip.unpavedPercent === 0) ||
           (filters.surface === "mostly_asphalt" &&
             trip.unpavedPercent > 0 &&
-            trip.unpavedPercent <= 30) ||
+            trip.unpavedPercent < 30) ||
           (filters.surface === "mixed" &&
-            trip.unpavedPercent > 30 &&
-            trip.unpavedPercent < 70) ||
-          (filters.surface === "mostly_unpaved" && trip.unpavedPercent >= 70);
+            trip.unpavedPercent >= 30 &&
+            trip.unpavedPercent <= 70) ||
+          (filters.surface === "mostly_unpaved" && trip.unpavedPercent > 70);
 
         return matchesMeasure && matchesDifficulty && matchesSurface;
       }),
@@ -68,11 +68,10 @@ function FindTripPattern() {
     <main className="find-trip-pattern">
       <header className="find-trip-pattern__header">
         <div>
-          <p className="eyebrow">Поездки рядом</p>
           <h1>Найдите подходящую поездку</h1>
           <p>Настройте маршрут, сложность и покрытие — карточки обновятся сразу.</p>
         </div>
-        <strong>{filteredTrips.length} из {demoTrips.length}</strong>
+        <strong>{filteredTrips.length} из {storyTrips.length}</strong>
       </header>
 
       <RouteFilterBar value={filters} onChange={setFilters} />

@@ -1,14 +1,23 @@
 import { createHmac, createHash, timingSafeEqual } from "node:crypto";
 
 import { BadRequestException, Injectable } from "@nestjs/common";
+import type { UserRole } from "@biketrips/domain";
 import jwt from "jsonwebtoken";
 
-type TokenPayload = {
+export type TokenPayload = {
   sub: string;
   name?: string;
+  role: UserRole;
+  phone?: string;
+  phoneVerified: boolean;
 };
 
 const TELEGRAM_AUTH_MAX_AGE_SECONDS = 24 * 60 * 60;
+
+function stableTelegramUserId(telegramId: string): string {
+  const hash = createHash("sha256").update(`telegram:${telegramId}`).digest("hex");
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-5${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
+}
 
 @Injectable()
 export class AuthService {
@@ -62,8 +71,10 @@ export class AuthService {
     }
 
     return this.issueToken({
-      sub: `telegram:${data.id}`,
+      sub: stableTelegramUserId(data.id ?? ""),
       name: data.username ?? data.first_name,
+      role: "user",
+      phoneVerified: false,
     });
   }
 }

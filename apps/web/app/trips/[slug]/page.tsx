@@ -99,8 +99,9 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
           <Card className="side-panel" padding="large">
           <h2 id="join-title">Записаться</h2>
           <p className="muted">
-            Мест занято: {trip.confirmedParticipants}/{trip.capacity}. Если лимит заполнен,
-            заявка попадет в лист ожидания.
+            {trip.capacity === null
+              ? `Записались: ${trip.confirmedParticipants} участников.`
+              : `Мест занято: ${trip.confirmedParticipants}/${trip.capacity}. Если лимит заполнен, заявка попадет в лист ожидания.`}
           </p>
           <form action={joinAction} className="form">
             <input name="userId" type="hidden" value={`web-${trip.id}`} />

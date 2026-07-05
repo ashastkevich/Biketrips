@@ -1,6 +1,8 @@
 import { BikeTripsApiClient } from "@biketrips/api-client";
+import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import type {
+  AuthenticatedUser,
   CreateParticipantInput,
   CreateTripInput,
   ParticipantStatus,
@@ -9,8 +11,6 @@ import type {
   TripParticipant,
   TripSummary,
 } from "@biketrips/domain";
-
-import { demoTrips, toTripSummary } from "./demo-data";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const organizerToken = process.env.BIKETRIPS_ORGANIZER_TOKEN;
@@ -29,21 +29,75 @@ async function createClient(): Promise<BikeTripsApiClient> {
   });
 }
 
-function matchesFilters(trip: TripSummary, filters: TripFilters): boolean {
-  if (!filters.includeDrafts && trip.status !== "published") return false;
-  if (filters.city && !trip.city.toLowerCase().includes(filters.city.toLowerCase())) return false;
-  if (filters.difficulty && trip.difficulty !== filters.difficulty) return false;
-  if (filters.bikeType && trip.bikeType !== filters.bikeType) return false;
-  if (filters.dateFrom && trip.startDateTime < filters.dateFrom) return false;
-  if (filters.dateTo && trip.startDateTime > filters.dateTo) return false;
-
-  return true;
-}
-
 export interface DataResult<TData> {
   data: TData;
-  source: "api" | "demo";
+  source: "api" | "unavailable";
   error?: string;
+}
+
+export interface CurrentUser extends AuthenticatedUser {
+  name: string;
+  phone: string;
+  telegram: string;
+  email: string;
+  telegramVerified: boolean;
+  emailVerified: boolean;
+}
+
+export async function getCurrentUser(): Promise<CurrentUser | null> {
+  const token = await getAuthToken();
+
+  if (!token) return null;
+
+  try {
+    const payload = jwt.verify(
+      token,
+      process.env.JWT_SECRET ?? "local-development-secret",
+    );
+
+    if (
+      typeof payload === "string" ||
+      typeof payload.sub !== "string" ||
+      (payload.role !== "user" && payload.role !== "admin")
+    ) {
+      return null;
+    }
+
+    const sessionUser: CurrentUser = {
+      id: payload.sub,
+      name: typeof payload.name === "string" ? payload.name : "Пользователь",
+      role: payload.role,
+      phoneVerified: payload.phoneVerified === true,
+      phone: typeof payload.phone === "string" ? payload.phone : "",
+      telegram: typeof payload.telegram === "string" ? payload.telegram : "",
+      email: typeof payload.email === "string" ? payload.email : "",
+      telegramVerified: payload.telegramVerified === true,
+      emailVerified: payload.emailVerified === true,
+    };
+
+    const databaseResponse = await fetch(`${apiUrl}/users/${encodeURIComponent(payload.sub)}`, {
+      headers: { authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }).catch(() => null);
+
+    if (!databaseResponse?.ok) return sessionUser;
+
+    const databaseUser = await databaseResponse.json() as {
+      name: string;
+      email: string | null;
+      phoneNumber: string | null;
+      phoneVerifiedAt: string | null;
+    };
+    return {
+      ...sessionUser,
+      name: databaseUser.name,
+      email: databaseUser.email ?? "",
+      phone: databaseUser.phoneNumber ?? "",
+      phoneVerified: databaseUser.phoneVerifiedAt !== null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function getTrips(filters: TripFilters = {}): Promise<DataResult<TripSummary[]>> {
@@ -52,8 +106,7 @@ export async function getTrips(filters: TripFilters = {}): Promise<DataResult<Tr
     const trips = await client.listTrips(filters);
     return { data: trips, source: "api" };
   } catch (error) {
-    const summaries = demoTrips.map(toTripSummary).filter((trip) => matchesFilters(trip, filters));
-    return { data: summaries, source: "demo", error: getErrorMessage(error) };
+    return { data: [], source: "unavailable", error: getErrorMessage(error) };
   }
 }
 
@@ -63,9 +116,23 @@ export async function getTrip(slugOrId: string): Promise<DataResult<TripDetail |
     const trip = await client.getTrip(slugOrId);
     return { data: trip, source: "api" };
   } catch (error) {
-    const trip = demoTrips.find((item) => item.slug === slugOrId || item.id === slugOrId) ?? null;
-    return { data: trip, source: "demo", error: getErrorMessage(error) };
+    return { data: null, source: "unavailable", error: getErrorMessage(error) };
   }
+}
+
+export async function getTripDetails(): Promise<DataResult<TripDetail[]>> {
+  const summaries = await getTrips();
+  if (summaries.source === "unavailable") {
+    return { data: [], source: "unavailable", error: summaries.error };
+  }
+
+  const details = await Promise.all(
+    summaries.data.map((trip) => getTrip(trip.slug)),
+  );
+  return {
+    data: details.flatMap((result) => result.data ? [result.data] : []),
+    source: "api",
+  };
 }
 
 export async function createTrip(input: CreateTripInput): Promise<TripDetail> {
@@ -102,17 +169,27 @@ export async function updateParticipantStatus(
   return client.updateParticipantStatus(tripId, participantId, status);
 }
 
-export async function getOrganizerAuthState(): Promise<"configured" | "missing"> {
+export async function getOrganizerAuthState(): Promise<"allowed" | "phone-required" | "missing"> {
   const token = await getAuthToken();
 
   if (!token) return "missing";
 
-  const response = await fetch(`${apiUrl}/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  }).catch(() => null);
+  try {
+    const payload = jwt.verify(
+      token,
+      process.env.JWT_SECRET ?? "local-development-secret",
+    );
 
-  return response?.ok ? "configured" : "missing";
+    if (typeof payload === "string" || !payload.sub) return "missing";
+
+    return payload.role === "admin" ||
+      payload.phoneVerified === true ||
+      (typeof payload.phone === "string" && payload.phone.trim().length > 0)
+      ? "allowed"
+      : "phone-required";
+  } catch {
+    return "missing";
+  }
 }
 
 function getErrorMessage(error: unknown): string {

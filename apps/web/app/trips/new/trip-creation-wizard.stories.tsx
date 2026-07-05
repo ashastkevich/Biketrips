@@ -34,8 +34,6 @@ const filledTrip = {
   paceMin: "19",
   paceMax: "24",
   difficulty: "medium",
-  bikeType: "any",
-  bikeTypes: ["any" as const],
   asphaltPercent: "60",
   unpavedPercent: "40",
   unpavedSurfaceDetails: ["hardpack" as const, "gravel" as const],

@@ -2,10 +2,9 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, MouseEvent } from "react";
-import type { TripDetail } from "@biketrips/domain";
+import type { ParticipantStatus, TripDetail } from "@biketrips/domain";
 
 import {
-  bikeTypeLabels,
   difficultyLabels,
   formatSurfaceComposition,
   unpavedSurfaceDetailLabels,
@@ -16,9 +15,10 @@ export interface TripDetailsModalProps {
   open: boolean;
   trip: TripDetail;
   coverImage?: string;
-  hasParticipantLimit?: boolean;
+  isAuthenticated?: boolean;
+  currentUserId: string | undefined;
   onClose: () => void;
-  onJoin?: (participant: { name: string; telegramUsername: string }) => void;
+  onJoin?: (participant?: { name: string; telegramUsername: string }) => void;
 }
 
 function Fact({ icon, label, value }: { icon: string; label: string; value: string }) {
@@ -33,8 +33,9 @@ function Fact({ icon, label, value }: { icon: string; label: string; value: stri
 export function TripDetailsModal({
   open,
   trip,
-  coverImage = "/img/Photo2.jpg",
-  hasParticipantLimit = true,
+  coverImage,
+  isAuthenticated = false,
+  currentUserId,
   onClose,
   onJoin,
 }: TripDetailsModalProps) {
@@ -42,7 +43,12 @@ export function TripDetailsModal({
   const dialogRef = useRef<HTMLElement>(null);
   const [showForm, setShowForm] = useState(false);
   const [joined, setJoined] = useState(false);
-  const placesLeft = Math.max(trip.capacity - trip.confirmedParticipants, 0);
+  const isOrganizer = trip.organizer.userId === currentUserId;
+  const [participationStatus, setParticipationStatus] = useState<ParticipantStatus | null>(null);
+  const [participationLoading, setParticipationLoading] = useState(false);
+  const [participationError, setParticipationError] = useState("");
+  const hasParticipantLimit = trip.capacity !== null;
+  const placesLeft = Math.max((trip.capacity ?? 0) - trip.confirmedParticipants, 0);
   const waitlist = hasParticipantLimit && placesLeft === 0;
   const date = new Intl.DateTimeFormat("ru-RU", {
     weekday: "long", day: "numeric", month: "long",
@@ -50,6 +56,12 @@ export function TripDetailsModal({
   const time = new Intl.DateTimeFormat("ru-RU", {
     hour: "2-digit", minute: "2-digit",
   }).format(new Date(trip.startDateTime));
+  const hasRouteConditions = Boolean(
+    trip.routeDescription ||
+      trip.equipmentRequirements ||
+      trip.rules ||
+      trip.unpavedSurfaceDetails.length,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -66,6 +78,40 @@ export function TripDetailsModal({
     };
   }, [onClose, open]);
 
+  useEffect(() => {
+    if (!open || !isAuthenticated) return;
+
+    let active = true;
+    setParticipationLoading(true);
+    setParticipationError("");
+
+    fetch(`/api/trips/${encodeURIComponent(trip.id)}/participation`, {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Не удалось проверить запись");
+        return response.json() as Promise<{ status?: ParticipantStatus } | null>;
+      })
+      .then((participation) => {
+        if (!active) return;
+        setParticipationStatus(
+          participation?.status && participation.status !== "cancelled"
+            ? participation.status
+            : null,
+        );
+      })
+      .catch(() => {
+        if (active) setParticipationError("Не удалось проверить вашу запись. Попробуйте ещё раз.");
+      })
+      .finally(() => {
+        if (active) setParticipationLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, open, trip.id]);
+
   if (!open) return null;
 
   function handleBackdropClick(event: MouseEvent<HTMLDivElement>) {
@@ -81,6 +127,58 @@ export function TripDetailsModal({
     });
     setJoined(true);
     setShowForm(false);
+  }
+
+  async function handleJoin() {
+    if (isAuthenticated) {
+      setParticipationLoading(true);
+      setParticipationError("");
+
+      const response = await fetch(
+        `/api/trips/${encodeURIComponent(trip.id)}/participation`,
+        { method: "POST" },
+      ).catch(() => null);
+
+      if (!response?.ok) {
+        const error = await response?.json().catch(() => null) as { message?: string } | null;
+        setParticipationError(
+          response?.status === 404
+            ? "Поездка не найдена в базе. Обновите страницу и попробуйте снова."
+            : error?.message ?? "Не удалось записаться на поездку. Попробуйте ещё раз.",
+        );
+        setParticipationLoading(false);
+        return;
+      }
+
+      const participation = await response.json() as { status: ParticipantStatus };
+      setParticipationStatus(participation.status);
+      setParticipationLoading(false);
+      onJoin?.();
+      setJoined(true);
+      return;
+    }
+
+    setShowForm(true);
+  }
+
+  async function handleCancelParticipation() {
+    setParticipationLoading(true);
+    setParticipationError("");
+
+    const response = await fetch(
+      `/api/trips/${encodeURIComponent(trip.id)}/participation`,
+      { method: "DELETE" },
+    ).catch(() => null);
+
+    if (!response?.ok) {
+      setParticipationError("Не удалось отменить запись. Попробуйте ещё раз.");
+      setParticipationLoading(false);
+      return;
+    }
+
+    setParticipationStatus(null);
+    setJoined(false);
+    setParticipationLoading(false);
   }
 
   return (
@@ -101,7 +199,7 @@ export function TripDetailsModal({
         />
 
         <div className="trip-details-modal__hero">
-          <img src={coverImage} alt="" />
+          {coverImage ? <img src={coverImage} alt="" /> : null}
           <div className="trip-details-modal__hero-shade" />
           <div className="trip-details-modal__hero-copy">
             <div className="trip-details-modal__eyebrow">
@@ -119,7 +217,6 @@ export function TripDetailsModal({
             <div className="trip-details-modal__facts" aria-label="Параметры поездки">
               <Fact icon="↔" label="Дистанция" value={`${trip.distanceKm} км`} />
               <Fact icon="◷" label="Темп" value={trip.paceMin && trip.paceMax ? `${trip.paceMin}–${trip.paceMax} км/ч` : "Свободный"} />
-              <Fact icon="◉" label="Велосипед" value={bikeTypeLabels[trip.bikeType]} />
               <Fact
                 icon="≈"
                 label="Покрытие"
@@ -132,10 +229,11 @@ export function TripDetailsModal({
               <p>{trip.description}</p>
             </section>
 
+            {hasRouteConditions ? (
             <details className="trip-details-disclosure" open>
               <summary>Маршрут и условия <span aria-hidden="true">⌄</span></summary>
               <div className="trip-details-disclosure__body">
-                <p>{trip.routeDescription ?? "Организатор уточнит маршрут перед стартом."}</p>
+                {trip.routeDescription ? <p>{trip.routeDescription}</p> : null}
                 <dl>
                   {trip.unpavedSurfaceDetails.length > 0 ? (
                     <div>
@@ -147,11 +245,16 @@ export function TripDetailsModal({
                       </dd>
                     </div>
                   ) : null}
-                  <div><dt>Что взять</dt><dd>{trip.equipmentRequirements ?? "Исправный велосипед и воду."}</dd></div>
-                  <div><dt>Правила группы</dt><dd>{trip.rules ?? "Следуем указаниям организатора и бережём группу."}</dd></div>
+                  {trip.equipmentRequirements ? (
+                    <div><dt>Что взять</dt><dd>{trip.equipmentRequirements}</dd></div>
+                  ) : null}
+                  {trip.rules ? (
+                    <div><dt>Правила группы</dt><dd>{trip.rules}</dd></div>
+                  ) : null}
                 </dl>
               </div>
             </details>
+            ) : null}
 
             <div className="trip-details-organizer">
               <span className="trip-details-organizer__avatar" aria-hidden="true">{trip.organizer.displayName.slice(0, 1)}</span>
@@ -163,12 +266,51 @@ export function TripDetailsModal({
             </div>
           </div>
 
-          <aside className="trip-details-modal__join" aria-label="Запись на поездку">
-            {joined ? (
+          <aside
+            className="trip-details-modal__join"
+            aria-label={isOrganizer ? "Участники поездки" : "Запись на поездку"}
+          >
+            {isOrganizer ? (
+              <>
+                <p className="trip-details-modal__join-kicker">Участники</p>
+                <p className="trip-details-modal__participant-count">
+                  Записались: <strong>{trip.confirmedParticipants}</strong>
+                  {hasParticipantLimit ? ` из ${trip.capacity}` : " участников"}
+                </p>
+                {hasParticipantLimit ? (
+                  <CapacityIndicator
+                    capacity={trip.capacity!}
+                    confirmed={trip.confirmedParticipants}
+                  />
+                ) : null}
+              </>
+            ) : participationStatus || joined ? (
               <div className="trip-details-success" role="status">
                 <span aria-hidden="true">✓</span>
-                <h3>{waitlist ? "Вы в листе ожидания" : "Вы записаны!"}</h3>
-                <p>{waitlist ? "Сообщим в Telegram, если освободится место." : "Детали и напоминание придут в Telegram."}</p>
+                <h3>
+                  {(participationStatus === "waitlisted" || (!participationStatus && waitlist))
+                    ? "Вы в листе ожидания"
+                    : joined
+                      ? "Вы успешно записаны!"
+                      : "Вы уже записаны"}
+                </h3>
+                <p>
+                  {(participationStatus === "waitlisted" || (!participationStatus && waitlist))
+                    ? "Сообщим, если освободится место."
+                    : "Эта поездка добавлена в ваш список."}
+                </p>
+                {participationError ? (
+                  <p className="trip-details-modal__error" role="alert">{participationError}</p>
+                ) : null}
+                {participationStatus ? (
+                  <Button
+                    tone="secondary"
+                    disabled={participationLoading}
+                    onClick={handleCancelParticipation}
+                  >
+                    {participationLoading ? "Отменяем…" : "Отменить запись"}
+                  </Button>
+                ) : null}
               </div>
             ) : showForm ? (
               <form className="trip-details-join-form" onSubmit={handleSubmit}>
@@ -184,14 +326,21 @@ export function TripDetailsModal({
               <>
                 <p className="trip-details-modal__join-kicker">{waitlist ? "Места закончились" : "Можно присоединиться"}</p>
                 {hasParticipantLimit ? (
-                  <CapacityIndicator capacity={trip.capacity} confirmed={trip.confirmedParticipants} />
+                  <CapacityIndicator capacity={trip.capacity!} confirmed={trip.confirmedParticipants} />
                 ) : (
                   <p className="trip-details-modal__participant-count">
                     Записались: <strong>{trip.confirmedParticipants}</strong> участников
                   </p>
                 )}
-                <Button size="large" onClick={() => setShowForm(true)}>
-                  {waitlist ? "Встать в лист ожидания" : "Записаться"}
+                {participationError ? (
+                  <p className="trip-details-modal__error" role="alert">{participationError}</p>
+                ) : null}
+                <Button size="large" disabled={participationLoading} onClick={handleJoin}>
+                  {participationLoading
+                    ? "Проверяем…"
+                    : waitlist
+                      ? "Встать в лист ожидания"
+                      : "Записаться"}
                 </Button>
                 <p className="trip-details-modal__join-note">{trip.registrationMode === "automatic" ? "Запись подтвердится сразу" : "Организатор подтвердит заявку"}</p>
               </>

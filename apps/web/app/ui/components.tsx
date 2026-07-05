@@ -12,7 +12,6 @@ import type {
   TextareaHTMLAttributes,
 } from "react";
 import type {
-  BikeType,
   DifficultyLevel,
   ParticipantStatus,
   TripFilters as TripFilterValues,
@@ -22,7 +21,6 @@ import type {
 } from "@biketrips/domain";
 
 import {
-  bikeTypeLabels,
   difficultyDescriptions,
   difficultyLabels,
   formatDateTime,
@@ -222,9 +220,9 @@ export function RouteFilterBar({
   const surfaceOptions = [
     { value: "any" as const, label: "Неважно", description: "Любое соотношение покрытия" },
     { value: "asphalt_only" as const, label: "Только асфальт", description: "Без грунтовых участков" },
-    { value: "mostly_asphalt" as const, label: "В основном асфальт", description: "Грунта до 30%" },
-    { value: "mixed" as const, label: "Смешанный маршрут", description: "Грунта от 31% до 69%" },
-    { value: "mostly_unpaved" as const, label: "В основном грунт", description: "Грунта от 70%" },
+    { value: "mostly_asphalt" as const, label: "В основном асфальт", description: "Грунта меньше 30%" },
+    { value: "mixed" as const, label: "Смешанный маршрут", description: "Грунта от 30% до 70%" },
+    { value: "mostly_unpaved" as const, label: "В основном грунт", description: "Грунта больше 70%" },
   ];
   const measureMin = 0;
   const measureMax = value.measure === "distance" ? 200 : 12;
@@ -1030,7 +1028,7 @@ export interface TripCardProps {
   difficulty: DifficultyLevel;
   averageSpeed: string | number;
   maxParticipants?: string | number;
-  coverImage: string;
+  coverImage?: string;
   href?: string;
   onOpen?: () => void;
 }
@@ -1067,7 +1065,9 @@ export function TripCard({
       <div
         className="trip-card__cover"
         style={{
-          backgroundImage: `linear-gradient(180deg, transparent, rgba(5, 18, 11, 0.52)), url("${coverImage}")`,
+          backgroundImage: coverImage
+            ? `linear-gradient(180deg, transparent, rgba(5, 18, 11, 0.52)), url("${coverImage}")`
+            : "linear-gradient(135deg, #53613c, #273525)",
         }}
       >
         <span>{distanceKm || "—"} км</span>
@@ -1156,7 +1156,6 @@ export function TripFilters({
   onChange: (value: TripFilterSelection) => void;
 }) {
   const difficultyOptions = Object.entries(difficultyLabels) as Array<[DifficultyLevel, string]>;
-  const bikeOptions = Object.entries(bikeTypeLabels) as Array<[BikeType, string]>;
   const toggleDifficulty = (option: DifficultyLevel) => {
     const selected = value.difficulty ?? [];
     const difficulty = selected.includes(option)
@@ -1165,15 +1164,6 @@ export function TripFilters({
 
     onChange({ ...value, difficulty: difficulty.length ? difficulty : undefined });
   };
-  const toggleBikeType = (option: BikeType) => {
-    const selected = value.bikeType ?? [];
-    const bikeType = selected.includes(option)
-      ? selected.filter((item) => item !== option)
-      : [...selected, option];
-
-    onChange({ ...value, bikeType: bikeType.length ? bikeType : undefined });
-  };
-
   return (
     <div className="trip-filters">
       <FormField label="Город">
@@ -1204,27 +1194,12 @@ export function TripFilters({
           ))}
         </div>
       </fieldset>
-      <fieldset className="ui-field trip-filters__choice">
-        <legend className="ui-field__label">Велосипед</legend>
-        <div className="trip-filters__options">
-          {bikeOptions.map(([option, label]) => (
-            <Chip
-              key={option}
-              selected={value.bikeType?.includes(option)}
-              onClick={() => toggleBikeType(option)}
-            >
-              {label}
-            </Chip>
-          ))}
-        </div>
-      </fieldset>
     </div>
   );
 }
 
 export type TripFilterSelection = Omit<TripFilterValues, "difficulty" | "bikeType"> & {
   difficulty?: DifficultyLevel[];
-  bikeType?: BikeType[];
 };
 
 export function StickyActionBar({

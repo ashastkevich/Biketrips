@@ -46,7 +46,9 @@ export default async function OrganizerTripsPage() {
                   <td>{formatShortDate(trip.startDateTime)}</td>
                   <td>{trip.city}</td>
                   <td>
-                    {trip.confirmedParticipants}/{trip.capacity}
+                    {trip.capacity === null
+                      ? trip.confirmedParticipants
+                      : `${trip.confirmedParticipants}/${trip.capacity}`}
                   </td>
                   <td><TripStatusBadge status={trip.status} /></td>
                   <td>

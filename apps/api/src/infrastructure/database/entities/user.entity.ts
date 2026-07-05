@@ -3,6 +3,7 @@ import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Up
 import { OrganizerEntity } from "./organizer.entity.js";
 import { TelegramAccountEntity } from "./telegram-account.entity.js";
 import { TripParticipantEntity } from "./trip-participant.entity.js";
+import type { UserRole } from "@biketrips/domain";
 
 @Entity("users")
 export class UserEntity {
@@ -14,6 +15,15 @@ export class UserEntity {
 
   @Column({ type: "text", nullable: true })
   email!: string | null;
+
+  @Column({ type: "text", default: "user" })
+  role!: UserRole;
+
+  @Column({ name: "phone_number", type: "text", nullable: true })
+  phoneNumber!: string | null;
+
+  @Column({ name: "phone_verified_at", type: "timestamptz", nullable: true })
+  phoneVerifiedAt!: Date | null;
 
   @Column({ name: "avatar_url", type: "text", nullable: true })
   avatarUrl!: string | null;

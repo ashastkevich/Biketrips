@@ -9,7 +9,6 @@ interface ProfileData {
   username: string;
   city: string;
   bio: string;
-  bike: string;
   pace: string;
 }
 
@@ -18,7 +17,6 @@ const initialProfile: ProfileData = {
   username: "aleksei_ride",
   city: "Москва",
   bio: "Люблю длинные гравийные маршруты, ранние старты и кофе где-нибудь на середине пути.",
-  bike: "Гравийный",
   pace: "20–24 км/ч",
 };
 
@@ -83,7 +81,6 @@ export function ProfileEditor() {
         <p className="profile-bio">{profile.bio}</p>
 
         <div className="profile-preferences">
-          <span>🚲 {profile.bike}</span>
           <span>≈ {profile.pace}</span>
         </div>
       </section>
@@ -126,15 +123,6 @@ export function ProfileEditor() {
             value={draft.city}
             onChange={(event) => update("city", event.target.value)}
           />
-        </label>
-        <label>
-          Тип велосипеда
-          <select value={draft.bike} onChange={(event) => update("bike", event.target.value)}>
-            <option>Гравийный</option>
-            <option>Шоссейный</option>
-            <option>Горный</option>
-            <option>Городской</option>
-          </select>
         </label>
         <label>
           Комфортный темп

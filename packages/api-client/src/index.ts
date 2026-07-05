@@ -59,7 +59,21 @@ export class BikeTripsApiClient {
   }
 
   async joinTrip(id: string, input: CreateParticipantInput): Promise<TripParticipant> {
-    return this.post<TripParticipant>(`/trips/${encodeURIComponent(id)}/participants`, input);
+    return this.post<TripParticipant>(`/trips/${encodeURIComponent(id)}/participants`, input, true);
+  }
+
+  async getParticipation(id: string): Promise<TripParticipant | null> {
+    return this.get<TripParticipant | null>(
+      `/trips/${encodeURIComponent(id)}/participation`,
+      true,
+    );
+  }
+
+  async cancelParticipation(id: string): Promise<TripParticipant> {
+    return this.delete<TripParticipant>(
+      `/trips/${encodeURIComponent(id)}/participants/me`,
+      true,
+    );
   }
 
   async listParticipants(id: string): Promise<TripParticipant[]> {
@@ -118,6 +132,15 @@ export class BikeTripsApiClient {
     return (await response.json()) as TResponse;
   }
 
+  private async delete<TResponse>(
+    path: string,
+    authenticated = false,
+  ): Promise<TResponse> {
+    const response = await this.request(path, { method: "DELETE" }, authenticated);
+
+    return (await response.json()) as TResponse;
+  }
+
   private async request(
     path: string,
     init: RequestInit,
@@ -144,7 +167,18 @@ export class BikeTripsApiClient {
     });
 
     if (!response.ok) {
-      throw new Error(`BikeTrips API request failed: ${response.status} ${response.statusText}`);
+      const body = await response.json().catch(() => null) as {
+        error?: string;
+        message?: string | string[];
+      } | null;
+      const details = Array.isArray(body?.message)
+        ? body.message.join("; ")
+        : body?.message ?? body?.error;
+      throw new Error(
+        details
+          ? `BikeTrips API request failed: ${details}`
+          : `BikeTrips API request failed: ${response.status} ${response.statusText}`,
+      );
     }
 
     return response;

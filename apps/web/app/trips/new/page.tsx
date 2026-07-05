@@ -30,7 +30,8 @@ interface NewTripPageProps {
 export default async function NewTripPage({ searchParams }: NewTripPageProps) {
   const query = await searchParams;
   const error = Array.isArray(query.error) ? query.error[0] : query.error;
-  const canPublish = (await getOrganizerAuthState()) === "configured";
+  const authState = await getOrganizerAuthState();
+  const canPublish = authState === "allowed";
 
   return (
     <main className="shell">
@@ -39,16 +40,24 @@ export default async function NewTripPage({ searchParams }: NewTripPageProps) {
         На главную
       </BackLink>
       {!canPublish ? (
-        <Alert title="Публикация после входа" tone="warning">
-          Форму можно заполнить без входа. Для публикации потребуется подтверждённый профиль
-          организатора.
+        <Alert
+          title={authState === "phone-required" ? "Добавьте номер телефона" : "Публикация после входа"}
+          tone="warning"
+        >
+          {authState === "phone-required"
+            ? "Создавать поездки могут зарегистрированные пользователи с заполненным номером телефона."
+            : "Форму можно заполнить без входа. Для публикации потребуется регистрация и номер телефона в профиле."}
         </Alert>
       ) : null}
       {error ? (
         <Alert title="Не удалось создать поездку" tone="danger">{error}</Alert>
       ) : null}
 
-      <TripCreationWizard action={createTripAction} canPublish={canPublish} />
+      <TripCreationWizard
+        action={createTripAction}
+        canPublish={canPublish}
+        isRegistered={authState !== "missing"}
+      />
     </main>
   );
 }

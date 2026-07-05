@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import type { BikeType, DifficultyLevel, UnpavedSurfaceDetail } from "@biketrips/domain";
+import type { DifficultyLevel, UnpavedSurfaceDetail } from "@biketrips/domain";
 
-import { demoTrips } from "../lib/demo-data";
+import { storyTrips } from "./story-fixtures";
 import { AppTopbar, getTripCardProps, PageHeader } from "../lib/components";
+import { ProfileMenu } from "../home-auth-control";
 import {
-  bikeTypeLabels,
   difficultyLabels,
   unpavedSurfaceDetailLabels,
 } from "../lib/labels";
@@ -140,6 +140,7 @@ export const Navigation: Story = {
       <div className="story-row">
         <BackLink href="/">На главную</BackLink>
         <LinkButton href="/trips/new">Создать поездку</LinkButton>
+        <ProfileMenu tone="dark" />
       </div>
     </StorySection>
   ),
@@ -156,7 +157,7 @@ export const SiteShell: Story = {
       >
         <p>Единая шапка, заголовок страницы и карточка результата.</p>
       </PageHeader>
-      <TripCardComponent {...getTripCardProps(demoTrips[0]!)} />
+      <TripCardComponent {...getTripCardProps(storyTrips[0]!)} />
     </div>
   ),
 };
@@ -190,7 +191,7 @@ export const TripInformation: Story = {
   render: () => (
     <StorySection title="Данные поездки">
       <div className="story-column">
-        <TripMeta trip={demoTrips[0]!} />
+        <TripMeta trip={storyTrips[0]!} />
         <CapacityIndicator capacity={14} confirmed={8} />
         <CapacityIndicator capacity={18} confirmed={18} />
       </div>
@@ -221,7 +222,7 @@ export const Participants: Story = {
   render: () => (
     <StorySection title="Участники">
       <Card padding="none">
-        {demoTrips[0]!.participants.map((participant) => (
+        {storyTrips[0]!.participants.map((participant) => (
           <ParticipantRow
             key={participant.id}
             participant={participant}
@@ -275,10 +276,8 @@ function StorySection({ title, children }: { title: string; children: React.Reac
 }
 
 function ChipDemo() {
-  const [selected, setSelected] = useState<BikeType>("gravel");
   const [difficulty, setDifficulty] = useState<DifficultyLevel>("medium");
   const [surfaces, setSurfaces] = useState<UnpavedSurfaceDetail[]>(["gravel"]);
-  const bikeOptions = Object.entries(bikeTypeLabels) as Array<[BikeType, string]>;
   const difficultyOptions = Object.entries(difficultyLabels) as Array<[DifficultyLevel, string]>;
   const surfaceOptions = Object.entries(unpavedSurfaceDetailLabels) as Array<
     [UnpavedSurfaceDetail, string]
@@ -294,16 +293,6 @@ function ChipDemo() {
 
   return (
     <div className="story-column">
-      <div className="story-chip-group">
-        <strong>Велосипед</strong>
-        <div className="story-row">
-          {bikeOptions.map(([value, label]) => (
-            <Chip key={value} selected={selected === value} onClick={() => setSelected(value)}>
-              {label}
-            </Chip>
-          ))}
-        </div>
-      </div>
       <div className="story-chip-group">
         <strong>Сложность маршрута</strong>
         <div className="story-row">

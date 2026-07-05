@@ -1,5 +1,4 @@
 import type {
-  BikeType,
   DifficultyLevel,
   DropPolicy,
   ParticipantStatus,
@@ -30,15 +29,6 @@ export const paceLabels: Record<PaceType, string> = {
   steady: "Ровно",
   fast: "Быстро",
   training: "Тренировка",
-};
-
-export const bikeTypeLabels: Record<BikeType, string> = {
-  city: "Городской",
-  road: "Шоссе",
-  gravel: "Gravel",
-  mtb: "MTB",
-  hybrid: "Гибрид",
-  any: "Любой",
 };
 
 export const unpavedSurfaceDetailLabels: Record<UnpavedSurfaceDetail, string> = {

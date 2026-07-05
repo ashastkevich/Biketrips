@@ -1,12 +1,16 @@
 import { FindTripSection } from "./find-trip-section";
 import { HomeAuthControl } from "./home-auth-control";
-import { getOrganizerAuthState } from "./lib/api";
+import { getCurrentUser, getTripDetails } from "./lib/api";
 import { ArrowIcon, Brand } from "./lib/components";
 import { CreateTripLauncher } from "./lib/create-trip-launcher";
 import { LinkButton } from "./ui/components";
 
 export default async function HomePage() {
-  const isAuthorized = (await getOrganizerAuthState()) === "configured";
+  const [currentUser, tripsResult] = await Promise.all([
+    getCurrentUser(),
+    getTripDetails(),
+  ]);
+  const isAuthorized = currentUser !== null;
 
   return (
     <>
@@ -39,13 +43,16 @@ export default async function HomePage() {
 
       <main>
         <div className="page section search-section" id="rides">
-          <FindTripSection />
+      <FindTripSection
+        trips={tripsResult.data}
+        isAuthenticated={isAuthorized}
+        currentUserId={currentUser?.id}
+      />
         </div>
 
         <section className="how-section" id="how" aria-labelledby="how-title">
           <div className="page">
             <div className="how-head">
-              <span className="how-label">От поиска к записи</span>
               <h2 id="how-title">Как это работает</h2>
               <p>
                 BikeTrips собирает поездки в понятную афишу: участник быстро оценивает маршрут, а
