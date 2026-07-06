@@ -1,7 +1,7 @@
 import { FindTripSection } from "./find-trip-section";
-import { HomeAuthControl } from "./home-auth-control";
+import { HomeHeader } from "./home-header";
 import { getCurrentUser, getTripDetails } from "./lib/api";
-import { ArrowIcon, Brand } from "./lib/components";
+import { ArrowIcon } from "./lib/components";
 import { CreateTripLauncher } from "./lib/create-trip-launcher";
 import { LinkButton } from "./ui/components";
 
@@ -14,17 +14,9 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="hero" aria-labelledby="hero-title">
-        <header className="page topbar">
-          <Brand tone="light" />
-          <nav className="nav" aria-label="Навигация">
-            <a className="nav-link" href="#how">
-              Как это работает
-            </a>
-            <HomeAuthControl isAuthorized={isAuthorized} />
-          </nav>
-        </header>
+      <HomeHeader isAuthorized={isAuthorized} />
 
+      <section className="hero" aria-labelledby="hero-title">
         <div className="page hero-content">
           <h1 id="hero-title">Совместные велопоездки рядом</h1>
           <p className="lead">

@@ -141,9 +141,9 @@ export function ProfileAccount({ initialUser }: { initialUser: CurrentUser }) {
                 onBlur={() => setTouched((current) => ({ ...current, email: true }))}
                 onChange={(event) => {
                   const nextValue = event.target.value;
-                  const hasUnsupportedCharacters = /[^A-Za-z0-9@._%+\-]/.test(nextValue);
+                  const hasUnsupportedCharacters = /[^A-Za-z0-9@._%+-]/.test(nextValue);
                   const hasCyrillic = /[А-Яа-яЁё]/.test(nextValue);
-                  setEmail(nextValue.replace(/[^A-Za-z0-9@._%+\-]/g, ""));
+                  setEmail(nextValue.replace(/[^A-Za-z0-9@._%+-]/g, ""));
                   setEmailCharacterError(
                     hasUnsupportedCharacters
                       ? hasCyrillic

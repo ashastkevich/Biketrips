@@ -84,7 +84,13 @@ export function ProfileMenu({ tone = "light" }: ProfileMenuProps) {
   );
 }
 
-export function HomeAuthControl({ isAuthorized }: { isAuthorized: boolean }) {
+export function HomeAuthControl({
+  isAuthorized,
+  tone = "light",
+}: {
+  isAuthorized: boolean;
+  tone?: "light" | "dark";
+}) {
   const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
@@ -108,12 +114,12 @@ export function HomeAuthControl({ isAuthorized }: { isAuthorized: boolean }) {
     window.location.assign(`/auth/${provider}?returnTo=/`);
   }
 
-  if (isAuthorized) return <ProfileMenu />;
+  if (isAuthorized) return <ProfileMenu tone={tone} />;
 
   return (
     <>
       <button className="create-button" type="button" onClick={() => setShowAuth(true)}>
-        Войти
+        <span>Войти</span>
       </button>
       {showAuth ? (
         <div

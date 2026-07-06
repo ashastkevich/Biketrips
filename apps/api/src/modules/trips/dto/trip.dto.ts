@@ -42,14 +42,18 @@ export class CreateTripDto {
   @IsString()
   startLocationName!: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ minimum: -90, maximum: 90 })
   @IsOptional()
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   startLat?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ minimum: -180, maximum: 180 })
   @IsOptional()
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   startLng?: number;
 
   @ApiProperty()

@@ -2,6 +2,7 @@ import { createElement } from "react";
 import type { Preview } from "@storybook/nextjs-vite";
 
 import { fontVariables } from "../app/fonts";
+import "maplibre-gl/dist/maplibre-gl.css";
 import "../app/styles.css";
 
 const preview: Preview = {

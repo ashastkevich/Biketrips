@@ -1,6 +1,16 @@
 "use client";
 
-import type { MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { DadataGeocoder } from "../../maps/dadata-geocoder";
+import { InteractiveMapLoader } from "../../maps/interactive-map-loader";
+import { DEFAULT_MAP_CENTER, getMapTilerApiKey } from "../../maps/map-config";
+import {
+  formatCoordinate,
+  formatPoint,
+  isValidMapPoint,
+  type MapPoint,
+} from "../../maps/map-types";
 
 interface StartLocationValue {
   name: string;
@@ -9,111 +19,132 @@ interface StartLocationValue {
 }
 
 interface StartLocationPickerProps {
-  city: string;
   value: StartLocationValue;
   onChange: (value: StartLocationValue) => void;
 }
 
-const cityCenters: Record<string, { lat: number; lng: number }> = {
-  Москва: { lat: 55.751244, lng: 37.618423 },
-  "Санкт-Петербург": { lat: 59.938784, lng: 30.314997 },
-  Казань: { lat: 55.796127, lng: 49.106414 },
-};
-
-const defaultCityCenter = cityCenters["Москва"]!;
-
-const mockStreets = [
-  "Велосипедная улица",
-  "Зелёный проспект",
-  "Парковая аллея",
-  "Набережная маршрута",
-  "Лесной проезд",
-  "Станционная площадь",
-];
-
-function formatCoordinate(value: number): string {
-  return value.toFixed(6);
+function readPoint(value: StartLocationValue): MapPoint | null {
+  if (!value.lat || !value.lng) return null;
+  const point = { lat: Number(value.lat), lng: Number(value.lng) };
+  return isValidMapPoint(point) ? point : null;
 }
 
-function getCityCenter(city: string) {
-  return cityCenters[city] ?? defaultCityCenter;
-}
+export function StartLocationPicker({ value, onChange }: StartLocationPickerProps) {
+  const apiKey = getMapTilerApiKey();
+  const geocoder = useMemo(() => (apiKey ? new DadataGeocoder() : null), [apiKey]);
+  const selectedPoint = readPoint(value);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [geocodingError, setGeocodingError] = useState("");
+  const [mapError, setMapError] = useState("");
+  const requestRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
-function getPinPosition(city: string, lat: string, lng: string) {
-  const center = getCityCenter(city);
-  const latitude = Number(lat);
-  const longitude = Number(lng);
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+    },
+    []
+  );
 
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    return { left: 50, top: 50 };
-  }
+  async function selectPoint(point: MapPoint) {
+    const normalizedPoint = {
+      lat: Number(formatCoordinate(point.lat)),
+      lng: Number(formatCoordinate(point.lng)),
+    };
+    const fallbackName = formatPoint(normalizedPoint);
 
-  return {
-    left: Math.min(92, Math.max(8, 50 + (longitude - center.lng) * 120)),
-    top: Math.min(92, Math.max(8, 50 - (latitude - center.lat) * 170)),
-  };
-}
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const requestId = ++requestRef.current;
 
-function getMockAddress(city: string, lat: number, lng: number): string {
-  const streetIndex = Math.abs(Math.round((lat + lng) * 1000)) % mockStreets.length;
-  const houseNumber = Math.max(1, Math.abs(Math.round((lat - lng) * 100)) % 84);
-  const cityName = city || "Москва";
-
-  return `${cityName}, ${mockStreets[streetIndex]}, ${houseNumber}`;
-}
-
-export function StartLocationPicker({ city, value, onChange }: StartLocationPickerProps) {
-  const pinPosition = getPinPosition(city, value.lat, value.lng);
-  const hasPoint = value.lat && value.lng;
-
-  function selectPoint(name: string, lat: number, lng: number) {
+    setGeocodingError("");
+    setIsGeocoding(true);
     onChange({
-      name,
-      lat: formatCoordinate(lat),
-      lng: formatCoordinate(lng),
+      name: fallbackName,
+      lat: formatCoordinate(normalizedPoint.lat),
+      lng: formatCoordinate(normalizedPoint.lng),
     });
+
+    try {
+      const result = await geocoder?.reverse(normalizedPoint, controller.signal);
+      if (requestId !== requestRef.current) return;
+      if (!result) throw new Error("Адрес не найден");
+
+      onChange({
+        name: result.name,
+        lat: formatCoordinate(normalizedPoint.lat),
+        lng: formatCoordinate(normalizedPoint.lng),
+      });
+    } catch (error) {
+      if (controller.signal.aborted || requestId !== requestRef.current) return;
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Не удалось определить адрес. Координаты сохранены.";
+      setGeocodingError(message);
+    } finally {
+      if (requestId === requestRef.current) setIsGeocoding(false);
+    }
   }
 
-  function handleMapClick(event: MouseEvent<HTMLButtonElement>) {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width;
-    const y = (event.clientY - rect.top) / rect.height;
-    const center = getCityCenter(city);
-    const lat = center.lat + (0.5 - y) * 0.42;
-    const lng = center.lng + (x - 0.5) * 0.62;
-
-    selectPoint(getMockAddress(city, lat, lng), lat, lng);
+  if (!apiKey) {
+    return (
+      <div className="start-location-picker">
+        <div className="start-location-map__state start-location-map__state--error" role="alert">
+          Карта не настроена. Добавьте NEXT_PUBLIC_MAPTILER_API_KEY в apps/web/.env.local.
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="start-location-picker">
       <div className="start-location-picker__header">
-        <div>
+        <div aria-live="polite">
           <span className="start-location-picker__label">Адрес точки старта</span>
-          <strong>{hasPoint ? value.name : "Кликните по карте, чтобы поставить пин"}</strong>
-          {hasPoint ? <small>{value.lat}, {value.lng}</small> : null}
+          <strong>
+            {isGeocoding
+              ? "Определяем адрес…"
+              : selectedPoint
+                ? value.name
+                : "Кликните по карте, чтобы поставить точку"}
+          </strong>
+          {selectedPoint ? <small>{formatPoint(selectedPoint)}</small> : null}
         </div>
-        <span className="start-location-picker__badge">прототип карты</span>
+        <span className="start-location-picker__badge">DaData</span>
       </div>
 
-      <button
-        type="button"
-        className="start-location-map"
-        aria-label="Выбрать точку старта на карте"
-        onClick={handleMapClick}
-      >
-        <span className="start-location-map__grid" aria-hidden="true" />
-        <span className="start-location-map__road start-location-map__road--primary" aria-hidden="true" />
-        <span className="start-location-map__road start-location-map__road--secondary" aria-hidden="true" />
-        <span className="start-location-map__park" aria-hidden="true" />
-        <span
-          className="start-location-map__pin"
-          style={{ left: `${pinPosition.left}%`, top: `${pinPosition.top}%` }}
-          aria-hidden="true"
+      <div className="start-location-map">
+        <InteractiveMapLoader
+          apiKey={apiKey}
+          center={DEFAULT_MAP_CENTER}
+          point={selectedPoint}
+          onError={() => setMapError("Не удалось загрузить данные карты. Попробуйте ещё раз.")}
+          onSelect={(point) => void selectPoint(point)}
+        />
+      </div>
+
+      {geocodingError && selectedPoint ? (
+        <button
+          type="button"
+          className="start-location-picker__retry"
+          onClick={() => void selectPoint(selectedPoint)}
         >
-          <span />
-        </span>
-      </button>
+          Повторить определение адреса
+        </button>
+      ) : null}
+
+      {geocodingError ? (
+        <p className="start-location-picker__warning" role="alert">
+          {geocodingError}
+        </p>
+      ) : null}
+      {mapError ? (
+        <p className="start-location-picker__warning" role="alert">
+          {mapError}
+        </p>
+      ) : null}
     </div>
   );
 }

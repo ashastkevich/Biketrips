@@ -23,8 +23,8 @@ import {
 } from "../../ui/components";
 import { AuthOptions, type AuthProvider } from "../../ui/auth-options";
 import { StartLocationPicker } from "./start-location-picker";
+import { NEW_TRIP_DRAFT_KEY } from "./draft-storage";
 
-const DRAFT_KEY = "biketrips:new-trip-draft:v5";
 const coverTemplates = [
   { src: "/img/Photo1.jpg", label: "Велосипедисты на лесной дороге" },
   { src: "/img/Photo2.jpg", label: "Группа в загородной поездке" },
@@ -34,7 +34,6 @@ const coverTemplates = [
 const defaultCoverImage = coverTemplates[1]!.src;
 export interface TripDraft {
   title: string;
-  city: string;
   date: string;
   time: string;
   startLocationName: string;
@@ -61,7 +60,6 @@ export interface TripDraft {
 
 const initialDraft: TripDraft = {
   title: "",
-  city: "Москва",
   date: "",
   time: "10:00",
   startLocationName: "",
@@ -103,8 +101,9 @@ export function TripCreationWizard({
   initialValues,
   persistDraft = true,
 }: TripCreationWizardProps) {
+  const defaultDraft = useMemo(() => ({ ...initialDraft, ...initialValues }), [initialValues]);
   const [step, setStep] = useState<number>(initialStep);
-  const [draft, setDraft] = useState<TripDraft>(() => ({ ...initialDraft, ...initialValues }));
+  const [draft, setDraft] = useState<TripDraft>(() => defaultDraft);
   const [restored, setRestored] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [stepError, setStepError] = useState("");
@@ -116,28 +115,28 @@ export function TripCreationWizard({
   useEffect(() => {
     if (!persistDraft) return;
 
-    const saved = window.localStorage.getItem(DRAFT_KEY);
+    const saved = window.localStorage.getItem(NEW_TRIP_DRAFT_KEY);
     if (saved) {
       try {
         const savedDraft = JSON.parse(saved) as Partial<TripDraft>;
         setDraft({
-          ...initialDraft,
+          ...defaultDraft,
           ...savedDraft,
           hasParticipantLimit:
-            savedDraft.hasParticipantLimit ?? initialDraft.hasParticipantLimit,
+            savedDraft.hasParticipantLimit ?? defaultDraft.hasParticipantLimit,
         });
         setRestored(true);
       } catch {
-        window.localStorage.removeItem(DRAFT_KEY);
+        window.localStorage.removeItem(NEW_TRIP_DRAFT_KEY);
       }
     }
-  }, [persistDraft]);
+  }, [defaultDraft, persistDraft]);
 
   useEffect(() => {
     if (!persistDraft) return;
 
     const timeout = window.setTimeout(() => {
-      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      window.localStorage.setItem(NEW_TRIP_DRAFT_KEY, JSON.stringify(draft));
     }, 250);
 
     return () => window.clearTimeout(timeout);
@@ -194,7 +193,13 @@ export function TripCreationWizard({
   function validateStep(currentStep: number): boolean {
     if (
       currentStep === 1 &&
-      (!draft.date || !draft.time || !draft.startLocationName || !draft.distanceKm || !draft.averageSpeed)
+      (!draft.date ||
+        !draft.time ||
+        !draft.startLocationName ||
+        !draft.startLat ||
+        !draft.startLng ||
+        !draft.distanceKm ||
+        !draft.averageSpeed)
     ) {
       setStepError("Заполните название, дату, время, место старта, дистанцию и среднюю скорость.");
       return false;
@@ -240,6 +245,7 @@ export function TripCreationWizard({
           } else {
             setShowAuth(true);
           }
+          return;
         }
       }}
     >
@@ -334,7 +340,6 @@ export function TripCreationWizard({
                 </FormField>
                 <div className="span-2">
                   <StartLocationPicker
-                    city={draft.city}
                     value={{
                       name: draft.startLocationName,
                       lat: draft.startLat,

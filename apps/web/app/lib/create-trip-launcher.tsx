@@ -17,13 +17,19 @@ interface CreateTripLauncherProps {
 
 export function CreateTripLauncher({
   className,
+  compact = false,
   label = "Создать поездку",
   tone = "primary",
 }: CreateTripLauncherProps) {
+  const classes = [
+    compact ? "section-create compact" : "",
+    className ?? "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <LinkButton className={className} href="/trips/new" tone={tone}>
+    <LinkButton className={classes} href="/trips/new" tone={tone}>
       <PlusIcon />
-      {label}
+      <span>{label}</span>
     </LinkButton>
   );
 }

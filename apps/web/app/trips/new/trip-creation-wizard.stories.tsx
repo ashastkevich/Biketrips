@@ -23,7 +23,6 @@ type Story = StoryObj<typeof meta>;
 
 const filledTrip = {
   title: "Гравийный круг через Мещеру",
-  city: "Москва",
   date: "2026-07-18",
   time: "09:30",
   startLocationName: "МЦД Крюково, главный вход",
@@ -62,7 +61,7 @@ function StartLocationPickerDemo() {
         <TextField readOnly value={location.name} />
       </FormField>
       <div style={{ marginTop: 12 }}>
-        <StartLocationPicker city="Москва" value={location} onChange={setLocation} />
+        <StartLocationPicker value={location} onChange={setLocation} />
       </div>
     </div>
   );
@@ -78,7 +77,6 @@ export const StepOneMeeting: Story = {
   args: {
     initialStep: 1,
     initialValues: {
-      city: "Москва",
       time: "10:00",
       distanceKm: "40",
       averageSpeed: "21",

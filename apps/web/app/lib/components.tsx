@@ -107,16 +107,18 @@ export function Brand({ tone = "dark" }: { tone?: "dark" | "light" }) {
 
 export function AppTopbar({ showNavigation = true }: { showNavigation?: boolean }) {
   return (
-    <header className="app-topbar">
-      <Brand />
-      {showNavigation ? (
-        <nav className="app-nav" aria-label="Навигация">
-          <Link href="/">Поездки</Link>
-          <Link href="/organizer/trips">Кабинет</Link>
-          <CreateTripLauncher compact label="Создать" />
-          <ProfileMenu tone="dark" />
-        </nav>
-      ) : <ProfileMenu tone="dark" />}
+    <header className="site-header site-header--app">
+      <div className="site-header__inner">
+        <Brand />
+        {showNavigation ? (
+          <nav className="site-nav app-nav" aria-label="Навигация">
+            <Link className="site-nav__link" href="/">Поездки</Link>
+            <Link className="site-nav__link" href="/organizer/trips">Кабинет</Link>
+            <CreateTripLauncher compact label="Создать" />
+            <ProfileMenu tone="dark" />
+          </nav>
+        ) : <ProfileMenu tone="dark" />}
+      </div>
     </header>
   );
 }

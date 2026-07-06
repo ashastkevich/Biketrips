@@ -16,6 +16,7 @@ import {
   SelectField,
   TripStatusBadge,
 } from "../../../ui/components";
+import { ClearNewTripDraft } from "./clear-new-trip-draft";
 
 interface OrganizerTripPageProps {
   params: Promise<{ id: string }>;
@@ -68,9 +69,11 @@ export default async function OrganizerTripPage({ params, searchParams }: Organi
   }
 
   const error = Array.isArray(query.error) ? query.error[0] : query.error;
+  const published = Boolean(query.published);
 
   return (
     <main className="shell detail-shell">
+      <ClearNewTripDraft enabled={published} />
       <AppTopbar />
       <BackLink href="/organizer/trips">
         Все поездки
@@ -98,6 +101,9 @@ export default async function OrganizerTripPage({ params, searchParams }: Organi
       ) : null}
       {query.updated ? (
         <Alert tone="success">Изменения сохранены.</Alert>
+      ) : null}
+      {published ? (
+        <Alert tone="success">Поездка опубликована.</Alert>
       ) : null}
       {error ? (
         <Alert title="Не удалось сохранить" tone="danger">{error}</Alert>

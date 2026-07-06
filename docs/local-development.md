@@ -63,9 +63,16 @@ Web-приложение читает настройки из `apps/web/.env.loc
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:4000
 NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=replace-with-telegram-bot-username
+NEXT_PUBLIC_MAPTILER_API_KEY=replace-with-public-maptiler-key
+DADATA_API_KEY=replace-with-dadata-api-key
 ```
 
 Эти файлы игнорируются Git. Не добавляйте в репозиторий реальные токены и секреты.
+Ключ MapTiler используется в браузере, поэтому создайте для него ограничения по
+разрешённым URL: `http://localhost:3000/*` для локальной разработки, а также
+отдельные production и preview-домены. Не выдавайте этому ключу лишние права.
+Ключ DaData используется только серверным маршрутом web-приложения для определения
+адреса точки старта по координатам.
 
 ## Запуск приложения
 

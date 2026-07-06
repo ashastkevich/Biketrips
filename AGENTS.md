@@ -2,17 +2,16 @@
 
 ## Project Structure & Module Organization
 
-This repository contains a static BikeTrips prototype, planning documents, and the MVP TypeScript monorepo scaffold.
+This repository contains the BikeTrips MVP TypeScript monorepo, planning documents, and shared assets for the web app.
 
-- `index.html` is the current single-page prototype.
-- `img/` stores local visual assets used by the page.
 - `docs/` contains product and architecture notes, including `project-overview.md`, `architecture.md`, and `mvp-implementation-plan.md`.
 - `apps/web` is the Next.js web app scaffold.
+- `apps/web/public/img` stores local visual assets used by the web app.
 - `apps/api` is the Node.js API scaffold before the NestJS implementation stage.
 - `apps/bot` is the Telegram bot worker scaffold.
 - `packages/domain`, `packages/api-client`, and `packages/config` contain shared domain types, API client code, and common config/env helpers.
 
-Keep new planning material in `docs/` and prototype-only assets in `img/`.
+Keep new planning material in `docs/` and web assets in `apps/web/public/img/`.
 
 ## Build, Test, and Development Commands
 
@@ -27,19 +26,18 @@ The monorepo uses npm workspaces. Common commands:
 - `npm test` runs the automated tests.
 - `npm run build` builds all buildable workspaces.
 - `docker compose up -d postgres redis` starts local PostgreSQL and Redis.
-- Open `index.html` directly in a browser to inspect the legacy static prototype.
 - Use `git status` before and after changes to review the working tree.
 - Use `rg "text"` to search project content quickly.
 
 ## Coding Style & Naming Conventions
 
-Use clear, semantic HTML and keep CSS organized by component or section. Preserve the existing two-space indentation style in `index.html`.
+Use clear, semantic HTML and keep CSS organized by component or section.
 
 Naming guidelines:
 
 - Use kebab-case for CSS classes, for example `ride-card` and `search-toolbar`.
 - Use lowercase, descriptive filenames for docs, for example `mvp-implementation-plan.md`.
-- Keep image names descriptive. Existing legacy names such as `Photo1.jpg` may remain, but new assets should use meaningful names.
+- Keep image names descriptive. Existing legacy names such as `Photo1.jpg` may remain in `apps/web/public/img/`, but new assets should use meaningful names.
 
 Prefer ASCII text unless a file already uses Russian copy or another clear project need requires non-ASCII content.
 
@@ -47,7 +45,7 @@ Prefer ASCII text unless a file already uses Russian copy or another clear proje
 
 Automated tests are configured with Vitest. Run `npm test` before handing off code changes.
 
-For prototype changes, manually verify:
+For web UI changes, manually verify:
 
 - desktop and mobile responsive layout;
 - image paths and rendering;
@@ -70,7 +68,7 @@ Document local setup
 Pull requests should include:
 
 - a short summary of the change;
-- screenshots for visual changes to `index.html`;
+- screenshots for visual changes;
 - notes about manual testing performed;
 - links to relevant issues or planning docs when applicable.
 
