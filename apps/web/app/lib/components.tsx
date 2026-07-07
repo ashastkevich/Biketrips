@@ -94,14 +94,14 @@ export function PinIcon() {
   );
 }
 
-export function Brand({ tone = "dark" }: { tone?: "dark" | "light" }) {
+export function Brand({ tone = "dark", href = "/" }: { tone?: "dark" | "light"; href?: string }) {
   return (
-    <Link className={`brand ${tone === "light" ? "brand-light" : ""}`} href="/" aria-label="BikeTrips">
+    <a className={`brand ${tone === "light" ? "brand-light" : ""}`} href={href} aria-label="BikeTrips">
       <span className="brand-icon">
         <BikeIcon />
       </span>
       BikeTrips
-    </Link>
+    </a>
   );
 }
 

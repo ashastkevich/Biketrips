@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createTrip, getOrganizerAuthState, updateTripStatus } from "../../lib/api";
 import { AppTopbar } from "../../lib/components";
 import { readTripInput } from "../../lib/form-data";
-import { Alert, BackLink } from "../../ui/components";
+import { Alert } from "../../ui/components";
 import { TripCreationWizard } from "./trip-creation-wizard";
 
 async function createTripAction(formData: FormData) {
@@ -36,9 +36,6 @@ export default async function NewTripPage({ searchParams }: NewTripPageProps) {
   return (
     <main className="shell">
       <AppTopbar showNavigation={false} />
-      <BackLink href="/">
-        На главную
-      </BackLink>
       {!canPublish ? (
         <Alert
           title={authState === "phone-required" ? "Добавьте номер телефона" : "Публикация после входа"}

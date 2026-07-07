@@ -30,7 +30,7 @@ export function HomeHeader({ isAuthorized }: { isAuthorized: boolean }) {
   return (
     <header className={`site-header site-header--home${isScrolled ? " site-header--scrolled" : ""}`}>
       <div className="page site-header__inner">
-        <Brand tone="light" />
+        <Brand tone="light" href="#hero" />
         <nav className="site-nav" aria-label="Навигация">
           <a className="site-nav__link" href="#how">
             Как это работает

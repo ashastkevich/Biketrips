@@ -28,6 +28,8 @@ export default function InteractiveMap({
   const onErrorRef = useRef(onError);
   const onSelectRef = useRef(onSelect);
   const pointRef = useRef(point);
+  const pointLat = point?.lat ?? null;
+  const pointLng = point?.lng ?? null;
 
   onErrorRef.current = onError;
   onSelectRef.current = onSelect;
@@ -80,7 +82,7 @@ export default function InteractiveMap({
     const map = mapRef.current;
     if (!map) return;
 
-    if (!point) {
+    if (pointLat === null || pointLng === null) {
       markerRef.current?.remove();
       markerRef.current = null;
       return;
@@ -91,12 +93,24 @@ export default function InteractiveMap({
       element.className = "start-location-map__marker";
       element.setAttribute("aria-hidden", "true");
       markerRef.current = new maplibregl.Marker({ element, anchor: "bottom" })
-        .setLngLat([point.lng, point.lat])
+        .setLngLat([pointLng, pointLat])
         .addTo(map);
     }
 
-    markerRef.current.setLngLat([point.lng, point.lat]);
-  }, [point]);
+    markerRef.current.setLngLat([pointLng, pointLat]);
+  }, [pointLat, pointLng]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || pointLat === null || pointLng === null) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    map.easeTo({
+      center: [pointLng, pointLat],
+      zoom: Math.max(map.getZoom(), 14),
+      duration: reducedMotion ? 0 : 500,
+    });
+  }, [pointLat, pointLng]);
 
   useEffect(() => {
     const map = mapRef.current;

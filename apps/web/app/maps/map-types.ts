@@ -15,6 +15,10 @@ export interface GeocodingResult {
   point: MapPoint;
 }
 
+export interface AddressSuggestion extends GeocodingResult {
+  id: string;
+}
+
 export interface Geocoder {
   reverse(point: MapPoint, signal?: AbortSignal): Promise<GeocodingResult | null>;
 }

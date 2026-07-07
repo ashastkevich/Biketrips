@@ -16,7 +16,7 @@ export default async function HomePage() {
     <>
       <HomeHeader isAuthorized={isAuthorized} />
 
-      <section className="hero" aria-labelledby="hero-title">
+      <section className="hero" id="hero" aria-labelledby="hero-title">
         <div className="page hero-content">
           <h1 id="hero-title">Совместные велопоездки рядом</h1>
           <p className="lead">

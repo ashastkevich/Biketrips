@@ -1,9 +1,6 @@
 "use client";
 
-import type {
-  DifficultyLevel,
-  UnpavedSurfaceDetail,
-} from "@biketrips/domain";
+import type { DifficultyLevel, UnpavedSurfaceDetail } from "@biketrips/domain";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { unpavedSurfaceDetailLabels } from "../../lib/labels";
@@ -20,6 +17,7 @@ import {
   TextareaField,
   TextField,
   TripCard,
+  type StepperSaveStatus,
 } from "../../ui/components";
 import { AuthOptions, type AuthProvider } from "../../ui/auth-options";
 import { StartLocationPicker } from "./start-location-picker";
@@ -104,13 +102,15 @@ export function TripCreationWizard({
   const defaultDraft = useMemo(() => ({ ...initialDraft, ...initialValues }), [initialValues]);
   const [step, setStep] = useState<number>(initialStep);
   const [draft, setDraft] = useState<TripDraft>(() => defaultDraft);
-  const [restored, setRestored] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<StepperSaveStatus>("idle");
   const [showDetails, setShowDetails] = useState(false);
   const [stepError, setStepError] = useState("");
   const [showAuth, setShowAuth] = useState(false);
   const [customCoverUrl, setCustomCoverUrl] = useState("");
   const [customCoverName, setCustomCoverName] = useState("");
   const coverFileRef = useRef<HTMLInputElement>(null);
+  const initialPersistSkippedRef = useRef(false);
+  const restoredDraftPendingRef = useRef(false);
 
   useEffect(() => {
     if (!persistDraft) return;
@@ -122,10 +122,9 @@ export function TripCreationWizard({
         setDraft({
           ...defaultDraft,
           ...savedDraft,
-          hasParticipantLimit:
-            savedDraft.hasParticipantLimit ?? defaultDraft.hasParticipantLimit,
+          hasParticipantLimit: savedDraft.hasParticipantLimit ?? defaultDraft.hasParticipantLimit,
         });
-        setRestored(true);
+        restoredDraftPendingRef.current = true;
       } catch {
         window.localStorage.removeItem(NEW_TRIP_DRAFT_KEY);
       }
@@ -135,8 +134,24 @@ export function TripCreationWizard({
   useEffect(() => {
     if (!persistDraft) return;
 
+    if (!initialPersistSkippedRef.current) {
+      initialPersistSkippedRef.current = true;
+      return;
+    }
+
+    if (restoredDraftPendingRef.current) {
+      restoredDraftPendingRef.current = false;
+      return;
+    }
+
+    setSaveStatus("saving");
     const timeout = window.setTimeout(() => {
-      window.localStorage.setItem(NEW_TRIP_DRAFT_KEY, JSON.stringify(draft));
+      try {
+        window.localStorage.setItem(NEW_TRIP_DRAFT_KEY, JSON.stringify(draft));
+        setSaveStatus("saved");
+      } catch {
+        setSaveStatus("error");
+      }
     }, 250);
 
     return () => window.clearTimeout(timeout);
@@ -146,7 +161,7 @@ export function TripCreationWizard({
     () => () => {
       if (customCoverUrl) URL.revokeObjectURL(customCoverUrl);
     },
-    [customCoverUrl],
+    [customCoverUrl]
   );
 
   const suggestedTitle = useMemo(() => {
@@ -175,8 +190,7 @@ export function TripCreationWizard({
       ...current,
       asphaltPercent: String(asphaltPercent),
       unpavedPercent: String(100 - asphaltPercent),
-      unpavedSurfaceDetails:
-        asphaltPercent === 100 ? [] : current.unpavedSurfaceDetails,
+      unpavedSurfaceDetails: asphaltPercent === 100 ? [] : current.unpavedSurfaceDetails,
     }));
     setStepError("");
   }
@@ -281,7 +295,7 @@ export function TripCreationWizard({
             { id: "3", label: "Публикация" },
           ]}
           currentStep={String(step)}
-          saveStatus={restored ? "saved" : "idle"}
+          saveStatus={saveStatus}
           onStepChange={(stepId) => setStep(Number(stepId))}
         />
 
@@ -322,20 +336,6 @@ export function TripCreationWizard({
                     required
                     value={draft.time}
                     onChange={(event) => update("time", event.target.value)}
-                  />
-                </FormField>
-                <FormField
-                  className="span-2"
-                  label="Место старта"
-                  hint="Адрес обновится после выбора точки на карте"
-                  required
-                >
-                  <TextField
-                    name="startLocationName"
-                    required
-                    readOnly
-                    placeholder="Выберите точку на карте"
-                    value={draft.startLocationName}
                   />
                 </FormField>
                 <div className="span-2">
@@ -445,11 +445,19 @@ export function TripCreationWizard({
                   </div>
                   {Number(draft.unpavedPercent) > 0 ? (
                     <div className="unpaved-details">
-                      <span>Что встретится на грунтовой части? <small>Необязательно</small></span>
-                      <div className="condition-chips" role="group" aria-label="Уточнение грунтовой части">
-                        {(Object.entries(unpavedSurfaceDetailLabels) as Array<
-                          [UnpavedSurfaceDetail, string]
-                        >).map(([value, label]) => (
+                      <span>
+                        Что встретится на грунтовой части? <small>Необязательно</small>
+                      </span>
+                      <div
+                        className="condition-chips"
+                        role="group"
+                        aria-label="Уточнение грунтовой части"
+                      >
+                        {(
+                          Object.entries(unpavedSurfaceDetailLabels) as Array<
+                            [UnpavedSurfaceDetail, string]
+                          >
+                        ).map(([value, label]) => (
                           <Chip
                             key={value}
                             selected={draft.unpavedSurfaceDetails.includes(value)}
@@ -500,14 +508,18 @@ export function TripCreationWizard({
               <div className="wizard-heading">
                 <p className="eyebrow">Шаг 3 из 3</p>
                 <h1>Расскажите о поездке</h1>
-                <p>Короткого описания достаточно. Остальные детали можно добавить сейчас или позже.</p>
+                <p>
+                  Короткого описания достаточно. Остальные детали можно добавить сейчас или позже.
+                </p>
               </div>
               <fieldset className="cover-picker">
                 <legend>Обложка поездки</legend>
                 <div className="cover-templates">
                   {coverTemplates.map((cover) => (
                     <button
-                      className={selectedCover === cover.src && !customCoverUrl ? "is-selected" : ""}
+                      className={
+                        selectedCover === cover.src && !customCoverUrl ? "is-selected" : ""
+                      }
                       type="button"
                       key={cover.src}
                       aria-label={cover.label}
@@ -590,20 +602,32 @@ export function TripCreationWizard({
               ) : (
                 <>
                   <input name="routeDescription" type="hidden" value={draft.routeDescription} />
-                  <input name="equipmentRequirements" type="hidden" value={draft.equipmentRequirements} />
+                  <input
+                    name="equipmentRequirements"
+                    type="hidden"
+                    value={draft.equipmentRequirements}
+                  />
                   <input name="rules" type="hidden" value={draft.rules} />
                 </>
               )}
             </>
           ) : null}
 
-          {stepError ? <div className="inline-error" role="alert">{stepError}</div> : null}
+          {stepError ? (
+            <div className="inline-error" role="alert">
+              {stepError}
+            </div>
+          ) : null}
 
           <div className="wizard-actions">
             {step > 1 ? (
-              <Button tone="secondary" type="button" onClick={goBack}>Назад</Button>
+              <Button tone="secondary" type="button" onClick={goBack}>
+                Назад
+              </Button>
             ) : (
-              <LinkButton href="/" tone="secondary">Отмена</LinkButton>
+              <LinkButton href="/" tone="secondary">
+                Отмена
+              </LinkButton>
             )}
             {step < 3 ? (
               <Button
@@ -617,14 +641,16 @@ export function TripCreationWizard({
                 Продолжить
               </Button>
             ) : (
-              <Button key="publish-trip" type="submit">Опубликовать поездку</Button>
+              <Button key="publish-trip" type="submit">
+                Опубликовать поездку
+              </Button>
             )}
           </div>
         </Card>
       </div>
 
       <aside className="wizard-preview" aria-label="Предпросмотр поездки">
-        <p className="preview-label">Так увидят участники</p>
+        <p className="preview-label">Так поездку увидят участники</p>
         <TripCard
           title={title}
           date={draft.date}
@@ -646,10 +672,7 @@ export function TripCreationWizard({
           onMouseDown={() => setShowAuth(false)}
         >
           <div onMouseDown={(event) => event.stopPropagation()}>
-            <AuthOptions
-              onClose={() => setShowAuth(false)}
-              onSelect={startAuthorization}
-            />
+            <AuthOptions onClose={() => setShowAuth(false)} onSelect={startAuthorization} />
           </div>
         </div>
       ) : null}
