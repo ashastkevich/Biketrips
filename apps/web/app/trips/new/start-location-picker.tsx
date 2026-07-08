@@ -34,12 +34,14 @@ export function StartLocationPicker({ value, onChange }: StartLocationPickerProp
   const inputId = useId();
   const listboxId = `${inputId}-suggestions`;
   const apiKey = getMapTilerApiKey();
-  const geocoder = useMemo(() => (apiKey ? new DadataGeocoder() : null), [apiKey]);
+  const geocoder = useMemo(() => new DadataGeocoder(), []);
   const selectedPoint = readPoint(value);
   const selectedPointKey = selectedPoint ? formatPoint(selectedPoint) : "";
   const [inputValue, setInputValue] = useState(value.name);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [hasOpenedMap, setHasOpenedMap] = useState(false);
+  const [isMapVisible, setIsMapVisible] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [suggestError, setSuggestError] = useState("");
@@ -60,8 +62,8 @@ export function StartLocationPicker({ value, onChange }: StartLocationPickerProp
       : selectedPoint
         ? formatPoint(selectedPoint)
         : hasUnconfirmedInput
-          ? "Выберите адрес из подсказок или поставьте точку на карте."
-          : "Начните вводить адрес или поставьте точку на карте.";
+          ? "Выберите адрес из подсказок или откройте карту, чтобы поставить точку."
+          : "Начните вводить адрес или откройте карту, чтобы поставить точку.";
 
   useEffect(
     () => () => {
@@ -188,6 +190,25 @@ export function StartLocationPicker({ value, onChange }: StartLocationPickerProp
     }, 120);
   }
 
+  function toggleMap() {
+    if (!apiKey) {
+      setMapError(
+        "Карта не настроена. Добавьте NEXT_PUBLIC_MAPTILER_API_KEY в apps/web/.env.local."
+      );
+      return;
+    }
+
+    setMapError("");
+
+    if (!hasOpenedMap) {
+      setHasOpenedMap(true);
+      setIsMapVisible(true);
+      return;
+    }
+
+    setIsMapVisible((current) => !current);
+  }
+
   async function selectPoint(point: MapPoint) {
     const normalizedPoint = {
       lat: Number(formatCoordinate(point.lat)),
@@ -235,93 +256,81 @@ export function StartLocationPicker({ value, onChange }: StartLocationPickerProp
     }
   }
 
-  if (!apiKey) {
-    return (
-      <div className="start-location-picker">
-        <label className="start-location-picker__field" htmlFor={inputId}>
-          <span className="start-location-picker__label">
-            Место старта <span aria-hidden="true">*</span>
-          </span>
-          <span className="start-location-picker__input-wrap">
-            <input
-              id={inputId}
-              className="ui-input start-location-picker__input"
-              placeholder="Начните вводить адрес"
-              value={inputValue}
-              onChange={(event) => handleInputChange(event.target.value)}
-            />
-          </span>
-        </label>
-        <div className="start-location-map__state start-location-map__state--error" role="alert">
-          Карта не настроена. Добавьте NEXT_PUBLIC_MAPTILER_API_KEY в apps/web/.env.local.
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="start-location-picker">
       <div className="start-location-picker__field">
         <label className="start-location-picker__label" htmlFor={inputId}>
           Место старта <span aria-hidden="true">*</span>
         </label>
-        <div className="start-location-picker__input-wrap">
-          <input
-            id={inputId}
-            className="ui-input start-location-picker__input"
-            placeholder="Начните вводить адрес"
-            value={inputValue}
-            role="combobox"
-            aria-autocomplete="list"
-            aria-controls={listboxId}
-            aria-expanded={showSuggestions}
-            aria-activedescendant={
-              activeSuggestionIndex >= 0 ? `${listboxId}-${activeSuggestionIndex}` : undefined
-            }
-            onChange={(event) => handleInputChange(event.target.value)}
-            onKeyDown={handleInputKeyDown}
-            onBlur={closeSuggestions}
-          />
-          {showSuggestions ? (
-            <div className="start-location-picker__suggestions" id={listboxId} role="listbox">
-              {suggestions.map((suggestion, index) => (
-                <button
-                  key={suggestion.id}
-                  id={`${listboxId}-${index}`}
-                  type="button"
-                  role="option"
-                  aria-selected={index === activeSuggestionIndex}
-                  className={
-                    index === activeSuggestionIndex
-                      ? "start-location-picker__suggestion is-active"
-                      : "start-location-picker__suggestion"
-                  }
-                  onMouseDown={(event) => {
-                    event.preventDefault();
-                    selectSuggestion(suggestion);
-                  }}
-                >
-                  <span>{suggestion.name}</span>
-                  <small>{formatPoint(suggestion.point)}</small>
-                </button>
-              ))}
-            </div>
-          ) : null}
+        <div className="start-location-picker__input-row">
+          <div className="start-location-picker__input-wrap">
+            <input
+              id={inputId}
+              className="ui-input start-location-picker__input"
+              placeholder="Начните вводить адрес"
+              value={inputValue}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls={listboxId}
+              aria-expanded={showSuggestions}
+              aria-activedescendant={
+                activeSuggestionIndex >= 0 ? `${listboxId}-${activeSuggestionIndex}` : undefined
+              }
+              onChange={(event) => handleInputChange(event.target.value)}
+              onKeyDown={handleInputKeyDown}
+              onBlur={closeSuggestions}
+            />
+            {showSuggestions ? (
+              <div className="start-location-picker__suggestions" id={listboxId} role="listbox">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={suggestion.id}
+                    id={`${listboxId}-${index}`}
+                    type="button"
+                    role="option"
+                    aria-selected={index === activeSuggestionIndex}
+                    className={
+                      index === activeSuggestionIndex
+                        ? "start-location-picker__suggestion is-active"
+                        : "start-location-picker__suggestion"
+                    }
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      selectSuggestion(suggestion);
+                    }}
+                  >
+                    <span>{suggestion.name}</span>
+                    <small>{formatPoint(suggestion.point)}</small>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            className="start-location-picker__map-toggle"
+            aria-expanded={isMapVisible}
+            onClick={toggleMap}
+          >
+            {isMapVisible ? "Скрыть карту" : "Показать карту"}
+          </button>
         </div>
         <small className="start-location-picker__hint" aria-live="polite">
           {hintText}
         </small>
       </div>
 
-      <div className="start-location-map">
-        <InteractiveMapLoader
-          apiKey={apiKey}
-          center={DEFAULT_MAP_CENTER}
-          point={selectedPoint}
-          onError={() => setMapError("Не удалось загрузить данные карты. Попробуйте ещё раз.")}
-          onSelect={(point) => void selectPoint(point)}
-        />
-      </div>
+      {hasOpenedMap && apiKey ? (
+        <div className="start-location-map" hidden={!isMapVisible}>
+          <InteractiveMapLoader
+            apiKey={apiKey}
+            center={DEFAULT_MAP_CENTER}
+            point={selectedPoint}
+            onError={() => setMapError("Не удалось загрузить данные карты. Попробуйте ещё раз.")}
+            onSelect={(point) => void selectPoint(point)}
+          />
+        </div>
+      ) : null}
 
       {geocodingError && selectedPoint ? (
         <button

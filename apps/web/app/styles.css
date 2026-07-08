@@ -1751,9 +1751,39 @@ body.modal-open {
   padding-right: 42px;
 }
 
+.start-location-picker__input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
 .start-location-picker__input-wrap {
   position: relative;
   display: block;
+}
+
+.start-location-picker__map-toggle {
+  min-height: 46px;
+  padding: 0 14px;
+  color: var(--green-dark);
+  background: #fffdfa;
+  border: 1px solid #d9d0c1;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.start-location-picker__map-toggle:hover {
+  background: #f1eadc;
+}
+
+.start-location-picker__map-toggle:focus-visible {
+  outline: 3px solid rgba(79, 104, 20, 0.28);
+  outline-offset: 3px;
 }
 
 .start-location-picker__hint {
@@ -1821,6 +1851,10 @@ body.modal-open {
   border: 1px solid #d7dfd7;
   border-radius: 17px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.48);
+}
+
+.start-location-map[hidden] {
+  display: none;
 }
 
 .start-location-map__canvas {
@@ -2338,8 +2372,12 @@ body.modal-open {
     width: 100%;
   }
 
-  .start-location-picker__header {
-    display: grid;
+  .start-location-picker__input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .start-location-picker__map-toggle {
+    width: 100%;
   }
 
   .start-location-map {
