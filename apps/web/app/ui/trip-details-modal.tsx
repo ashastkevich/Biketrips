@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { FormEvent, MouseEvent } from "react";
 import type { ParticipantStatus, TripDetail } from "@biketrips/domain";
 
@@ -40,6 +41,8 @@ export function TripDetailsModal({
   onJoin,
 }: TripDetailsModalProps) {
   const titleId = useId();
+  const cancelTitleId = useId();
+  const router = useRouter();
   const dialogRef = useRef<HTMLElement>(null);
   const [showForm, setShowForm] = useState(false);
   const [joined, setJoined] = useState(false);
@@ -47,6 +50,16 @@ export function TripDetailsModal({
   const [participationStatus, setParticipationStatus] = useState<ParticipantStatus | null>(null);
   const [participationLoading, setParticipationLoading] = useState(false);
   const [participationError, setParticipationError] = useState("");
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
+  const [tripCancellationLoading, setTripCancellationLoading] = useState(false);
+  const [tripCancellationError, setTripCancellationError] = useState("");
+  const [tripCancelled, setTripCancelled] = useState(trip.status === "cancelled");
+  const canCancelTrip =
+    isOrganizer &&
+    new Date(trip.startDateTime).getTime() > Date.now() &&
+    trip.status !== "cancelled" &&
+    trip.status !== "finished" &&
+    !tripCancelled;
   const hasParticipantLimit = trip.capacity !== null;
   const placesLeft = Math.max((trip.capacity ?? 0) - trip.confirmedParticipants, 0);
   const waitlist = hasParticipantLimit && placesLeft === 0;
@@ -66,7 +79,14 @@ export function TripDetailsModal({
   useEffect(() => {
     if (!open) return;
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        if (showCancelConfirmation) {
+          setTripCancellationError("");
+          setShowCancelConfirmation(false);
+        } else {
+          onClose();
+        }
+      }
     }
     document.addEventListener("keydown", handleKeyDown);
     const previousOverflow = document.body.style.overflow;
@@ -76,7 +96,7 @@ export function TripDetailsModal({
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [onClose, open]);
+  }, [onClose, open, showCancelConfirmation]);
 
   useEffect(() => {
     if (!open || !isAuthenticated) return;
@@ -181,6 +201,34 @@ export function TripDetailsModal({
     setParticipationLoading(false);
   }
 
+  async function handleCancelTrip() {
+    setTripCancellationLoading(true);
+    setTripCancellationError("");
+
+    const response = await fetch(
+      `/api/trips/${encodeURIComponent(trip.id)}/cancel`,
+      { method: "POST" },
+    ).catch(() => null);
+
+    if (!response?.ok) {
+      const error = await response?.json().catch(() => null) as { message?: string } | null;
+      setTripCancellationError(error?.message ?? "Не удалось отменить поездку.");
+      setTripCancellationLoading(false);
+      return;
+    }
+
+    setTripCancelled(true);
+    setShowCancelConfirmation(false);
+    setTripCancellationLoading(false);
+    if (window.history.state?.tripModal) {
+      window.addEventListener("popstate", () => router.refresh(), { once: true });
+      onClose();
+    } else {
+      onClose();
+      router.refresh();
+    }
+  }
+
   return (
     <div className="trip-details-backdrop" onMouseDown={handleBackdropClick}>
       <section
@@ -283,6 +331,15 @@ export function TripDetailsModal({
                     confirmed={trip.confirmedParticipants}
                   />
                 ) : null}
+                {tripCancelled ? (
+                  <p className="trip-details-modal__cancelled" role="status">
+                    Поездка отменена
+                  </p>
+                ) : canCancelTrip ? (
+                  <Button tone="danger" onClick={() => setShowCancelConfirmation(true)}>
+                    Отменить поездку
+                  </Button>
+                ) : null}
               </>
             ) : participationStatus || joined ? (
               <div className="trip-details-success" role="status">
@@ -348,6 +405,41 @@ export function TripDetailsModal({
           </aside>
         </div>
       </section>
+      {showCancelConfirmation ? (
+        <div className="trip-cancel-confirm-backdrop">
+          <section
+            className="trip-cancel-confirm"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby={cancelTitleId}
+          >
+            <h2 id={cancelTitleId}>Отменить поездку?</h2>
+            <p>Поездка получит статус «Отменена». Участники увидят обновлённый статус.</p>
+            {tripCancellationError ? (
+              <p className="trip-details-modal__error" role="alert">{tripCancellationError}</p>
+            ) : null}
+            <div className="trip-cancel-confirm__actions">
+              <Button
+                tone="danger"
+                loading={tripCancellationLoading}
+                onClick={handleCancelTrip}
+              >
+                Подтвердить отмену
+              </Button>
+              <Button
+                tone="ghost"
+                disabled={tripCancellationLoading}
+                onClick={() => {
+                  setTripCancellationError("");
+                  setShowCancelConfirmation(false);
+                }}
+              >
+                Не отменять
+              </Button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

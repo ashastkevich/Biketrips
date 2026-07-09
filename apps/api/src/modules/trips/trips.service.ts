@@ -1,12 +1,13 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Brackets, Repository } from "typeorm";
+import { Repository } from "typeorm";
 import type { TripStatus } from "@biketrips/domain";
 
 import { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
 import { TripUpdateEntity } from "../../infrastructure/database/entities/trip-update.entity.js";
 import { OrganizerEntity } from "../../infrastructure/database/entities/organizer.entity.js";
 import { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
+import { CityEntity } from "../../infrastructure/database/entities/city.entity.js";
 import { NotificationsService } from "../notifications/notifications.service.js";
 import type { CreateTripDto, TripFiltersDto, UpdateTripDto } from "./dto/trip.dto.js";
 
@@ -21,6 +22,8 @@ export class TripsService {
     private readonly organizersRepository: Repository<OrganizerEntity>,
     @InjectRepository(UserEntity)
     private readonly usersRepository: Repository<UserEntity>,
+    @InjectRepository(CityEntity)
+    private readonly citiesRepository: Repository<CityEntity>,
     @Inject(NotificationsService)
     private readonly notificationsService: NotificationsService
   ) {}
@@ -39,13 +42,7 @@ export class TripsService {
     }
 
     if (filters.city) {
-      query.andWhere(
-        new Brackets((builder) => {
-          builder
-            .where("city.slug = :city", { city: filters.city })
-            .orWhere("city.name ILIKE :cityName", { cityName: `%${filters.city}%` });
-        })
-      );
+      query.andWhere("city.slug = :city", { city: filters.city });
     }
 
     if (filters.difficulty) {
@@ -106,6 +103,10 @@ export class TripsService {
     },
   ): Promise<TripEntity> {
     this.validateSurfaceComposition(dto.asphaltPercent, dto.unpavedPercent);
+    const cityExists = await this.citiesRepository.existsBy({ id: dto.cityId });
+    if (!cityExists) {
+      throw new BadRequestException("Unknown city");
+    }
     const organizer = await this.getOrCreateOrganizer(actor);
     const trip = this.tripsRepository.create({
       ...this.mapWritableFields(dto),
@@ -169,9 +170,21 @@ export class TripsService {
 
   async transition(
     id: string,
-    status: Extract<TripStatus, "published" | "cancelled" | "finished">
+    status: Extract<TripStatus, "published" | "cancelled" | "finished">,
+    actor: { id: string; role: "user" | "admin" },
   ): Promise<TripEntity> {
     const trip = await this.getBySlugOrId(id);
+    if (trip.organizer.userId !== actor.id && actor.role !== "admin") {
+      throw new ForbiddenException("Only the trip organizer can change its status");
+    }
+    if (
+      status === "cancelled" &&
+      (trip.startAt.getTime() <= Date.now() ||
+        trip.status === "cancelled" ||
+        trip.status === "finished")
+    ) {
+      throw new BadRequestException("Only an upcoming active trip can be cancelled");
+    }
     trip.status = status;
     const savedTrip = await this.tripsRepository.save(trip);
 

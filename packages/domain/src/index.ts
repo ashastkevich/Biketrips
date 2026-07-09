@@ -53,6 +53,15 @@ export type TripFormat = (typeof tripFormats)[number];
 export const registrationModes = ["automatic", "manual"] as const;
 export type RegistrationMode = (typeof registrationModes)[number];
 
+export interface City {
+  id: string;
+  name: string;
+  slug: string;
+  timezone: string;
+  centerLat: number | null;
+  centerLng: number | null;
+}
+
 export interface TripSummary {
   id: string;
   slug: string;

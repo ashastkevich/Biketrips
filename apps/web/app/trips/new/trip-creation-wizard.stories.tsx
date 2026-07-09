@@ -4,6 +4,7 @@ import { useState } from "react";
 import { StartLocationPicker } from "./start-location-picker";
 import { TripCreationWizard } from "./trip-creation-wizard";
 import { FormField, TextField } from "../../ui/components";
+import { fallbackCities } from "../../lib/cities";
 
 const meta = {
   title: "Design System/Patterns/Создание поездки",
@@ -14,6 +15,7 @@ const meta = {
   args: {
     action: () => undefined,
     canPublish: true,
+    cities: fallbackCities,
     persistDraft: false,
   },
 } satisfies Meta<typeof TripCreationWizard>;

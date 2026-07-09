@@ -35,6 +35,7 @@ export async function PATCH(request: Request) {
     phone?: unknown;
     telegram?: unknown;
     email?: unknown;
+    cityId?: unknown;
   } | null;
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
@@ -42,6 +43,7 @@ export async function PATCH(request: Request) {
     ? body.telegram.trim().replace(/^@/, "")
     : "";
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  const cityId = typeof body?.cityId === "string" ? body.cityId.trim() : "";
 
   if (name.length < 2 || name.length > 80) {
     return NextResponse.json(
@@ -79,7 +81,7 @@ export async function PATCH(request: Request) {
         authorization: `Bearer ${decodeURIComponent(token)}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ name, email, phoneNumber: phone }),
+      body: JSON.stringify({ name, email, phoneNumber: phone, cityId }),
       cache: "no-store",
     },
   ).catch(() => null);
@@ -91,6 +93,10 @@ export async function PATCH(request: Request) {
       { status: apiResponse?.status ?? 503 },
     );
   }
+  const databaseUser = await apiResponse.json() as {
+    cityId: string | null;
+    city: { name: string } | null;
+  };
 
   const updatedToken = jwt.sign(
     {
@@ -103,11 +109,20 @@ export async function PATCH(request: Request) {
       email,
       telegramVerified: payload.telegramVerified === true && telegram === payload.telegram,
       emailVerified: payload.emailVerified === true && email === payload.email,
+      cityId: databaseUser.cityId ?? "",
+      city: databaseUser.city?.name ?? "",
     },
     process.env.JWT_SECRET ?? "local-development-secret",
     { expiresIn: "7d" },
   );
-  const response = NextResponse.json({ name, phone, telegram, email });
+  const response = NextResponse.json({
+    name,
+    phone,
+    telegram,
+    email,
+    cityId: databaseUser.cityId ?? "",
+    city: databaseUser.city?.name ?? "",
+  });
   response.cookies.set(authCookieName, updatedToken, {
     httpOnly: true,
     sameSite: "lax",

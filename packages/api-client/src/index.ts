@@ -1,6 +1,7 @@
 import type {
   CreateParticipantInput,
   CreateTripInput,
+  City,
   ParticipantStatus,
   TripDetail,
   TripFilters,
@@ -32,6 +33,10 @@ export class BikeTripsApiClient {
 
   async health(): Promise<HealthResponse> {
     return this.get<HealthResponse>("/health");
+  }
+
+  async listCities(): Promise<City[]> {
+    return this.get<City[]>("/cities");
   }
 
   async listTrips(filters: TripFilters = {}): Promise<TripSummary[]> {

@@ -1,6 +1,6 @@
 "use client";
 
-import type { DifficultyLevel, UnpavedSurfaceDetail } from "@biketrips/domain";
+import type { City, DifficultyLevel, UnpavedSurfaceDetail } from "@biketrips/domain";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { unpavedSurfaceDetailLabels } from "../../lib/labels";
@@ -31,6 +31,7 @@ const coverTemplates = [
 ];
 const defaultCoverImage = coverTemplates[1]!.src;
 export interface TripDraft {
+  cityId: string;
   title: string;
   date: string;
   time: string;
@@ -57,6 +58,7 @@ export interface TripDraft {
 }
 
 const initialDraft: TripDraft = {
+  cityId: "",
   title: "",
   date: "",
   time: "10:00",
@@ -89,6 +91,7 @@ interface TripCreationWizardProps {
   initialStep?: 1 | 2 | 3;
   initialValues?: Partial<TripDraft>;
   persistDraft?: boolean;
+  cities: City[];
 }
 
 export function TripCreationWizard({
@@ -98,6 +101,7 @@ export function TripCreationWizard({
   initialStep = 1,
   initialValues,
   persistDraft = true,
+  cities,
 }: TripCreationWizardProps) {
   const defaultDraft = useMemo(() => ({ ...initialDraft, ...initialValues }), [initialValues]);
   const [step, setStep] = useState<number>(initialStep);
@@ -246,6 +250,7 @@ export function TripCreationWizard({
   const title = draft.title || suggestedTitle;
   const startAt = draft.date && draft.time ? `${draft.date}T${draft.time}` : "";
   const selectedCover = customCoverUrl || draft.coverImage || defaultCoverImage;
+  const selectedCity = cities.find((city) => city.id === draft.cityId) ?? cities[0];
 
   return (
     <form
@@ -264,7 +269,7 @@ export function TripCreationWizard({
       }}
     >
       <input name="organizerId" type="hidden" value="30000000-0000-4000-8000-000000000001" />
-      <input name="cityId" type="hidden" value="10000000-0000-4000-8000-000000000001" />
+      <input name="cityId" type="hidden" value={draft.cityId} />
       <input name="title" type="hidden" value={title} />
       <input name="startAt" type="hidden" value={startAt} />
       <input name="startLocationName" type="hidden" value={draft.startLocationName} />
@@ -308,6 +313,18 @@ export function TripCreationWizard({
                 <p>Начните с главного — участники сразу поймут, подходит ли им поездка.</p>
               </div>
               <div className="form-grid">
+                <FormField className="span-2" label="Город" required>
+                  <select
+                    className="ui-input"
+                    required
+                    value={draft.cityId}
+                    onChange={(event) => update("cityId", event.target.value)}
+                  >
+                    {cities.map((city) => (
+                      <option value={city.id} key={city.id}>{city.name}</option>
+                    ))}
+                  </select>
+                </FormField>
                 <FormField
                   className="span-2"
                   label="Название"
@@ -340,6 +357,11 @@ export function TripCreationWizard({
                 </FormField>
                 <div className="span-2">
                   <StartLocationPicker
+                    cityCenter={
+                      selectedCity?.centerLat != null && selectedCity?.centerLng != null
+                        ? { lat: selectedCity.centerLat, lng: selectedCity.centerLng }
+                        : undefined
+                    }
                     value={{
                       name: draft.startLocationName,
                       lat: draft.startLat,

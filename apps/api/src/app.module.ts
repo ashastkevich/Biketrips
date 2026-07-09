@@ -4,6 +4,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { AdminModule } from "./modules/admin/admin.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
+import { CitiesModule } from "./modules/cities/cities.module.js";
 import { NotificationsModule } from "./modules/notifications/notifications.module.js";
 import { OrganizersModule } from "./modules/organizers/organizers.module.js";
 import { ParticipantsModule } from "./modules/participants/participants.module.js";
@@ -44,6 +45,7 @@ import { WaitlistEntryEntity } from "./infrastructure/database/entities/waitlist
     }),
     AdminModule,
     AuthModule,
+    CitiesModule,
     NotificationsModule,
     OrganizersModule,
     ParticipantsModule,

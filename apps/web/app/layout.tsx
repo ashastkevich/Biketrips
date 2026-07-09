@@ -8,6 +8,9 @@ import "./styles.css";
 export const metadata: Metadata = {
   title: "BikeTrips",
   description: "Совместные велопоездки",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 interface RootLayoutProps {

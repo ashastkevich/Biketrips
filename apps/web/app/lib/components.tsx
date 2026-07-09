@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import type { TripDetail, TripSummary } from "@biketrips/domain";
 
@@ -15,6 +14,7 @@ import { CreateTripLauncher } from "./create-trip-launcher";
 import { ProfileMenu } from "../home-auth-control";
 import {
   Alert,
+  LinkButton,
   ParticipantRow,
 } from "../ui/components";
 import type { TripCardProps } from "../ui/components";
@@ -36,16 +36,33 @@ export function DataNotice({ source, error }: DataNoticeProps) {
 
 export function BikeIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="6.5" cy="16.5" r="3.5" stroke="currentColor" strokeWidth="2" />
-      <circle cx="17.5" cy="16.5" r="3.5" stroke="currentColor" strokeWidth="2" />
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
       <path
-        d="M9 16.5h3.5l2.4-6.5M8.5 10h4.8l4.2 6.5M10.4 6.5h3"
+        d="M11 32c0-12.7 9.5-21 21-21s21 8.3 21 21-9.5 21-21 21-21-8.3-21-21Z"
+        fill="currentColor"
+        opacity="0.18"
+      />
+      <path
+        d="M18 25c5.6-7.5 19.9-9.3 29 0"
         stroke="currentColor"
         strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
+        strokeWidth="3.2"
+        opacity="0.58"
       />
+      <circle cx="20" cy="40" r="7" stroke="currentColor" strokeWidth="4.2" />
+      <circle cx="44" cy="40" r="7" stroke="currentColor" strokeWidth="4.2" />
+      <path
+        d="M20 40h11l6-15M31 40l-7-13h14l6 13"
+        stroke="var(--brand-bike-frame, #404823)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="4.2"
+      />
+      <path
+        d="M43 16a5 5 0 0 1 5 5c0 4.2-5 8.2-5 8.2S38 25.2 38 21a5 5 0 0 1 5-5Z"
+        fill="currentColor"
+      />
+      <circle cx="43" cy="21" r="1.8" fill="var(--brand-bike-dot, #cbd5ab)" />
     </svg>
   );
 }
@@ -105,16 +122,30 @@ export function Brand({ tone = "dark", href = "/" }: { tone?: "dark" | "light"; 
   );
 }
 
-export function AppTopbar({ showNavigation = true }: { showNavigation?: boolean }) {
+export function AppTopbar({
+  showNavigation = true,
+  showCreateAction = true,
+}: {
+  showNavigation?: boolean;
+  showCreateAction?: boolean;
+}) {
   return (
     <header className="site-header site-header--app">
       <div className="site-header__inner">
         <Brand />
         {showNavigation ? (
           <nav className="site-nav app-nav" aria-label="Навигация">
-            <Link className="site-nav__link" href="/">Поездки</Link>
-            <Link className="site-nav__link" href="/organizer/trips">Кабинет</Link>
-            <CreateTripLauncher compact label="Создать" />
+            <LinkButton className="app-nav__action" href="/#rides">
+              <ArrowIcon />
+              <span>Найти поездку</span>
+            </LinkButton>
+            {showCreateAction ? (
+              <CreateTripLauncher
+                className="app-nav__action"
+                label="Создать поездку"
+                tone="secondary"
+              />
+            ) : null}
             <ProfileMenu tone="dark" />
           </nav>
         ) : <ProfileMenu tone="dark" />}

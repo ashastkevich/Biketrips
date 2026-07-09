@@ -4,15 +4,17 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { CurrentUser } from "../lib/api";
+import type { City } from "@biketrips/domain";
 import { Button } from "../ui/components";
 
-export function ProfileAccount({ initialUser }: { initialUser: CurrentUser }) {
+export function ProfileAccount({ initialUser, cities }: { initialUser: CurrentUser; cities: City[] }) {
   const router = useRouter();
   const [user, setUser] = useState(initialUser);
   const [name, setName] = useState(initialUser.name);
   const [phone, setPhone] = useState(initialUser.phone);
   const [telegram, setTelegram] = useState(initialUser.telegram);
   const [email, setEmail] = useState(initialUser.email);
+  const [cityId, setCityId] = useState(initialUser.cityId);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -33,7 +35,7 @@ export function ProfileAccount({ initialUser }: { initialUser: CurrentUser }) {
     const response = await fetch("/api/profile", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name, phone, telegram, email }),
+      body: JSON.stringify({ name, phone, telegram, email, cityId }),
     }).catch(() => null);
 
     if (!response?.ok) {
@@ -48,12 +50,15 @@ export function ProfileAccount({ initialUser }: { initialUser: CurrentUser }) {
       phone: string;
       telegram: string;
       email: string;
+      cityId: string;
+      city: string;
     };
     setUser((current) => ({ ...current, ...body }));
     setName(body.name);
     setPhone(body.phone);
     setTelegram(body.telegram);
     setEmail(body.email);
+    setCityId(body.cityId);
     setEmailCharacterError("");
     setTouched({ phone: false, email: false });
     setEditing(false);
@@ -66,6 +71,7 @@ export function ProfileAccount({ initialUser }: { initialUser: CurrentUser }) {
     setPhone(user.phone);
     setTelegram(user.telegram);
     setEmail(user.email);
+    setCityId(user.cityId);
     setError("");
     setEmailCharacterError("");
     setTouched({ phone: false, email: false });
@@ -76,8 +82,12 @@ export function ProfileAccount({ initialUser }: { initialUser: CurrentUser }) {
     <section className="profile-card" aria-labelledby="profile-data-title">
       <div className="profile-card__heading">
         <div>
-          <p className="profile-section-label">Учётная запись</p>
-          <h2 id="profile-data-title">Данные пользователя</h2>
+          <p
+            className="profile-section-label profile-section-label--profile"
+            id="profile-data-title"
+          >
+            Профиль пользователя
+          </p>
         </div>
         {!editing ? (
           <Button tone="secondary" size="small" onClick={() => setEditing(true)}>
@@ -162,6 +172,15 @@ export function ProfileAccount({ initialUser }: { initialUser: CurrentUser }) {
                 {touched.email && emailError ? emailError : "\u00A0"}
               </small>
             </label>
+            <label>
+              Город
+              <select value={cityId} onChange={(event) => setCityId(event.target.value)}>
+                <option value="">Не указан</option>
+                {cities.map((city) => (
+                  <option value={city.id} key={city.id}>{city.name}</option>
+                ))}
+              </select>
+            </label>
           </div>
           {error ? <p className="profile-save-notice" role="alert">{error}</p> : null}
           <div className="profile-form__actions">
@@ -206,6 +225,10 @@ export function ProfileAccount({ initialUser }: { initialUser: CurrentUser }) {
                 href="/profile?verifyEmail=1"
               />
             </dd>
+          </div>
+          <div>
+            <dt>Город</dt>
+            <dd>{user.city || "Не указан"}</dd>
           </div>
         </dl>
       )}

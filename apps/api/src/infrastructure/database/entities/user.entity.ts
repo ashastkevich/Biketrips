@@ -1,5 +1,6 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
+import { CityEntity } from "./city.entity.js";
 import { OrganizerEntity } from "./organizer.entity.js";
 import { TelegramAccountEntity } from "./telegram-account.entity.js";
 import { TripParticipantEntity } from "./trip-participant.entity.js";
@@ -27,6 +28,13 @@ export class UserEntity {
 
   @Column({ name: "avatar_url", type: "text", nullable: true })
   avatarUrl!: string | null;
+
+  @Column({ name: "city_id", type: "uuid", nullable: true })
+  cityId!: string | null;
+
+  @ManyToOne(() => CityEntity, { nullable: true })
+  @JoinColumn({ name: "city_id" })
+  city!: CityEntity | null;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;

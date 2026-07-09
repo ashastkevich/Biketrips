@@ -18,6 +18,8 @@ import { AddSurfaceCompositionFields1737600000000 } from "./migrations/173760000
 import { DropLegacySurfaceType1737700000000 } from "./migrations/1737700000000-DropLegacySurfaceType.js";
 import { AddTripCoverImage1737800000000 } from "./migrations/1737800000000-AddTripCoverImage.js";
 import { MakeTripParticipantLimitOptional1737900000000 } from "./migrations/1737900000000-MakeTripParticipantLimitOptional.js";
+import { AddCityCentersAndSeedCities1738000000000 } from "./migrations/1738000000000-AddCityCentersAndSeedCities.js";
+import { AddUserCity1738100000000 } from "./migrations/1738100000000-AddUserCity.js";
 
 export const appDataSource = new DataSource({
   type: "postgres",
@@ -41,6 +43,8 @@ export const appDataSource = new DataSource({
     DropLegacySurfaceType1737700000000,
     AddTripCoverImage1737800000000,
     MakeTripParticipantLimitOptional1737900000000,
+    AddCityCentersAndSeedCities1738000000000,
+    AddUserCity1738100000000,
   ],
   synchronize: false,
 });

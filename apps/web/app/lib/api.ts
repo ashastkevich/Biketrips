@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import type {
   AuthenticatedUser,
+  City,
   CreateParticipantInput,
   CreateTripInput,
   ParticipantStatus,
@@ -42,6 +43,8 @@ export interface CurrentUser extends AuthenticatedUser {
   email: string;
   telegramVerified: boolean;
   emailVerified: boolean;
+  cityId: string;
+  city: string;
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -73,6 +76,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       email: typeof payload.email === "string" ? payload.email : "",
       telegramVerified: payload.telegramVerified === true,
       emailVerified: payload.emailVerified === true,
+      cityId: typeof payload.cityId === "string" ? payload.cityId : "",
+      city: typeof payload.city === "string" ? payload.city : "",
     };
 
     const databaseResponse = await fetch(`${apiUrl}/users/${encodeURIComponent(payload.sub)}`, {
@@ -87,6 +92,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       email: string | null;
       phoneNumber: string | null;
       phoneVerifiedAt: string | null;
+      cityId: string | null;
+      city: { name: string } | null;
     };
     return {
       ...sessionUser,
@@ -94,6 +101,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       email: databaseUser.email ?? "",
       phone: databaseUser.phoneNumber ?? "",
       phoneVerified: databaseUser.phoneVerifiedAt !== null,
+      cityId: databaseUser.cityId ?? "",
+      city: databaseUser.city?.name ?? "",
     };
   } catch {
     return null;
@@ -110,6 +119,16 @@ export async function getTrips(filters: TripFilters = {}): Promise<DataResult<Tr
   }
 }
 
+export async function getCities(): Promise<DataResult<City[]>> {
+  try {
+    const client = await createClient();
+    const cities = await client.listCities();
+    return { data: cities, source: "api" };
+  } catch (error) {
+    return { data: [], source: "unavailable", error: getErrorMessage(error) };
+  }
+}
+
 export async function getTrip(slugOrId: string): Promise<DataResult<TripDetail | null>> {
   try {
     const client = await createClient();
@@ -120,8 +139,8 @@ export async function getTrip(slugOrId: string): Promise<DataResult<TripDetail |
   }
 }
 
-export async function getTripDetails(): Promise<DataResult<TripDetail[]>> {
-  const summaries = await getTrips();
+export async function getTripDetails(filters: TripFilters = {}): Promise<DataResult<TripDetail[]>> {
+  const summaries = await getTrips(filters);
   if (summaries.source === "unavailable") {
     return { data: [], source: "unavailable", error: summaries.error };
   }

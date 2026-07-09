@@ -561,7 +561,7 @@ function FilterTrigger({
           <path d="M10 5.75V10L13 11.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ) : null}
-      <span><strong>{label}</strong>{summary ? <small>{summary}</small> : null}</span>
+      <span className="route-filter-trigger__copy"><strong>{label}</strong>{summary ? <small>{summary}</small> : null}</span>
       {label !== "Сложность маршрута" && label !== "Покрытие" && label !== "Дистанция / время" ? (
         <span className="route-filter-trigger__chevron" aria-hidden="true">⌄</span>
       ) : null}

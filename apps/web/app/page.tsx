@@ -1,15 +1,30 @@
 import { FindTripSection } from "./find-trip-section";
+import { cookies } from "next/headers";
 import { HomeHeader } from "./home-header";
-import { getCurrentUser, getTripDetails } from "./lib/api";
+import { getCities, getCurrentUser, getTripDetails } from "./lib/api";
+import { CITY_COOKIE_NAME, fallbackCities, selectCity } from "./lib/cities";
 import { ArrowIcon } from "./lib/components";
 import { CreateTripLauncher } from "./lib/create-trip-launcher";
 import { LinkButton } from "./ui/components";
 
-export default async function HomePage() {
-  const [currentUser, tripsResult] = await Promise.all([
+interface HomePageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const [query, cookieStore, currentUser, citiesResult] = await Promise.all([
+    searchParams,
+    cookies(),
     getCurrentUser(),
-    getTripDetails(),
+    getCities(),
   ]);
+  const cities = citiesResult.data.length > 0 ? citiesResult.data : fallbackCities;
+  const queryCity = Array.isArray(query.city) ? query.city[0] : query.city;
+  const selectedCity = selectCity(
+    cities,
+    queryCity ?? cookieStore.get(CITY_COOKIE_NAME)?.value,
+  );
+  const tripsResult = await getTripDetails({ city: selectedCity.slug });
   const isAuthorized = currentUser !== null;
 
   return (
@@ -39,6 +54,8 @@ export default async function HomePage() {
         trips={tripsResult.data}
         isAuthenticated={isAuthorized}
         currentUserId={currentUser?.id}
+        cities={cities}
+        selectedCity={selectedCity}
       />
         </div>
 

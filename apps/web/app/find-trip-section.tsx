@@ -8,6 +8,9 @@ import { RouteFilterBar, TripCard } from "./ui/components";
 import { TripDetailsModal } from "./ui/trip-details-modal";
 import { useTripModal } from "./ui/use-trip-modal";
 import type { RouteFilterValue } from "./ui/components";
+import type { City } from "@biketrips/domain";
+import { CitySelector } from "./city-selector";
+import { LinkButton } from "./ui/components";
 
 const initialFilters: RouteFilterValue = {
   measure: "distance",
@@ -23,10 +26,14 @@ export function FindTripSection({
   trips,
   isAuthenticated = false,
   currentUserId,
+  cities,
+  selectedCity,
 }: {
   trips: TripDetail[];
   isAuthenticated?: boolean;
   currentUserId?: string;
+  cities: City[];
+  selectedCity: City;
 }) {
   const [filters, setFilters] = useState<RouteFilterValue>(initialFilters);
   const { selectedTrip, openTrip, closeTrip } = useTripModal(trips, "/");
@@ -69,7 +76,10 @@ export function FindTripSection({
         <strong>{filteredTrips.length} из {trips.length}</strong>
       </header>
 
-      <RouteFilterBar value={filters} onChange={setFilters} />
+      <div className="find-trip-filters">
+        <CitySelector cities={cities} selectedCity={selectedCity} />
+        <RouteFilterBar value={filters} onChange={setFilters} />
+      </div>
 
       {filteredTrips.length > 0 ? (
         <section className="results" aria-label="Найденные поездки">
@@ -81,10 +91,25 @@ export function FindTripSection({
             />
           ))}
         </section>
+      ) : trips.length === 0 ? (
+        <section className="find-trip-pattern__empty">
+          <h2>Пока нет ближайших поездок</h2>
+          <p>{selectedCity.name}: создайте первую поездку или выберите другой город.</p>
+          <LinkButton href={`/trips/new?city=${encodeURIComponent(selectedCity.slug)}`}>
+            Создать поездку
+          </LinkButton>
+        </section>
       ) : (
         <section className="find-trip-pattern__empty">
           <h2>Подходящих поездок нет</h2>
-          <p>Попробуйте расширить диапазон или выбрать другие параметры.</p>
+          <p>Попробуйте расширить диапазон или сбросить выбранные параметры.</p>
+          <button
+            className="ui-button ui-button--secondary"
+            type="button"
+            onClick={() => setFilters(initialFilters)}
+          >
+            Сбросить фильтры
+          </button>
         </section>
       )}
 

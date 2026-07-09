@@ -22,6 +22,7 @@ interface StartLocationValue {
 interface StartLocationPickerProps {
   value: StartLocationValue;
   onChange: (value: StartLocationValue) => void;
+  cityCenter?: MapPoint;
 }
 
 function readPoint(value: StartLocationValue): MapPoint | null {
@@ -30,7 +31,7 @@ function readPoint(value: StartLocationValue): MapPoint | null {
   return isValidMapPoint(point) ? point : null;
 }
 
-export function StartLocationPicker({ value, onChange }: StartLocationPickerProps) {
+export function StartLocationPicker({ value, onChange, cityCenter }: StartLocationPickerProps) {
   const inputId = useId();
   const listboxId = `${inputId}-suggestions`;
   const apiKey = getMapTilerApiKey();
@@ -324,7 +325,7 @@ export function StartLocationPicker({ value, onChange }: StartLocationPickerProp
         <div className="start-location-map" hidden={!isMapVisible}>
           <InteractiveMapLoader
             apiKey={apiKey}
-            center={DEFAULT_MAP_CENTER}
+            center={selectedPoint ?? cityCenter ?? DEFAULT_MAP_CENTER}
             point={selectedPoint}
             onError={() => setMapError("Не удалось загрузить данные карты. Попробуйте ещё раз.")}
             onSelect={(point) => void selectPoint(point)}

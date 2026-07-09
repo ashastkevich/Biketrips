@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import type { DifficultyLevel, UnpavedSurfaceDetail } from "@biketrips/domain";
+import type { City, DifficultyLevel, UnpavedSurfaceDetail } from "@biketrips/domain";
 
 import { storyTrips } from "./story-fixtures";
 import { AppTopbar, getTripCardProps, PageHeader } from "../lib/components";
 import { ProfileMenu } from "../home-auth-control";
+import { CityFilter } from "../city-selector";
 import {
   difficultyLabels,
   unpavedSurfaceDetailLabels,
@@ -345,6 +346,12 @@ function SwitchDemo() {
 }
 
 function RouteFilterDemo() {
+  const cities: City[] = [
+    { id: "moscow", name: "Москва", slug: "moscow", timezone: "Europe/Moscow", centerLat: 55.7558, centerLng: 37.6173 },
+    { id: "saint-petersburg", name: "Санкт-Петербург", slug: "saint-petersburg", timezone: "Europe/Moscow", centerLat: 59.9343, centerLng: 30.3351 },
+    { id: "kazan", name: "Казань", slug: "kazan", timezone: "Europe/Moscow", centerLat: 55.7879, centerLng: 49.1233 },
+  ];
+  const [selectedCity, setSelectedCity] = useState(cities[0]!);
   const [filters, setFilters] = useState<RouteFilterValue>({
     measure: "distance",
     distanceFromKm: 0,
@@ -357,7 +364,10 @@ function RouteFilterDemo() {
 
   return (
     <StorySection title="Фильтры маршрутов">
-      <RouteFilterBar value={filters} onChange={setFilters} />
+      <div className="find-trip-filters">
+        <CityFilter cities={cities} selectedCity={selectedCity} onChange={setSelectedCity} />
+        <RouteFilterBar value={filters} onChange={setFilters} />
+      </div>
     </StorySection>
   );
 }

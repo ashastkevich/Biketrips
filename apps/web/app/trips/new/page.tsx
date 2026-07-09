@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
-import { createTrip, getOrganizerAuthState, updateTripStatus } from "../../lib/api";
+import { createTrip, getCities, getOrganizerAuthState, updateTripStatus } from "../../lib/api";
+import { CITY_COOKIE_NAME, fallbackCities, selectCity } from "../../lib/cities";
 import { AppTopbar } from "../../lib/components";
 import { readTripInput } from "../../lib/form-data";
 import { Alert } from "../../ui/components";
@@ -14,7 +16,7 @@ async function createTripAction(formData: FormData) {
   try {
     const trip = await createTrip(readTripInput(formData));
     await updateTripStatus(trip.id, "publish");
-    destination = `/organizer/trips/${trip.id}?published=1`;
+    destination = "/#rides";
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось создать поездку";
     destination = `/trips/new?error=${encodeURIComponent(message)}`;
@@ -28,14 +30,24 @@ interface NewTripPageProps {
 }
 
 export default async function NewTripPage({ searchParams }: NewTripPageProps) {
-  const query = await searchParams;
+  const [query, cookieStore, citiesResult, authState] = await Promise.all([
+    searchParams,
+    cookies(),
+    getCities(),
+    getOrganizerAuthState(),
+  ]);
   const error = Array.isArray(query.error) ? query.error[0] : query.error;
-  const authState = await getOrganizerAuthState();
+  const requestedCity = Array.isArray(query.city) ? query.city[0] : query.city;
+  const cities = citiesResult.data.length > 0 ? citiesResult.data : fallbackCities;
+  const selectedCity = selectCity(
+    cities,
+    requestedCity ?? cookieStore.get(CITY_COOKIE_NAME)?.value,
+  );
   const canPublish = authState === "allowed";
 
   return (
     <main className="shell">
-      <AppTopbar showNavigation={false} />
+      <AppTopbar showCreateAction={false} />
       {!canPublish ? (
         <Alert
           title={authState === "phone-required" ? "Добавьте номер телефона" : "Публикация после входа"}
@@ -53,6 +65,8 @@ export default async function NewTripPage({ searchParams }: NewTripPageProps) {
       <TripCreationWizard
         action={createTripAction}
         canPublish={canPublish}
+        cities={cities}
+        initialValues={{ cityId: selectedCity.id }}
         isRegistered={authState !== "missing"}
       />
     </main>

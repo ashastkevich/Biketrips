@@ -58,22 +58,31 @@ export class TripsController {
   @Post(":id/publish")
   @UseGuards(JwtAuthGuard, TripCreatorGuard)
   @ApiBearerAuth()
-  async publish(@Param("id") id: string) {
-    return serializeTripDetail(await this.tripsService.transition(id, "published"));
+  async publish(
+    @Param("id") id: string,
+    @Req() request: { user: { id: string; role: "user" | "admin" } },
+  ) {
+    return serializeTripDetail(await this.tripsService.transition(id, "published", request.user));
   }
 
   @Post(":id/cancel")
-  @UseGuards(JwtAuthGuard, TripCreatorGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  async cancel(@Param("id") id: string) {
-    return serializeTripDetail(await this.tripsService.transition(id, "cancelled"));
+  async cancel(
+    @Param("id") id: string,
+    @Req() request: { user: { id: string; role: "user" | "admin" } },
+  ) {
+    return serializeTripDetail(await this.tripsService.transition(id, "cancelled", request.user));
   }
 
   @Post(":id/finish")
   @UseGuards(JwtAuthGuard, TripCreatorGuard)
   @ApiBearerAuth()
-  async finish(@Param("id") id: string) {
-    return serializeTripDetail(await this.tripsService.transition(id, "finished"));
+  async finish(
+    @Param("id") id: string,
+    @Req() request: { user: { id: string; role: "user" | "admin" } },
+  ) {
+    return serializeTripDetail(await this.tripsService.transition(id, "finished", request.user));
   }
 
   @Post(":id/participants")
