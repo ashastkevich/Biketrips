@@ -51,8 +51,12 @@ export class TripsController {
   @Patch(":id")
   @UseGuards(JwtAuthGuard, TripCreatorGuard)
   @ApiBearerAuth()
-  async update(@Param("id") id: string, @Body() dto: UpdateTripDto) {
-    return serializeTripDetail(await this.tripsService.update(id, dto));
+  async update(
+    @Param("id") id: string,
+    @Body() dto: UpdateTripDto,
+    @Req() request: { user: { id: string; role: "user" | "admin" } },
+  ) {
+    return serializeTripDetail(await this.tripsService.update(id, dto, request.user));
   }
 
   @Post(":id/publish")

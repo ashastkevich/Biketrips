@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import type { TripStatus } from "@biketrips/domain";
+import { Not, Repository } from "typeorm";
+import { slugifyTripTitle, type TripStatus } from "@biketrips/domain";
 
 import { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
 import { TripUpdateEntity } from "../../infrastructure/database/entities/trip-update.entity.js";
@@ -158,14 +158,44 @@ export class TripsService {
     );
   }
 
-  async update(id: string, dto: UpdateTripDto): Promise<TripEntity> {
+  async update(
+    id: string,
+    dto: UpdateTripDto,
+    actor: { id: string; role: "user" | "admin" },
+  ): Promise<TripEntity> {
     const trip = await this.getBySlugOrId(id);
+    if (trip.organizer.userId !== actor.id && actor.role !== "admin") {
+      throw new ForbiddenException("Only the trip organizer can edit it");
+    }
+    if (
+      trip.startAt.getTime() <= Date.now() ||
+      trip.status === "cancelled" ||
+      trip.status === "finished"
+    ) {
+      throw new BadRequestException("Only an upcoming active trip can be edited");
+    }
     this.validateSurfaceComposition(
       dto.asphaltPercent ?? trip.asphaltPercent,
       dto.unpavedPercent ?? trip.unpavedPercent
     );
-    Object.assign(trip, this.mapUpdateFields(dto), dto.status ? { status: dto.status } : {});
-    return this.tripsRepository.save(trip);
+    if (dto.title !== undefined && dto.title !== trip.title) {
+      trip.publicSlug = await this.createUniqueSlug(dto.title, trip.id);
+    }
+    Object.assign(trip, this.mapUpdateFields(dto));
+    const savedTrip = await this.tripsRepository.save(trip);
+
+    if (savedTrip.status === "published") {
+      await this.tripUpdatesRepository.save(
+        this.tripUpdatesRepository.create({
+          tripId: savedTrip.id,
+          title: "Детали поездки обновлены",
+          body: "Организатор изменил информацию о поездке.",
+        }),
+      );
+      await this.notificationsService.enqueueTripUpdatedNotification(savedTrip);
+    }
+
+    return this.getBySlugOrId(savedTrip.id);
   }
 
   async transition(
@@ -265,26 +295,26 @@ export class TripsService {
     if (dto.maxParticipants !== undefined) update.maxParticipants = dto.maxParticipants;
     if (dto.registrationMode !== undefined) update.registrationMode = dto.registrationMode;
     if (dto.coverImage !== undefined) update.coverImage = dto.coverImage;
-    if (dto.organizerId !== undefined) update.organizerId = dto.organizerId;
     if (dto.cityId !== undefined) update.cityId = dto.cityId;
 
     return update;
   }
 
-  private async createUniqueSlug(title: string): Promise<string> {
-    const baseSlug = title
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9а-яё]+/gi, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 72);
+  private async createUniqueSlug(title: string, excludedTripId?: string): Promise<string> {
+    const baseSlug = slugifyTripTitle(title);
     const fallbackSlug = `trip-${Date.now()}`;
     const slug = baseSlug || fallbackSlug;
     let candidate = slug;
     let suffix = 2;
 
-    while (await this.tripsRepository.exists({ where: { publicSlug: candidate } })) {
+    while (
+      await this.tripsRepository.exists({
+        where: {
+          publicSlug: candidate,
+          ...(excludedTripId ? { id: Not(excludedTripId) } : {}),
+        },
+      })
+    ) {
       candidate = `${slug}-${suffix}`;
       suffix += 1;
     }

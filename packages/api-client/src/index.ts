@@ -7,6 +7,7 @@ import type {
   TripFilters,
   TripParticipant,
   TripSummary,
+  UpdateTripInput,
 } from "@biketrips/domain";
 
 export interface ApiClientOptions {
@@ -49,6 +50,10 @@ export class BikeTripsApiClient {
 
   async createTrip(input: CreateTripInput): Promise<TripDetail> {
     return this.post<TripDetail>("/trips", input, true);
+  }
+
+  async updateTrip(id: string, input: UpdateTripInput): Promise<TripDetail> {
+    return this.patch<TripDetail>(`/trips/${encodeURIComponent(id)}`, input, true);
   }
 
   async publishTrip(id: string): Promise<TripDetail> {

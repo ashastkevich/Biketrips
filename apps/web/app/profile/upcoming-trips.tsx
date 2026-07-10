@@ -25,7 +25,14 @@ export function UpcomingTrips({
   emptyMessage = "Поездок пока нет.",
   variant = "upcoming",
 }: UpcomingTripsProps) {
-  const { selectedTrip, openTrip, closeTrip } = useTripModal(trips, "/profile");
+  const modalScope = variant === "created" ? "created" : "participating";
+  const {
+    selectedTrip,
+    savedChanges,
+    openTrip,
+    closeTrip,
+    acknowledgeSavedChanges,
+  } = useTripModal(trips, "/profile", modalScope);
 
   function handleTripClick(event: MouseEvent<HTMLAnchorElement>, trip: TripDetail) {
     if (
@@ -114,6 +121,10 @@ export function UpcomingTrips({
           isAuthenticated={isAuthenticated}
           currentUserId={currentUserId}
           onClose={closeTrip}
+          returnPath="/profile"
+          returnScope={modalScope}
+          savedChanges={savedChanges}
+          onSavedConfirmationClose={acknowledgeSavedChanges}
         />
       ) : null}
     </>

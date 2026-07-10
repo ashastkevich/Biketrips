@@ -28,6 +28,20 @@ export class NotificationsService {
     );
   }
 
+  async enqueueTripUpdatedNotification(trip: TripEntity): Promise<void> {
+    await this.jobsRepository.save(
+      this.jobsRepository.create({
+        channel: "telegram",
+        type: "trip_updated",
+        tripId: trip.id,
+        payload: {
+          title: trip.title,
+          publicSlug: trip.publicSlug,
+        },
+      }),
+    );
+  }
+
   async enqueueParticipantPromoted(waitlistEntry: WaitlistEntryEntity): Promise<void> {
     await this.jobsRepository.save(
       this.jobsRepository.create({

@@ -36,7 +36,13 @@ export function FindTripSection({
   selectedCity: City;
 }) {
   const [filters, setFilters] = useState<RouteFilterValue>(initialFilters);
-  const { selectedTrip, openTrip, closeTrip } = useTripModal(trips, "/");
+  const {
+    selectedTrip,
+    savedChanges,
+    openTrip,
+    closeTrip,
+    acknowledgeSavedChanges,
+  } = useTripModal(trips, "/", "feed");
 
   const filteredTrips = useMemo(
     () =>
@@ -121,6 +127,10 @@ export function FindTripSection({
           isAuthenticated={isAuthenticated}
           currentUserId={currentUserId}
           onClose={closeTrip}
+          returnPath="/"
+          returnScope="feed"
+          savedChanges={savedChanges}
+          onSavedConfirmationClose={acknowledgeSavedChanges}
         />
       ) : null}
     </section>

@@ -87,6 +87,8 @@ const initialDraft: TripDraft = {
 interface TripCreationWizardProps {
   action: (formData: FormData) => void | Promise<void>;
   canPublish: boolean;
+  mode?: "create" | "edit";
+  cancelHref?: string;
   isRegistered?: boolean;
   initialStep?: 1 | 2 | 3;
   initialValues?: Partial<TripDraft>;
@@ -97,6 +99,8 @@ interface TripCreationWizardProps {
 export function TripCreationWizard({
   action,
   canPublish,
+  mode = "create",
+  cancelHref = "/",
   isRegistered = false,
   initialStep = 1,
   initialValues,
@@ -107,11 +111,18 @@ export function TripCreationWizard({
   const [step, setStep] = useState<number>(initialStep);
   const [draft, setDraft] = useState<TripDraft>(() => defaultDraft);
   const [saveStatus, setSaveStatus] = useState<StepperSaveStatus>("idle");
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(
+    Boolean(
+      initialValues?.routeDescription ||
+      initialValues?.equipmentRequirements ||
+      initialValues?.rules,
+    ),
+  );
   const [stepError, setStepError] = useState("");
   const [showAuth, setShowAuth] = useState(false);
   const [customCoverUrl, setCustomCoverUrl] = useState("");
   const [customCoverName, setCustomCoverName] = useState("");
+  const [isTitleEdited, setIsTitleEdited] = useState(Boolean(defaultDraft.title));
   const coverFileRef = useRef<HTMLInputElement>(null);
   const initialPersistSkippedRef = useRef(false);
   const restoredDraftPendingRef = useRef(false);
@@ -209,9 +220,12 @@ export function TripCreationWizard({
   }
 
   function validateStep(currentStep: number): boolean {
+    const effectiveTitle = draft.title || (isTitleEdited ? "" : suggestedTitle);
+
     if (
       currentStep === 1 &&
-      (!draft.date ||
+      (!effectiveTitle.trim() ||
+        !draft.date ||
         !draft.time ||
         !draft.startLocationName ||
         !draft.startLat ||
@@ -244,10 +258,11 @@ export function TripCreationWizard({
   }
 
   function startAuthorization(provider: AuthProvider) {
-    window.location.assign(`/auth/${provider}?returnTo=/trips/new`);
+    const returnTo = mode === "edit" ? cancelHref : "/trips/new";
+    window.location.assign(`/auth/${provider}?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
-  const title = draft.title || suggestedTitle;
+  const title = draft.title || (isTitleEdited ? "" : suggestedTitle);
   const startAt = draft.date && draft.time ? `${draft.date}T${draft.time}` : "";
   const selectedCover = customCoverUrl || draft.coverImage || defaultCoverImage;
   const selectedCity = cities.find((city) => city.id === draft.cityId) ?? cities[0];
@@ -286,6 +301,11 @@ export function TripCreationWizard({
         <input name="unpavedSurfaceDetails" type="hidden" value={detail} key={detail} />
       ))}
       <input name="dropPolicy" type="hidden" value={draft.dropPolicy} />
+      <input
+        name="hasParticipantLimit"
+        type="hidden"
+        value={String(draft.hasParticipantLimit)}
+      />
       {draft.hasParticipantLimit ? (
         <input name="maxParticipants" type="hidden" value={draft.maxParticipants} />
       ) : null}
@@ -308,7 +328,7 @@ export function TripCreationWizard({
           {step === 1 ? (
             <>
               <div className="wizard-heading">
-                <p className="eyebrow">Шаг 1 из 3</p>
+                <p className="eyebrow">{mode === "edit" ? "Редактирование · шаг 1 из 3" : "Шаг 1 из 3"}</p>
                 <h1>Когда и где встречаемся?</h1>
                 <p>Начните с главного — участники сразу поймут, подходит ли им поездка.</p>
               </div>
@@ -336,7 +356,10 @@ export function TripCreationWizard({
                     minLength={4}
                     required
                     value={title}
-                    onChange={(event) => update("title", event.target.value)}
+                    onChange={(event) => {
+                      setIsTitleEdited(true);
+                      update("title", event.target.value);
+                    }}
                   />
                 </FormField>
                 <FormField label="Дата" required>
@@ -401,7 +424,7 @@ export function TripCreationWizard({
           {step === 2 ? (
             <>
               <div className="wizard-heading">
-                <p className="eyebrow">Шаг 2 из 3</p>
+                <p className="eyebrow">{mode === "edit" ? "Редактирование · шаг 2 из 3" : "Шаг 2 из 3"}</p>
                 <h1>Кому подойдёт поездка?</h1>
                 <p>Темп и покрытие помогут собрать совместимую группу.</p>
               </div>
@@ -528,7 +551,7 @@ export function TripCreationWizard({
           {step === 3 ? (
             <>
               <div className="wizard-heading">
-                <p className="eyebrow">Шаг 3 из 3</p>
+                <p className="eyebrow">{mode === "edit" ? "Редактирование · шаг 3 из 3" : "Шаг 3 из 3"}</p>
                 <h1>Расскажите о поездке</h1>
                 <p>
                   Короткого описания достаточно. Остальные детали можно добавить сейчас или позже.
@@ -647,7 +670,7 @@ export function TripCreationWizard({
                 Назад
               </Button>
             ) : (
-              <LinkButton href="/" tone="secondary">
+              <LinkButton href={cancelHref} tone="secondary">
                 Отмена
               </LinkButton>
             )}
@@ -663,8 +686,8 @@ export function TripCreationWizard({
                 Продолжить
               </Button>
             ) : (
-              <Button key="publish-trip" type="submit">
-                Опубликовать поездку
+              <Button key="submit-trip" type="submit">
+                {mode === "edit" ? "Сохранить изменения" : "Опубликовать поездку"}
               </Button>
             )}
           </div>
@@ -672,7 +695,9 @@ export function TripCreationWizard({
       </div>
 
       <aside className="wizard-preview" aria-label="Предпросмотр поездки">
-        <p className="preview-label">Так поездку увидят участники</p>
+        <p className="preview-label">
+          {mode === "edit" ? "Так поездка будет выглядеть" : "Так поездку увидят участники"}
+        </p>
         <TripCard
           title={title}
           date={draft.date}

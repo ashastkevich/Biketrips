@@ -11,6 +11,7 @@ import type {
   TripFilters,
   TripParticipant,
   TripSummary,
+  UpdateTripInput,
 } from "@biketrips/domain";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -146,7 +147,7 @@ export async function getTripDetails(filters: TripFilters = {}): Promise<DataRes
   }
 
   const details = await Promise.all(
-    summaries.data.map((trip) => getTrip(trip.slug)),
+    summaries.data.map((trip) => getTrip(trip.id)),
   );
   return {
     data: details.flatMap((result) => result.data ? [result.data] : []),
@@ -157,6 +158,11 @@ export async function getTripDetails(filters: TripFilters = {}): Promise<DataRes
 export async function createTrip(input: CreateTripInput): Promise<TripDetail> {
   const client = await createClient();
   return client.createTrip(input);
+}
+
+export async function updateTrip(tripId: string, input: UpdateTripInput): Promise<TripDetail> {
+  const client = await createClient();
+  return client.updateTrip(tripId, input);
 }
 
 export async function joinTrip(

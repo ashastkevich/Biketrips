@@ -13,6 +13,7 @@ export function serializeTripSummary(trip: TripEntity) {
     id: trip.id,
     slug: trip.publicSlug,
     title: trip.title,
+    cityId: trip.cityId,
     city: trip.city.name,
     startDateTime: trip.startAt.toISOString(),
     distanceKm: Number(trip.distanceKm),

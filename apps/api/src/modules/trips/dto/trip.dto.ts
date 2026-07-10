@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from "@nestjs/swagger";
 import {
   IsDateString,
   IsArray,
@@ -16,13 +16,11 @@ import {
   dropPolicies,
   registrationModes,
   unpavedSurfaceDetails,
-  tripStatuses,
   type BikeType,
   type DifficultyLevel,
   type DropPolicy,
   type RegistrationMode,
   type UnpavedSurfaceDetail,
-  type TripStatus,
 } from "@biketrips/domain";
 
 export class CreateTripDto {
@@ -144,12 +142,9 @@ export class CreateTripDto {
   cityId!: string;
 }
 
-export class UpdateTripDto extends PartialType(CreateTripDto) {
-  @ApiPropertyOptional({ enum: tripStatuses })
-  @IsOptional()
-  @IsIn(tripStatuses)
-  status?: TripStatus;
-}
+export class UpdateTripDto extends PartialType(
+  OmitType(CreateTripDto, ["organizerId"] as const),
+) {}
 
 export class TripFiltersDto {
   @ApiPropertyOptional()

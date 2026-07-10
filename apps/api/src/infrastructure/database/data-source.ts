@@ -20,6 +20,7 @@ import { AddTripCoverImage1737800000000 } from "./migrations/1737800000000-AddTr
 import { MakeTripParticipantLimitOptional1737900000000 } from "./migrations/1737900000000-MakeTripParticipantLimitOptional.js";
 import { AddCityCentersAndSeedCities1738000000000 } from "./migrations/1738000000000-AddCityCentersAndSeedCities.js";
 import { AddUserCity1738100000000 } from "./migrations/1738100000000-AddUserCity.js";
+import { TransliterateTripSlugs1738200000000 } from "./migrations/1738200000000-TransliterateTripSlugs.js";
 
 export const appDataSource = new DataSource({
   type: "postgres",
@@ -45,6 +46,7 @@ export const appDataSource = new DataSource({
     MakeTripParticipantLimitOptional1737900000000,
     AddCityCentersAndSeedCities1738000000000,
     AddUserCity1738100000000,
+    TransliterateTripSlugs1738200000000,
   ],
   synchronize: false,
 });

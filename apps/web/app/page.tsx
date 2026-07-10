@@ -1,7 +1,7 @@
 import { FindTripSection } from "./find-trip-section";
 import { cookies } from "next/headers";
 import { HomeHeader } from "./home-header";
-import { getCities, getCurrentUser, getTripDetails } from "./lib/api";
+import { getCities, getCurrentUser, getTrip, getTripDetails } from "./lib/api";
 import { CITY_COOKIE_NAME, fallbackCities, selectCity } from "./lib/cities";
 import { ArrowIcon } from "./lib/components";
 import { CreateTripLauncher } from "./lib/create-trip-launcher";
@@ -25,6 +25,16 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     queryCity ?? cookieStore.get(CITY_COOKIE_NAME)?.value,
   );
   const tripsResult = await getTripDetails({ city: selectedCity.slug });
+  const requestedTripSlug = Array.isArray(query.trip) ? query.trip[0] : query.trip;
+  const requestedTripResult =
+    query.scope === "feed" && requestedTripSlug
+      ? await getTrip(requestedTripSlug)
+      : null;
+  const trips =
+    requestedTripResult?.data &&
+    !tripsResult.data.some((trip) => trip.id === requestedTripResult.data?.id)
+      ? [...tripsResult.data, requestedTripResult.data]
+      : tripsResult.data;
   const isAuthorized = currentUser !== null;
 
   return (
@@ -51,7 +61,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <main>
         <div className="page section search-section" id="rides">
       <FindTripSection
-        trips={tripsResult.data}
+        trips={trips}
         isAuthenticated={isAuthorized}
         currentUserId={currentUser?.id}
         cities={cities}

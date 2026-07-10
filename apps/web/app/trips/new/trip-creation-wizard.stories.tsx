@@ -110,3 +110,17 @@ export const AuthorizationRequired: Story = {
     initialValues: filledTrip,
   },
 };
+
+export const EditPublishedTrip: Story = {
+  name: "Редактирование опубликованной поездки",
+  args: {
+    cancelHref: "/profile",
+    initialStep: 3,
+    initialValues: {
+      ...filledTrip,
+      cityId: fallbackCities[0]!.id,
+      routeDescription: "Крюково — лесные дороги — Зеленоград.",
+    },
+    mode: "edit",
+  },
+};

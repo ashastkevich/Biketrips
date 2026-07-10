@@ -1,18 +1,16 @@
 import { notFound, redirect } from "next/navigation";
 
-import { AppTopbar, DataNotice, PageHeader, ParticipantList, TripFacts } from "../../lib/components";
-import { getTrip, joinTrip } from "../../lib/api";
+import { AppTopbar, DataNotice, getTripCardProps } from "../../lib/components";
+import { getCurrentUser, getTrip, joinTrip, updateTripStatus } from "../../lib/api";
 import { readParticipantInput } from "../../lib/form-data";
-import { formatDateTime } from "../../lib/labels";
 import {
   Alert,
-  BackLink,
   Button,
-  Card,
-  FormField,
-  TextareaField,
+  CapacityIndicator,
+  LinkButton,
   TextField,
 } from "../../ui/components";
+import { TripDetailsCard } from "../../ui/trip-details-card";
 
 interface TripPageProps {
   params: Promise<{ slug: string }>;
@@ -26,14 +24,23 @@ function hasFlag(value: string | string[] | undefined): boolean {
 export default async function TripPage({ params, searchParams }: TripPageProps) {
   const { slug } = await params;
   const query = await searchParams;
-  const result = await getTrip(slug);
+  const [result, currentUser] = await Promise.all([getTrip(slug), getCurrentUser()]);
 
   if (!result.data) {
     notFound();
   }
 
   const trip = result.data;
-
+  const coverImage = getTripCardProps(trip).coverImage;
+  const isOrganizer = trip.organizer.userId === currentUser?.id;
+  const hasParticipantLimit = trip.capacity !== null;
+  const placesLeft = Math.max((trip.capacity ?? 0) - trip.confirmedParticipants, 0);
+  const waitlist = hasParticipantLimit && placesLeft === 0;
+  const canCancelTrip =
+    isOrganizer &&
+    new Date(trip.startDateTime).getTime() > Date.now() &&
+    trip.status !== "cancelled" &&
+    trip.status !== "finished";
   async function joinAction(formData: FormData) {
     "use server";
 
@@ -49,21 +56,29 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
     redirect(destination);
   }
 
+  async function cancelTripAction() {
+    "use server";
+
+    let destination = `/trips/${slug}?cancelled=1`;
+
+    try {
+      await updateTripStatus(trip.id, "cancel");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Не удалось отменить поездку";
+      destination = `/trips/${slug}?cancelError=${encodeURIComponent(message)}`;
+    }
+
+    redirect(destination);
+  }
+
   return (
     <main className="shell detail-shell">
       <AppTopbar />
-      <BackLink href="/">
-        На главную
-      </BackLink>
-
-      <PageHeader eyebrow={`${trip.city} · ${formatDateTime(trip.startDateTime)}`} title={trip.title}>
-        <p>{trip.description}</p>
-      </PageHeader>
 
       <DataNotice source={result.source} error={result.error} />
       {hasFlag(query.joined) ? (
         <Alert title="Заявка отправлена" tone="success">
-          Организатор увидит ваши данные в списке участников.
+          {waitlist ? "Вы в листе ожидания. Сообщим, если освободится место." : "Эта поездка добавлена в ваш список."}
         </Alert>
       ) : null}
       {query.joinError ? (
@@ -71,57 +86,84 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
           {Array.isArray(query.joinError) ? query.joinError[0] : query.joinError}
         </Alert>
       ) : null}
-      <section className="content-grid">
-        <div className="stack">
-          <Card className="content-card" padding="large">
-            <h2 id="facts-title">Параметры</h2>
-            <TripFacts trip={trip} />
-          </Card>
+      {hasFlag(query.cancelled) ? (
+        <Alert title="Поездка отменена" tone="success">
+          Участники увидят обновлённый статус поездки.
+        </Alert>
+      ) : null}
+      {query.cancelError ? (
+        <Alert title="Не удалось отменить поездку" tone="danger">
+          {Array.isArray(query.cancelError) ? query.cancelError[0] : query.cancelError}
+        </Alert>
+      ) : null}
 
-          <Card className="content-card" padding="large">
-            <h2 id="route-title">Маршрут и условия</h2>
-            <div className="rich-text">
-              <p>{trip.routeDescription ?? "Организатор добавит описание маршрута позже."}</p>
-              <h3>Снаряжение</h3>
-              <p>{trip.equipmentRequirements ?? "Особых требований нет."}</p>
-              <h3>Правила</h3>
-              <p>{trip.rules ?? "Следуйте указаниям организатора и берегите группу."}</p>
-            </div>
-          </Card>
-
-          <Card className="content-card" padding="large">
-            <h2 id="participants-title">Участники</h2>
-            <ParticipantList trip={trip} />
-          </Card>
-        </div>
-
-        <aside aria-labelledby="join-title">
-          <Card className="side-panel" padding="large">
-          <h2 id="join-title">Записаться</h2>
-          <p className="muted">
-            {trip.capacity === null
-              ? `Записались: ${trip.confirmedParticipants} участников.`
-              : `Мест занято: ${trip.confirmedParticipants}/${trip.capacity}. Если лимит заполнен, заявка попадет в лист ожидания.`}
-          </p>
-          <form action={joinAction} className="form">
-            <input name="userId" type="hidden" value={`web-${trip.id}`} />
-            <FormField label="Имя" required>
-              <TextField name="name" required minLength={2} placeholder="Алексей" />
-            </FormField>
-            <FormField label="Telegram">
-              <TextField name="telegramUsername" placeholder="username" />
-            </FormField>
-            <FormField label="Телефон">
-              <TextField name="phone" inputMode="tel" placeholder="+7..." />
-            </FormField>
-            <FormField label="Комментарий">
-              <TextareaField name="comment" rows={4} placeholder="Опыт, вопросы, пожелания" />
-            </FormField>
-            <Button type="submit">Отправить заявку</Button>
-          </form>
-          </Card>
-        </aside>
-      </section>
+      <TripDetailsCard
+        trip={trip}
+        coverImage={coverImage}
+        titleId="trip-page-title"
+        headingLevel="h1"
+        className="trip-details-page-card"
+        aside={
+          <aside
+            className="trip-details-modal__join"
+            aria-label={isOrganizer ? "Участники поездки" : "Запись на поездку"}
+          >
+            {isOrganizer ? (
+              <>
+                <p className="trip-details-modal__join-kicker">Участники</p>
+                <p className="trip-details-modal__participant-count">
+                  Записались: <strong>{trip.confirmedParticipants}</strong>
+                  {hasParticipantLimit ? ` из ${trip.capacity}` : " участников"}
+                </p>
+                {hasParticipantLimit ? (
+                  <CapacityIndicator capacity={trip.capacity!} confirmed={trip.confirmedParticipants} />
+                ) : null}
+                <LinkButton href={`/trips/${encodeURIComponent(trip.slug)}/edit?returnTo=/&scope=feed`} tone="secondary">
+                  Редактировать поездку
+                </LinkButton>
+                {canCancelTrip ? (
+                  <form action={cancelTripAction}>
+                    <Button tone="danger" type="submit">
+                      Отменить поездку
+                    </Button>
+                  </form>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <p className="trip-details-modal__join-kicker">
+                  {waitlist ? "Места закончились" : "Можно присоединиться"}
+                </p>
+                {hasParticipantLimit ? (
+                  <CapacityIndicator capacity={trip.capacity!} confirmed={trip.confirmedParticipants} />
+                ) : (
+                  <p className="trip-details-modal__participant-count">
+                    Записались: <strong>{trip.confirmedParticipants}</strong> участников
+                  </p>
+                )}
+                <form action={joinAction} className="trip-details-join-form trip-details-page-form">
+                  <input name="userId" type="hidden" value={`web-${trip.id}`} />
+                  <label>
+                    <span>Как вас зовут</span>
+                    <TextField name="name" required minLength={2} placeholder="Алексей" />
+                  </label>
+                  <label>
+                    <span>Telegram</span>
+                    <TextField name="telegramUsername" required placeholder="@username" />
+                  </label>
+                  <Button type="submit">
+                    {waitlist ? "Встать в лист ожидания" : "Записаться"}
+                  </Button>
+                  <small>Контакт увидит только организатор.</small>
+                </form>
+                <p className="trip-details-modal__join-note">
+                  {trip.registrationMode === "automatic" ? "Запись подтвердится сразу" : "Организатор подтвердит заявку"}
+                </p>
+              </>
+            )}
+          </aside>
+        }
+      />
     </main>
   );
 }

@@ -7,6 +7,7 @@ import type {
   ParticipantStatus,
   RegistrationMode,
   UnpavedSurfaceDetail,
+  UpdateTripInput,
 } from "@biketrips/domain";
 
 export function readString(formData: FormData, name: string): string {
@@ -68,6 +69,17 @@ export function readTripInput(formData: FormData): CreateTripInput {
     coverImage: readOptionalString(formData, "coverImage"),
     organizerId: readString(formData, "organizerId"),
     cityId: readString(formData, "cityId"),
+  };
+}
+
+export function readTripUpdateInput(formData: FormData): UpdateTripInput {
+  const { organizerId: _organizerId, ...input } = readTripInput(formData);
+  return {
+    ...input,
+    maxParticipants:
+      readString(formData, "hasParticipantLimit") === "true"
+        ? input.maxParticipants
+        : null,
   };
 }
 
