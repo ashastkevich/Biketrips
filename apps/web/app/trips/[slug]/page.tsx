@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { AppTopbar, DataNotice, getTripCardProps } from "../../lib/components";
 import { getCurrentUser, getTrip, joinTrip, updateTripStatus } from "../../lib/api";
 import { readParticipantInput } from "../../lib/form-data";
+import { getTripEditHref } from "../../lib/trip-links";
 import {
   Alert,
   Button,
@@ -121,7 +122,7 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
                 ) : null}
                 <LinkButton
                   className={tripDetailsStyles.joinButton}
-                  href={`/trips/${encodeURIComponent(trip.slug)}/edit?returnTo=/&scope=feed`}
+                  href={getTripEditHref(trip, { returnTo: "/", scope: "feed" })}
                   tone="secondary"
                 >
                   Редактировать поездку

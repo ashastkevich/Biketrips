@@ -4,7 +4,9 @@ import Link from "next/link";
 import type { MouseEvent } from "react";
 import type { TripDetail } from "@biketrips/domain";
 
+import { getTripCoverBackground } from "../lib/assets";
 import { ClockIcon, getTripCardProps, PinIcon } from "../lib/components";
+import { getTripHref } from "../lib/trip-links";
 import { difficultyLabels, formatShortDate, tripStatusLabels } from "../lib/labels";
 import { Badge } from "../ui/components";
 import { TripDetailsModal } from "../ui/trip-details-modal";
@@ -71,14 +73,12 @@ export function UpcomingTrips({
             ) : null}
             {trips.map((trip) => {
           const coverImage = getTripCardProps(trip).coverImage;
-          const coverBackground = coverImage
-            ? `url("${coverImage}")`
-            : "linear-gradient(135deg, #53613c, #273525)";
+          const coverBackground = getTripCoverBackground(coverImage);
 
           return (
             <Link
               className={classes(styles.trip, variant === "created" && styles.tripCreated)}
-              href={`/trips/${trip.slug}`}
+              href={getTripHref(trip)}
               key={trip.id}
               onClick={(event) => handleTripClick(event, trip)}
             >

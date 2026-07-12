@@ -5,6 +5,7 @@ import { fallbackCities } from "../../../lib/cities";
 import { getCities, getCurrentUser, getTrip, updateTrip } from "../../../lib/api";
 import { AppTopbar } from "../../../lib/components";
 import { readTripUpdateInput } from "../../../lib/form-data";
+import { getTripHref, getTripReference } from "../../../lib/trip-links";
 import { Alert, LinkButton } from "../../../ui/components";
 import {
   TripCreationWizard,
@@ -156,7 +157,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
       : returnTo === "/"
         ? "feed"
         : "created";
-  const cancelHref = `/trips/${trip.slug}`;
+  const cancelHref = getTripHref(trip);
   const tripId = trip.id;
   const originalTrip: TripDetail = trip;
   const originalLocalStart = `${start.date}T${start.time}`;
@@ -202,14 +203,15 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
         originalLocalStart,
       );
       const updatedTrip = await updateTrip(tripId, input);
+      const updatedTripReference = getTripReference(updatedTrip) ?? tripReference;
       const resultQuery = new URLSearchParams({
-        trip: updatedTrip.slug,
+        trip: updatedTripReference,
         returnTo,
         saved: "1",
         scope: returnScope,
       });
       changes.forEach((change) => resultQuery.append("change", change));
-      destination = `/trips/${encodeURIComponent(updatedTrip.slug)}/edit?${resultQuery.toString()}`;
+      destination = `${getTripHref(updatedTrip)}/edit?${resultQuery.toString()}`;
     } catch (actionError) {
       const message =
         actionError instanceof Error ? actionError.message : "Не удалось сохранить изменения";

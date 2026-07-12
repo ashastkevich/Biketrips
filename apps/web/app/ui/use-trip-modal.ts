@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import type { TripDetail } from "@biketrips/domain";
 
+import { getTripHref, getTripReference, isSameTripReference } from "../lib/trip-links";
+
 function decodePathSegment(value: string): string {
   try {
     return decodeURIComponent(value);
@@ -31,7 +33,7 @@ export function useTripModal(
         : pathSlug
           ? decodePathSegment(pathSlug)
           : null;
-      const trip = trips.find((item) => item.slug === selectedSlug) ?? null;
+      const trip = trips.find((item) => isSameTripReference(item, selectedSlug)) ?? null;
 
       setSelectedTrip(trip);
       if (requestedSlug && trip) {
@@ -45,7 +47,7 @@ export function useTripModal(
   }, [modalScope, trips]);
 
   function openTrip(trip: TripDetail) {
-    window.history.pushState({ tripModal: true }, "", `/trips/${trip.slug}`);
+    window.history.pushState({ tripModal: true }, "", getTripHref(trip));
     setSavedChanges(null);
     setSelectedTrip(trip);
   }
@@ -63,10 +65,13 @@ export function useTripModal(
   function acknowledgeSavedChanges() {
     setSavedChanges(null);
     if (selectedTrip) {
+      const reference = getTripReference(selectedTrip);
+      if (!reference) return;
+
       window.history.replaceState(
         { restoredTripModal: true },
         "",
-        `/trips/${encodeURIComponent(selectedTrip.slug)}`,
+        getTripHref(selectedTrip),
       );
     }
   }

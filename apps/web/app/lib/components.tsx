@@ -18,6 +18,7 @@ import {
   ParticipantRow,
 } from "../ui/components";
 import type { TripCardProps } from "../ui/components";
+import { getTripHref } from "./trip-links";
 import styles from "./components.module.css";
 import shellStyles from "./app-shell.module.css";
 
@@ -235,7 +236,7 @@ export function getTripCardProps(
     averageSpeed,
     maxParticipants: trip.capacity ?? undefined,
     coverImage: getTripImage(trip),
-    href: `/trips/${trip.slug}`,
+    href: getTripHref(trip),
   };
 }
 

@@ -27,6 +27,7 @@ import {
   participantStatusLabels,
   tripStatusLabels,
 } from "../lib/labels";
+import { getTripCardCoverBackground } from "../lib/assets";
 import filterStyles from "./route-filters.module.css";
 import styles from "./components.module.css";
 import tripCardStyles from "./trip-card.module.css";
@@ -1143,9 +1144,7 @@ export function TripCard({
       <div
         className={tripCardStyles.cover}
         style={{
-          backgroundImage: coverImage
-            ? `linear-gradient(180deg, transparent, rgba(5, 18, 11, 0.52)), url("${coverImage}")`
-            : "linear-gradient(135deg, #53613c, #273525)",
+          backgroundImage: getTripCardCoverBackground(coverImage),
         }}
       >
         <span>{distanceKm || "—"} км</span>

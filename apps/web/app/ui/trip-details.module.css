@@ -38,7 +38,7 @@
   background: #344125;
 }
 
-.hero > img,
+.heroImage,
 .heroShade {
   position: absolute;
   inset: 0;
@@ -46,7 +46,7 @@
   height: 100%;
 }
 
-.hero > img {
+.heroImage {
   object-fit: cover;
 }
 

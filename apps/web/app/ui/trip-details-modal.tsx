@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { FormEvent, MouseEvent } from "react";
 import type { ParticipantStatus, TripDetail } from "@biketrips/domain";
 
+import { getTripEditHref } from "../lib/trip-links";
 import { Button, CapacityIndicator, CloseButton, TextField } from "./components";
 import { TripDetailsCard } from "./trip-details-card";
 import styles from "./trip-details.module.css";
@@ -60,10 +61,10 @@ export function TripDetailsModal({
   const hasParticipantLimit = trip.capacity !== null;
   const placesLeft = Math.max((trip.capacity ?? 0) - trip.confirmedParticipants, 0);
   const waitlist = hasParticipantLimit && placesLeft === 0;
-  const editTripHref =
-    `/trips/${encodeURIComponent(trip.slug)}/edit` +
-    `?returnTo=${encodeURIComponent(returnPath)}` +
-    `&scope=${encodeURIComponent(returnScope)}`;
+  const editTripHref = getTripEditHref(trip, {
+    returnTo: returnPath,
+    scope: returnScope,
+  });
   useEffect(() => {
     if (!open) return;
     function handleKeyDown(event: KeyboardEvent) {

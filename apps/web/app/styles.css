@@ -111,114 +111,6 @@ h1 {
   line-height: 1.02;
 }
 
-.form-actions,
-.button-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.panel,
-.side-panel,
-.empty-state,
-.auth-card {
-  background: var(--surface);
-  border: 1px solid var(--dark-line);
-  border-radius: 18px;
-  box-shadow: 0 14px 38px rgba(18, 32, 24, 0.06);
-}
-
-.back-link,
-.table-link {
-  display: inline-flex;
-  margin-bottom: 18px;
-  color: var(--green-dark);
-  font-weight: 760;
-}
-
-.back-link:hover,
-.table-link:hover {
-  text-decoration: underline;
-}
-
-.notice {
-  margin: 16px 0;
-  padding: 14px 16px;
-  color: #624b13;
-  background: #fff8df;
-  border: 1px solid #d7c38f;
-  border-radius: 18px;
-  line-height: 1.5;
-}
-
-.notice.success {
-  color: #215433;
-  background: #ecf8ef;
-  border-color: #a8d2b6;
-}
-
-.notice.danger {
-  color: #822f28;
-  background: #fff0ee;
-  border-color: #e3a49e;
-}
-
-.content-grid {
-  display: grid;
-  gap: 18px;
-}
-
-.stack,
-.participant-stack,
-.update-list {
-  display: grid;
-  gap: 16px;
-}
-
-.section-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.panel,
-.side-panel,
-.empty-state,
-.auth-card {
-  padding: 24px;
-}
-
-.side-panel {
-  align-self: start;
-}
-
-.panel h2,
-.side-panel h2,
-.auth-card h2,
-.empty-state h2 {
-  margin: 0 0 16px;
-  font-size: 24px;
-  font-weight: 560;
-  line-height: 1.16;
-}
-
-.rich-text h3 {
-  margin: 18px 0 8px;
-  font-size: 17px;
-  font-weight: 600;
-}
-
-.metric-grid {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-}
-
-.metric-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 dt {
   color: var(--muted);
   font-size: 13px;
@@ -229,20 +121,6 @@ dd {
   margin: 4px 0 0;
   font-weight: 800;
   overflow-wrap: anywhere;
-}
-
-.form {
-  display: grid;
-  gap: 14px;
-}
-
-label,
-.form-field {
-  display: grid;
-  gap: 7px;
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 700;
 }
 
 input,
@@ -259,26 +137,6 @@ textarea {
 
 textarea {
   resize: vertical;
-}
-
-.wide-form {
-  margin-top: 18px;
-}
-
-.form-actions {
-  margin-top: 6px;
-}
-
-.empty-state {
-  display: grid;
-  gap: 10px;
-  justify-items: start;
-  padding: 28px;
-}
-
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;
 }
 
 table {
@@ -304,44 +162,6 @@ tr:last-child td {
   border-bottom: 0;
 }
 
-.participant-card {
-  display: grid;
-  gap: 12px;
-  padding: 0 0 16px;
-  border-bottom: 1px solid #e7ede7;
-}
-
-.participant-card:last-child {
-  padding-bottom: 0;
-  border-bottom: 0;
-}
-
-.participant-card p {
-  margin: 4px 0 0;
-  color: var(--muted);
-}
-
-.telegram-placeholder {
-  display: grid;
-  width: 76px;
-  height: 76px;
-  place-items: center;
-  margin-bottom: 16px;
-  color: #ffffff;
-  background: #229ed9;
-  border-radius: 50%;
-  font-weight: 900;
-}
-
-@media (max-width: 520px) {
-  .auth-options-backdrop {
-    padding: 0;
-  }
-}
-
-@media (max-width: 980px) {
-}
-
 @media (max-width: 680px) {
   .page,
   .shell,
@@ -353,27 +173,6 @@ tr:last-child td {
     font-size: 39px;
   }
 
-  .form-actions,
-  .button-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .metric-grid {
-    grid-template-columns: 1fr;
-  }
-
-}
-
-@media (min-width: 920px) {
-  .content-grid {
-    grid-template-columns: minmax(0, 1fr) 360px;
-  }
-}
-
-.story-actions {
-  justify-content: flex-end;
-  margin-top: 20px;
 }
 
 .typography-theme {
@@ -383,12 +182,6 @@ tr:last-child td {
     ui-sans-serif,
     system-ui,
     sans-serif;
-}
-
-.storybook-porcelain-theme {
-  --surface: #fbfaf9;
-  --soft: #f5f3ec;
-  --dark-line: #e7e4dc;
 }
 
 .app-theme {
@@ -401,18 +194,6 @@ tr:last-child td {
   --green-dark: #404823;
   --green-glow: rgba(79, 104, 20, 0.24);
   color: var(--text);
-}
-
-.app-theme :is(
-  .content-card,
-  .side-panel,
-  .panel
-) {
-  background-color: var(--surface);
-  border-color: #e0dbce;
-  box-shadow:
-    0 1px 2px rgba(28, 26, 24, 0.04),
-    0 16px 42px rgba(28, 26, 24, 0.07);
 }
 
 .app-theme :focus-visible {
@@ -432,10 +213,6 @@ tr:last-child td {
   background-color: #fff;
   border-color: #e0dbce;
   border-radius: 12px;
-}
-
-.app-theme .content-card {
-  border-radius: 18px;
 }
 
 .app-theme :is(h1, h2, h3) {

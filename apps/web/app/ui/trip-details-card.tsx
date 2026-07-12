@@ -1,4 +1,5 @@
 import { forwardRef, type ReactNode } from "react";
+import Image from "next/image";
 import type { TripDetail } from "@biketrips/domain";
 
 import {
@@ -79,7 +80,16 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
         {overlay}
 
         <div className={styles.hero}>
-          {coverImage ? <img src={coverImage} alt="" /> : null}
+          {coverImage ? (
+            <Image
+              className={styles.heroImage}
+              src={coverImage}
+              alt=""
+              fill
+              sizes="(max-width: 760px) 100vw, 1040px"
+              priority={headingLevel === "h1"}
+            />
+          ) : null}
           <div className={styles.heroShade} />
           <div className={styles.heroCopy}>
             <div className={styles.eyebrow}>
