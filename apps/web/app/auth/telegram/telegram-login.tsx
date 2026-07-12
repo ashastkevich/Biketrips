@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import componentStyles from "../../ui/components.module.css";
+import styles from "./telegram.module.css";
+
 interface TelegramUser {
   id: number;
   first_name: string;
@@ -77,7 +80,7 @@ export function TelegramLogin({
 
   if (!botUsername) {
     return (
-      <p className="ui-alert ui-alert--warning" role="alert">
+      <p className={`${componentStyles.alert} ${componentStyles.alertWarning}`} role="alert">
         Telegram-вход не настроен. Укажите NEXT_PUBLIC_TELEGRAM_BOT_USERNAME.
       </p>
     );
@@ -85,8 +88,12 @@ export function TelegramLogin({
 
   return (
     <>
-      <div className="telegram-login-widget" ref={widgetRef} />
-      {error ? <p className="ui-alert ui-alert--danger" role="alert">{error}</p> : null}
+      <div className={styles.widget} ref={widgetRef} />
+      {error ? (
+        <p className={`${componentStyles.alert} ${componentStyles.alertDanger}`} role="alert">
+          {error}
+        </p>
+      ) : null}
     </>
   );
 }

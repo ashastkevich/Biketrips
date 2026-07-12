@@ -3,6 +3,7 @@ import { UpcomingTrips } from "./upcoming-trips";
 import { getCities, getCurrentUser, getTripDetails } from "../lib/api";
 import { fallbackCities } from "../lib/cities";
 import { ProfileAccount } from "./profile-account";
+import styles from "./profile.module.css";
 
 export default async function ProfilePage() {
   const [user, tripsResult, citiesResult] = await Promise.all([
@@ -50,30 +51,30 @@ export default async function ProfilePage() {
     .toUpperCase();
 
   return (
-    <main className="shell profile-page">
+    <main className={`shell ${styles.page}`}>
       <AppTopbar />
 
-      <header className="profile-hero">
-        <div className="profile-avatar" aria-hidden="true">
+      <header className={styles.hero}>
+        <div className={styles.avatar} aria-hidden="true">
           {initials || "Г"}
         </div>
-        <div className="profile-identity">
-          <div className="profile-name-row">
+        <div className={styles.identity}>
+          <div className={styles.nameRow}>
             <h1>{name}</h1>
           </div>
         </div>
       </header>
 
-      <div className="profile-layout">
-        <div className="profile-main">
+      <div className={styles.layout}>
+        <div className={styles.main}>
           {user ? (
             <ProfileAccount initialUser={user} cities={cities} />
           ) : (
-            <section className="profile-card" aria-labelledby="profile-data-title">
-              <div className="profile-card__heading">
+            <section className={styles.card} aria-labelledby="profile-data-title">
+              <div className={styles.cardHeading}>
                 <div>
                   <p
-                    className="profile-section-label profile-section-label--profile"
+                    className={`${styles.sectionLabel} ${styles.sectionLabelProfile}`}
                     id="profile-data-title"
                   >
                     Профиль пользователя
@@ -84,10 +85,10 @@ export default async function ProfilePage() {
             </section>
           )}
 
-          <section className="profile-card" aria-labelledby="upcoming-title">
-            <div className="profile-card__heading">
+          <section className={styles.card} aria-labelledby="upcoming-title">
+            <div className={styles.cardHeading}>
               <div>
-                <p className="profile-section-label">Вы организатор</p>
+                <p className={styles.sectionLabel}>Вы участник</p>
                 <h2 id="upcoming-title">Ближайшие поездки</h2>
               </div>
             </div>
@@ -100,14 +101,14 @@ export default async function ProfilePage() {
             />
           </section>
 
-          <section className="profile-card" aria-labelledby="created-trips-title">
-            <div className="profile-card__heading">
+          <section className={styles.card} aria-labelledby="created-trips-title">
+            <div className={styles.cardHeading}>
               <div>
-                <p className="profile-section-label">Вы организатор</p>
+                <p className={styles.sectionLabel}>Вы организатор</p>
                 <h2 id="created-trips-title">Созданные поездки</h2>
               </div>
             </div>
-            <section className="profile-trip-subsection" aria-labelledby="created-upcoming-title">
+            <section className={styles.tripSubsection} aria-labelledby="created-upcoming-title">
               <h3 id="created-upcoming-title">Предстоящие</h3>
               <UpcomingTrips
                 trips={upcomingCreatedTrips}
@@ -117,7 +118,7 @@ export default async function ProfilePage() {
                 variant="created"
               />
             </section>
-            <section className="profile-trip-subsection" aria-labelledby="created-past-title">
+            <section className={styles.tripSubsection} aria-labelledby="created-past-title">
               <h3 id="created-past-title">Прошедшие</h3>
               <UpcomingTrips
                 trips={pastCreatedTrips}

@@ -1,0 +1,47 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.section {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.section > h2 {
+  margin: 0 0 20px;
+}
+
+.column {
+  display: grid;
+  gap: 14px;
+}
+
+.chipGroup {
+  display: grid;
+  gap: 8px;
+}
+
+.chipGroup > strong {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+@media (max-width: 760px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .section {
+    padding: 18px 14px;
+  }
+}

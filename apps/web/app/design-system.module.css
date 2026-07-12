@@ -1,0 +1,157 @@
+.pageShell {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 34px 0 72px;
+}
+
+.pageHeader {
+  display: flex;
+  width: 100%;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  margin: 20px 0 28px;
+}
+
+.pageHeader h1 {
+  max-width: 820px;
+  margin: 0;
+  font-size: clamp(34px, 5vw, 58px);
+  font-weight: 550;
+  line-height: 1.05;
+}
+
+.eyebrow {
+  width: fit-content;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 16px;
+  padding: 0 12px;
+  color: var(--green-dark);
+  background: rgba(79, 104, 20, 0.1);
+  border: 1px solid rgba(79, 104, 20, 0.18);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.lead,
+.muted {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.lead {
+  max-width: 600px;
+  margin: 24px 0 0;
+  font-size: clamp(18px, 2vw, 23px);
+  font-weight: 400;
+}
+
+.contentCard {
+  padding: 24px;
+  background-color: var(--surface);
+  border: 1px solid #e0dbce;
+  border-radius: 18px;
+  box-shadow:
+    0 1px 2px rgba(28, 26, 24, 0.04),
+    0 16px 42px rgba(28, 26, 24, 0.07);
+}
+
+.tokenGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tokenSwatch {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 18px;
+  color: #fff;
+  border: 1px solid #e0dbce;
+  border-radius: 18px;
+}
+
+.tokenSwatchDarkCopy {
+  color: #1c1a18;
+}
+
+.tokenSwatch strong,
+.tokenSwatch span,
+.tokenSwatch small {
+  display: block;
+}
+
+.tokenSwatch span {
+  margin: 3px 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+.tokenSwatch small {
+  font-size: 12px;
+  opacity: 0.78;
+}
+
+.tokenMetrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.tokenMetrics > div {
+  display: grid;
+  gap: 5px;
+}
+
+.tokenMetrics small {
+  color: var(--muted);
+}
+
+.radiusSample,
+.elevationSample {
+  width: 100%;
+  height: 74px;
+  display: block;
+  margin-bottom: 6px;
+  background: #e7e8d1;
+  border: 1px solid #d8dab3;
+}
+
+.radiusSampleSmall {
+  border-radius: 12px;
+}
+
+.radiusSampleMedium {
+  border-radius: 18px;
+}
+
+.radiusSampleLarge {
+  border-radius: 28px;
+}
+
+.elevationSample {
+  background: #fbfaf9;
+  border-radius: 18px;
+  box-shadow: 0 16px 32px rgba(28, 26, 24, 0.12);
+}
+
+@media (max-width: 760px) {
+  .pageHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tokenGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tokenMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

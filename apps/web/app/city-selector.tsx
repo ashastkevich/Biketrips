@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { CITY_COOKIE_NAME } from "./lib/cities";
+import filterStyles from "./ui/route-filters.module.css";
+
+function classes(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(" ");
+}
 
 export function CityFilter({
   cities,
@@ -40,9 +45,9 @@ export function CityFilter({
   }, [open]);
 
   return (
-    <div className="city-filter-control" ref={rootRef}>
+    <div className={filterStyles.cityFilterControl} ref={rootRef}>
       <button
-        className={`route-filter-trigger${open ? " is-active" : ""}`}
+        className={classes(filterStyles.trigger, open && filterStyles.triggerActive)}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -53,11 +58,18 @@ export function CityFilter({
       </button>
 
       {open ? (
-        <section className="route-filter-popover city-filter-popover" aria-label="Выбор города">
-          <div className="route-filter-options" role="listbox" aria-label="Город поездки">
+        <section
+          className={`${filterStyles.popover} ${filterStyles.cityPopover}`}
+          aria-label="Выбор города"
+        >
+          <div className={filterStyles.options} role="listbox" aria-label="Город поездки">
             {cities.map((city) => (
               <button
-                className={`route-filter-option city-filter-option${city.id === selectedCity.id ? " is-selected" : ""}`}
+                className={classes(
+                  filterStyles.option,
+                  filterStyles.cityOption,
+                  city.id === selectedCity.id && filterStyles.optionSelected,
+                )}
                 type="button"
                 role="option"
                 aria-selected={city.id === selectedCity.id}
@@ -70,7 +82,7 @@ export function CityFilter({
                 <span>
                   <strong>{city.name}</strong>
                 </span>
-                <span className="route-filter-option__check" aria-hidden="true">✓</span>
+                <span className={filterStyles.optionCheck} aria-hidden="true">✓</span>
               </button>
             ))}
           </div>

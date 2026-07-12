@@ -7,6 +7,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { storyTrips } from "./story-fixtures";
 import { Button } from "./components";
 import { TripDetailsModal } from "./trip-details-modal";
+import tripDetailsStyles from "./trip-details.module.css";
 
 const meta = {
   title: "Design System/Patterns/Карточка поездки",
@@ -47,7 +48,7 @@ export const Interactive: Story = {
 function InteractiveDemo(props: React.ComponentProps<typeof TripDetailsModal>) {
   const [open, setOpen] = useState(false);
   return (
-    <main className="trip-details-story">
+    <main className={tripDetailsStyles.story}>
       <div>
         <p>Ближайшая поездка</p>
         <h1>{props.trip.title}</h1>

@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
+import styles from "./design-system.module.css";
+
 const meta = {
   title: "Design System/Foundations/Overview",
   parameters: {
@@ -12,20 +14,20 @@ type Story = StoryObj<typeof meta>;
 
 export const Foundations: Story = {
   render: () => (
-    <main className="page-shell">
-      <section className="page-header">
+    <main className={styles.pageShell}>
+      <section className={styles.pageHeader}>
         <div>
-          <p className="eyebrow">BikeTrips design system</p>
+          <p className={styles.eyebrow}>BikeTrips design system</p>
           <h1>Основы интерфейса</h1>
-          <div className="lead">
+          <div className={styles.lead}>
             Общие визуальные решения для ленты, страницы поездки и кабинета организатора.
           </div>
         </div>
       </section>
 
-      <section className="content-card">
+      <section className={styles.contentCard}>
         <h2>Цветовые токены</h2>
-        <div className="token-grid">
+        <div className={styles.tokenGrid}>
           <TokenSwatch color="#1C1A18" name="Black" usage="Основной текст" />
           <TokenSwatch color="#4F6814" name="Primary green" usage="Главное действие" />
           <TokenSwatch color="#F5F3EC" name="Sand 100" usage="Основной фон Komoot" dark />
@@ -35,22 +37,22 @@ export const Foundations: Story = {
         </div>
       </section>
 
-      <section className="content-card">
+      <section className={styles.contentCard}>
         <h2>Типографика</h2>
         <h1>Совместные велопоездки рядом</h1>
         <h2>Найдите подходящий маршрут</h2>
         <h3>Вечерний gravel по паркам</h3>
         <p>Основной текст помогает быстро понять формат, темп и сложность поездки.</p>
-        <p className="muted">Вспомогательный текст и пояснения к данным.</p>
+        <p className={styles.muted}>Вспомогательный текст и пояснения к данным.</p>
       </section>
 
-      <section className="content-card">
+      <section className={styles.contentCard}>
         <h2>Геометрия и глубина</h2>
-        <div className="token-metrics">
-          <div><span className="radius-sample radius-sample--small" /><strong>12 px</strong><small>Контролы</small></div>
-          <div><span className="radius-sample radius-sample--medium" /><strong>18 px</strong><small>Карточки</small></div>
-          <div><span className="radius-sample radius-sample--large" /><strong>28 px</strong><small>Крупные поверхности</small></div>
-          <div><span className="elevation-sample" /><strong>Level 1</strong><small>Мягкая глубина</small></div>
+        <div className={styles.tokenMetrics}>
+          <div><span className={`${styles.radiusSample} ${styles.radiusSampleSmall}`} /><strong>12 px</strong><small>Контролы</small></div>
+          <div><span className={`${styles.radiusSample} ${styles.radiusSampleMedium}`} /><strong>18 px</strong><small>Карточки</small></div>
+          <div><span className={`${styles.radiusSample} ${styles.radiusSampleLarge}`} /><strong>28 px</strong><small>Крупные поверхности</small></div>
+          <div><span className={styles.elevationSample} /><strong>Level 1</strong><small>Мягкая глубина</small></div>
         </div>
       </section>
 
@@ -70,7 +72,10 @@ function TokenSwatch({
   dark?: boolean;
 }) {
   return (
-    <div className={`token-swatch${dark ? " is-dark-copy" : ""}`} style={{ background: color }}>
+    <div
+      className={`${styles.tokenSwatch}${dark ? ` ${styles.tokenSwatchDarkCopy}` : ""}`}
+      style={{ background: color }}
+    >
       <strong>{name}</strong>
       <span>{color}</span>
       <small>{usage}</small>

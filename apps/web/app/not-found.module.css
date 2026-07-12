@@ -1,0 +1,30 @@
+.card {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  margin-top: 56px;
+}
+
+.card :is(h1, p) {
+  margin: 0;
+}
+
+.eyebrow {
+  width: fit-content;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 16px;
+  padding: 0 12px;
+  color: var(--green-dark);
+  background: rgba(79, 104, 20, 0.1);
+  border: 1px solid rgba(79, 104, 20, 0.18);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.muted {
+  color: var(--muted);
+  line-height: 1.55;
+}

@@ -1,4 +1,5 @@
 import { LinkButton } from "../ui/components";
+import styles from "./create-trip-launcher.module.css";
 
 function PlusIcon() {
   return (
@@ -22,7 +23,7 @@ export function CreateTripLauncher({
   tone = "primary",
 }: CreateTripLauncherProps) {
   const classes = [
-    compact ? "section-create compact" : "",
+    compact ? styles.compact : "",
     className ?? "",
   ].filter(Boolean).join(" ");
 

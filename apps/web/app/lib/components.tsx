@@ -18,6 +18,12 @@ import {
   ParticipantRow,
 } from "../ui/components";
 import type { TripCardProps } from "../ui/components";
+import styles from "./components.module.css";
+import shellStyles from "./app-shell.module.css";
+
+function classes(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(" ");
+}
 
 interface DataNoticeProps {
   source: "api" | "unavailable";
@@ -111,10 +117,32 @@ export function PinIcon() {
   );
 }
 
-export function Brand({ tone = "dark", href = "/" }: { tone?: "dark" | "light"; href?: string }) {
+export function Brand({
+  tone = "dark",
+  href = "/",
+  scrolled = false,
+}: {
+  tone?: "dark" | "light";
+  href?: string;
+  scrolled?: boolean;
+}) {
   return (
-    <a className={`brand ${tone === "light" ? "brand-light" : ""}`} href={href} aria-label="BikeTrips">
-      <span className="brand-icon">
+    <a
+      className={classes(
+        shellStyles.brand,
+        tone === "light" && shellStyles.brandLight,
+        scrolled && shellStyles.brandScrolled,
+      )}
+      href={href}
+      aria-label="BikeTrips"
+    >
+      <span
+        className={classes(
+          shellStyles.brandIcon,
+          tone === "light" ? shellStyles.brandIconLight : shellStyles.brandIconDark,
+          scrolled && shellStyles.brandIconScrolled,
+        )}
+      >
         <BikeIcon />
       </span>
       BikeTrips
@@ -130,18 +158,18 @@ export function AppTopbar({
   showCreateAction?: boolean;
 }) {
   return (
-    <header className="site-header site-header--app">
-      <div className="site-header__inner">
+    <header className={`${shellStyles.header} ${shellStyles.appHeader}`}>
+      <div className={`page ${shellStyles.inner} ${shellStyles.elevatedInner} ${shellStyles.appInner}`}>
         <Brand />
         {showNavigation ? (
-          <nav className="site-nav app-nav" aria-label="Навигация">
-            <LinkButton className="app-nav__action" href="/#rides">
+          <nav className={shellStyles.nav} aria-label="Навигация">
+            <LinkButton className={shellStyles.appNavAction} href="/#rides">
               <ArrowIcon />
               <span>Найти поездку</span>
             </LinkButton>
             {showCreateAction ? (
               <CreateTripLauncher
-                className="app-nav__action"
+                className={shellStyles.appNavAction}
                 label="Создать поездку"
                 tone="secondary"
               />
@@ -163,13 +191,13 @@ interface PageHeaderProps {
 
 export function PageHeader({ eyebrow, title, children, actions }: PageHeaderProps) {
   return (
-    <section className="page-header">
+    <section className={styles.pageHeader}>
       <div>
-        {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
+        {eyebrow ? <p className={styles.eyebrow}>{eyebrow}</p> : null}
         <h1>{title}</h1>
-        {children ? <div className="lead">{children}</div> : null}
+        {children ? <div className={styles.lead}>{children}</div> : null}
       </div>
-      {actions ? <div className="header-actions">{actions}</div> : null}
+      {actions ? <div className={styles.headerActions}>{actions}</div> : null}
     </section>
   );
 }
@@ -213,7 +241,7 @@ export function getTripCardProps(
 
 export function TripFacts({ trip }: { trip: TripDetail }) {
   return (
-    <dl className="facts-grid">
+    <dl className={styles.factsGrid}>
       <Metric label="Старт" value={formatDateTime(trip.startDateTime)} />
       <Metric label="Место" value={trip.startLocationName} />
       <Metric label="Дистанция" value={`${trip.distanceKm} км`} />
@@ -235,11 +263,11 @@ export function TripFacts({ trip }: { trip: TripDetail }) {
 
 export function ParticipantList({ trip }: { trip: TripDetail }) {
   if (trip.participants.length === 0) {
-    return <p className="muted">Пока никто не записался.</p>;
+    return <p className={styles.muted}>Пока никто не записался.</p>;
   }
 
   return (
-    <div className="participant-list">
+    <div className={styles.participantList}>
       {trip.participants.map((participant) => (
         <ParticipantRow participant={participant} key={participant.id} />
       ))}

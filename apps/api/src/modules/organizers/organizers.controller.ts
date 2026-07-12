@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { IsOptional, IsString } from "class-validator";
 
@@ -24,7 +24,7 @@ class CreateOrganizerDto {
 @ApiTags("organizers")
 @Controller("organizers")
 export class OrganizersController {
-  constructor(private readonly organizersService: OrganizersService) {}
+  constructor(@Inject(OrganizersService) private readonly organizersService: OrganizersService) {}
 
   @Get(":id")
   async get(@Param("id") id: string) {

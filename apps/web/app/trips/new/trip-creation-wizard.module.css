@@ -1,0 +1,381 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+  margin-top: 22px;
+}
+
+.main {
+  min-width: 0;
+}
+
+.panel {
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  padding: 30px;
+  overflow: visible;
+}
+
+.heading {
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  width: fit-content;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 16px;
+  padding: 0 12px;
+  color: var(--green-dark);
+  background: rgba(79, 104, 20, 0.1);
+  border: 1px solid rgba(79, 104, 20, 0.18);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.heading h1 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 43px);
+  font-weight: 560;
+}
+
+.heading p:last-child {
+  max-width: 600px;
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.participantLimitField {
+  grid-column: 1 / -1;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.participantLimitField label > span:first-child {
+  color: var(--text);
+  font-size: inherit;
+  font-weight: 700;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.formGrid.conditionsForm {
+  grid-template-columns: 1fr;
+}
+
+.span2 {
+  grid-column: 1 / -1;
+}
+
+.conditionField.conditionField {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.38fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+}
+
+.conditionField.conditionField > span {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.surfaceConditionField {
+  align-items: start;
+}
+
+.surfaceConditionField > span {
+  padding-top: 28px;
+}
+
+.conditionChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.surfaceComposition {
+  display: grid;
+  gap: 14px;
+}
+
+.surfaceFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.surfacePercentField {
+  position: relative;
+}
+
+.surfaceInput {
+  padding-right: 34px;
+}
+
+.surfacePercentField > span {
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  color: var(--muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.surfaceRangeWrap {
+  position: relative;
+  height: 24px;
+}
+
+.surfaceRangeTrack {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  left: 8px;
+  height: 8px;
+  overflow: hidden;
+  background: #d9dfd6;
+  border: 1px solid #95a08f;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.surfaceRangeTrack > span {
+  display: block;
+  height: 100%;
+  background: var(--green);
+}
+
+.surfaceRange.surfaceRange {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 24px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.surfaceRange.surfaceRange::-webkit-slider-runnable-track {
+  height: 8px;
+  background: transparent;
+  border: 0;
+}
+
+.surfaceRange.surfaceRange::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -4px;
+  appearance: none;
+  background: var(--green);
+  border: 0;
+  border-radius: 50%;
+}
+
+.surfaceRange.surfaceRange::-moz-range-track {
+  height: 8px;
+  background: transparent;
+  border: 0;
+}
+
+.surfaceRange.surfaceRange::-moz-range-progress {
+  height: 8px;
+  background: transparent;
+}
+
+.surfaceRange.surfaceRange::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--green);
+  border: 0;
+  border-radius: 50%;
+}
+
+.unpavedDetails {
+  grid-column: 2;
+  display: grid;
+  gap: 9px;
+}
+
+.unpavedDetails > span {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.unpavedDetails small {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.detailsToggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18px;
+  padding: 15px 0;
+  color: var(--green-dark);
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--dark-line);
+  border-bottom: 1px solid var(--dark-line);
+  font-weight: 750;
+}
+
+.detailsToggleLabel {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.coverPicker {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 22px;
+  padding: 0;
+  border: 0;
+}
+
+.coverPicker legend {
+  margin-bottom: 10px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.coverTemplates {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.coverTemplates button {
+  position: relative;
+  min-height: 92px;
+  overflow: hidden;
+  background-position: center;
+  background-size: cover;
+  border: 2px solid transparent;
+  border-radius: 14px;
+}
+
+.coverTemplates button.coverSelected {
+  border-color: var(--green-dark);
+  box-shadow: 0 0 0 3px rgba(79, 104, 20, 0.18);
+}
+
+.coverTemplates button span {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 24px;
+  height: 24px;
+  display: none;
+  place-items: center;
+  color: #fff;
+  background: var(--green-dark);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.coverTemplates button.coverSelected span {
+  display: grid;
+}
+
+.optionalFields {
+  margin-top: 18px;
+}
+
+.inlineError {
+  margin-top: 16px;
+  padding: 12px 14px;
+  color: #822f28;
+  background: #fff0ee;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 28px;
+}
+
+.preview {
+  position: sticky;
+  top: 24px;
+  padding-top: 94px;
+}
+
+.previewLabel {
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .preview {
+    position: static;
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 760px) {
+  .formGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .panel {
+    min-height: 520px;
+    padding: 22px 18px;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .actionButton {
+    width: 100%;
+  }
+
+  .coverTemplates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .conditionField.conditionField {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .surfaceConditionField > span {
+    padding-top: 0;
+  }
+
+  .unpavedDetails {
+    grid-column: 1;
+  }
+}

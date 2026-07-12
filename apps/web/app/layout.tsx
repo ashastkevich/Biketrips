@@ -20,7 +20,7 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ru">
-      <body className={`${fontVariables} typography-theme storybook-outdoor-theme`}>
+      <body className={`${fontVariables} typography-theme app-theme`}>
         {children}
       </body>
     </html>

@@ -1,0 +1,243 @@
+.hero {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  overflow: hidden;
+  color: var(--white);
+  background-image:
+    linear-gradient(90deg, rgba(5, 15, 11, 0.78) 0%, rgba(5, 15, 11, 0.58) 34%, rgba(5, 15, 11, 0.18) 67%, rgba(5, 15, 11, 0.08) 100%),
+    linear-gradient(180deg, rgba(5, 15, 11, 0.32) 0%, rgba(5, 15, 11, 0.04) 44%, rgba(5, 15, 11, 0.55) 100%),
+    url("/img/ridemate-hero-cycling-group.png");
+  background-position: center;
+  background-size: cover;
+}
+
+.hero::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 190px;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(180deg, rgba(4, 12, 9, 0.54), rgba(4, 12, 9, 0));
+}
+
+.hero.hero :is(h1, h2, h3) {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 680px;
+  padding: 34px 0 118px;
+}
+
+.lead {
+  max-width: 600px;
+  margin: 24px 0 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: clamp(18px, 2vw, 23px);
+  font-weight: 400;
+  line-height: 1.48;
+}
+
+.heroActions,
+.footerInner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.heroActions {
+  margin-top: 34px;
+}
+
+.section {
+  padding: 74px 0;
+}
+
+.searchSection {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 70px 0;
+}
+
+.howSection {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  padding: 84px 0;
+  color: var(--text);
+  background: var(--sand-200);
+  border-top: 1px solid var(--dark-line);
+  scroll-margin-top: 96px;
+}
+
+.howHead {
+  max-width: 760px;
+  margin-bottom: 34px;
+  padding-top: 10px;
+}
+
+.howHead h2 {
+  margin: 0;
+  font-size: clamp(32px, 4.6vw, 56px);
+  font-weight: 520;
+  line-height: 1.05;
+}
+
+.howHead p {
+  max-width: 620px;
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.step {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--dark-line);
+  border-radius: 18px;
+  box-shadow: 0 14px 38px rgba(18, 32, 24, 0.06);
+}
+
+.stepNumber {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+  color: #fff;
+  background: var(--green);
+  border-radius: 14px;
+  font-weight: 900;
+}
+
+.step h3 {
+  margin: 0 0 9px;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 560;
+}
+
+.step p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.52;
+}
+
+.footer {
+  padding: 34px 0;
+  color: rgba(255, 255, 255, 0.72);
+  background: #0b0f0d;
+}
+
+.footerInner {
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.footerBrand {
+  color: #fff;
+  font-family:
+    var(--font-unbounded),
+    var(--font-manrope),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-weight: 600;
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 14px 22px;
+  font-size: 14px;
+}
+
+.footerLinks a:hover {
+  color: #fff;
+}
+
+@media (max-width: 980px) {
+  .hero {
+    background-position: 62% center;
+  }
+
+  .heroContent {
+    padding-top: 52px;
+    padding-bottom: 118px;
+  }
+
+  .steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .hero {
+    background-position: 64% center;
+  }
+
+  .heroContent {
+    padding-top: 44px;
+    padding-bottom: 128px;
+  }
+
+  .lead {
+    font-size: 18px;
+  }
+
+  .heroActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .section {
+    padding: 54px 0;
+  }
+
+  .searchSection {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100svh;
+    align-items: flex-start;
+    padding: 54px 0;
+    overflow: visible;
+  }
+
+  .howSection {
+    min-height: 100vh;
+    min-height: 100svh;
+    align-items: flex-start;
+    padding: 54px 0;
+  }
+
+  .footerInner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .footerLinks {
+    justify-content: flex-start;
+  }
+}

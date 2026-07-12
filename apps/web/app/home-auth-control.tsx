@@ -4,6 +4,13 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { AuthOptions, type AuthProvider } from "./ui/auth-options";
+import authOptionStyles from "./ui/auth-options.module.css";
+import componentStyles from "./ui/components.module.css";
+import styles from "./home-auth-control.module.css";
+
+function classes(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(" ");
+}
 
 interface ProfileMenuProps {
   tone?: "light" | "dark";
@@ -48,9 +55,9 @@ export function ProfileMenu({ tone = "light" }: ProfileMenuProps) {
   }
 
   return (
-    <div className={`profile-menu profile-menu--${tone}`} ref={profileMenuRef}>
+    <div className={styles.profileMenu} ref={profileMenuRef}>
       <button
-        className="profile-menu__trigger"
+        className={classes(styles.profileTrigger, tone === "dark" && styles.profileTriggerDark)}
         type="button"
         aria-label="Открыть меню профиля"
         aria-haspopup="menu"
@@ -63,7 +70,7 @@ export function ProfileMenu({ tone = "light" }: ProfileMenuProps) {
         </svg>
       </button>
       {showProfileMenu ? (
-        <div className="profile-menu__dropdown" role="menu">
+        <div className={styles.dropdown} role="menu">
           <Link href="/profile" role="menuitem" onClick={() => setShowProfileMenu(false)}>
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <circle cx="12" cy="8" r="3.25" stroke="currentColor" strokeWidth="2" />
@@ -118,12 +125,19 @@ export function HomeAuthControl({
 
   return (
     <>
-      <button className="create-button" type="button" onClick={() => setShowAuth(true)}>
+      <button
+        className={classes(
+          styles.loginButton,
+          tone === "dark" ? styles.loginButtonDark : styles.loginButtonLight,
+        )}
+        type="button"
+        onClick={() => setShowAuth(true)}
+      >
         <span>Войти</span>
       </button>
       {showAuth ? (
         <div
-          className="ui-dialog-backdrop auth-options-backdrop"
+          className={`${componentStyles.dialogBackdrop} ${authOptionStyles.backdrop}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby="auth-options-title"

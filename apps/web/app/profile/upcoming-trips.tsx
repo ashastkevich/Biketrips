@@ -9,6 +9,11 @@ import { difficultyLabels, formatShortDate, tripStatusLabels } from "../lib/labe
 import { Badge } from "../ui/components";
 import { TripDetailsModal } from "../ui/trip-details-modal";
 import { useTripModal } from "../ui/use-trip-modal";
+import styles from "./profile.module.css";
+
+function classes(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(" ");
+}
 
 interface UpcomingTripsProps {
   trips: TripDetail[];
@@ -51,13 +56,13 @@ export function UpcomingTrips({
 
   return (
     <>
-      <div className="profile-trip-list">
+      <div className={styles.tripList}>
         {trips.length === 0 ? (
-          <p className="profile-trip-list__empty">{emptyMessage}</p>
+          <p className={styles.tripListEmpty}>{emptyMessage}</p>
         ) : (
           <>
             {variant === "created" ? (
-              <div className="profile-trip-table__header" aria-hidden="true">
+              <div className={styles.tripTableHeader} aria-hidden="true">
                 <span>Поездка</span>
                 <span>Город</span>
                 <span>Места</span>
@@ -66,20 +71,23 @@ export function UpcomingTrips({
             ) : null}
             {trips.map((trip) => {
           const coverImage = getTripCardProps(trip).coverImage;
+          const coverBackground = coverImage
+            ? `url("${coverImage}")`
+            : "linear-gradient(135deg, #53613c, #273525)";
 
           return (
             <Link
-              className={`profile-trip${variant === "created" ? " profile-trip--created" : ""}`}
+              className={classes(styles.trip, variant === "created" && styles.tripCreated)}
               href={`/trips/${trip.slug}`}
               key={trip.id}
               onClick={(event) => handleTripClick(event, trip)}
             >
               <div
-                className="profile-trip__cover"
-                style={{ backgroundImage: `url("${coverImage}")` }}
+                className={styles.tripCover}
+                style={{ backgroundImage: coverBackground }}
                 aria-hidden="true"
               />
-              <div className="profile-trip__copy">
+              <div className={styles.tripCopy}>
                 <p>{formatShortDate(trip.startDateTime)}</p>
                 <h3>{trip.title}</h3>
                 {variant === "upcoming" ? (
@@ -91,18 +99,18 @@ export function UpcomingTrips({
               </div>
               {variant === "created" ? (
                 <>
-                  <span className="profile-trip__city" data-label="Город">{trip.city}</span>
-                  <span className="profile-trip__capacity" data-label="Места">
+                  <span className={styles.tripCity} data-label="Город">{trip.city}</span>
+                  <span className={styles.tripCapacity} data-label="Места">
                     {trip.capacity === null
                       ? "Без лимита"
                       : `${trip.confirmedParticipants}/${trip.capacity}`}
                   </span>
-                  <Badge tone={trip.status === "published" ? "success" : trip.status === "cancelled" ? "danger" : "neutral"}>
+                  <Badge className={styles.tripBadge} tone={trip.status === "published" ? "success" : trip.status === "cancelled" ? "danger" : "neutral"}>
                     {tripStatusLabels[trip.status]}
                   </Badge>
                 </>
               ) : (
-                <Badge tone={trip.difficulty === "easy" ? "success" : "warning"}>
+                <Badge className={styles.tripBadge} tone={trip.difficulty === "easy" ? "success" : "warning"}>
                   {difficultyLabels[trip.difficulty]}
                 </Badge>
               )}

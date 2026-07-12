@@ -1,0 +1,47 @@
+.canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.canvas :global(.maplibregl-canvas) {
+  cursor: crosshair;
+}
+
+.marker {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  background: var(--green-dark);
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  box-shadow: 0 14px 28px rgba(18, 32, 24, 0.24);
+  transform: rotate(-45deg);
+}
+
+.marker::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+}
+
+.state {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.stateError {
+  min-height: 0;
+  color: #7c3328;
+  background: #fff4f0;
+  border: 1px solid #edc8bd;
+  border-radius: 12px;
+}

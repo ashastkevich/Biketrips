@@ -1,0 +1,145 @@
+.options {
+  position: relative;
+  width: min(440px, calc(100vw - 32px));
+  padding: 32px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--dark-line);
+  border-radius: 28px;
+  box-shadow: 0 24px 64px rgba(18, 32, 24, 0.12);
+}
+
+.backdrop {
+}
+
+.header {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 620;
+  line-height: 1.15;
+}
+
+.header > p:last-child {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+}
+
+.option {
+  position: relative;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 0 16px;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--dark-line);
+  border-radius: 14px;
+  font-weight: 720;
+  text-align: left;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.option:hover {
+  border-color: rgba(79, 104, 20, 0.5);
+  box-shadow: 0 8px 20px rgba(18, 32, 24, 0.08);
+  transform: translateY(-1px);
+}
+
+.option:active {
+  transform: translateY(0);
+}
+
+.icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.icon svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.telegram .icon {
+  color: #fff;
+  background: #229ed9;
+}
+
+.vk .icon {
+  color: #fff;
+  background: #0077ff;
+}
+
+.yandex .icon {
+  color: #fff;
+  background: #fc3f1d;
+}
+
+.badge {
+  padding: 4px 7px;
+  color: var(--green-dark);
+  background: rgba(79, 104, 20, 0.1);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.legal {
+  margin: 18px 12px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .backdrop {
+    padding: 0;
+  }
+
+  .options {
+    width: 100vw;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: grid;
+    align-content: center;
+    padding: 32px 18px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .header h2 {
+    font-size: clamp(21px, 7vw, 24px);
+  }
+
+  .option {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .badge {
+    display: none;
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "../../../ui/components";
+import tripDetailsStyles from "../../../ui/trip-details.module.css";
 
 interface SavedTripConfirmationProps {
   changes: string[];
@@ -22,9 +23,9 @@ export function SavedTripConfirmation({
   const destination = `${returnPath}?${destinationQuery.toString()}`;
 
   return (
-    <div className="trip-cancel-confirm-backdrop">
+    <div className={tripDetailsStyles.confirmBackdrop}>
       <section
-        className="trip-cancel-confirm"
+        className={tripDetailsStyles.confirm}
         role="dialog"
         aria-modal="true"
         aria-labelledby="trip-edit-saved-title"
@@ -41,7 +42,7 @@ export function SavedTripConfirmation({
         ) : (
           <p>Новых значений в полях не обнаружено.</p>
         )}
-        <div className="trip-cancel-confirm__actions trip-cancel-confirm__actions--center">
+        <div className={`${tripDetailsStyles.confirmActions} ${tripDetailsStyles.confirmActionsCenter}`}>
           <Button
             onClick={() => {
               window.location.assign(destination);

@@ -7,6 +7,7 @@ import { storyTrips } from "./ui/story-fixtures";
 import { getTripCardProps } from "./lib/components";
 import { RouteFilterBar, TripCard } from "./ui/components";
 import type { RouteFilterValue } from "./ui/components";
+import styles from "./find-trip-section.module.css";
 
 const meta = {
   title: "Design System/Patterns/Найти поездку",
@@ -65,8 +66,8 @@ function FindTripPattern() {
   );
 
   return (
-    <main className="find-trip-pattern">
-      <header className="find-trip-pattern__header">
+    <main className={styles.pattern}>
+      <header className={styles.header}>
         <div>
           <h1>Найдите подходящую поездку</h1>
           <p>Настройте маршрут, сложность и покрытие — карточки обновятся сразу.</p>
@@ -77,13 +78,13 @@ function FindTripPattern() {
       <RouteFilterBar value={filters} onChange={setFilters} />
 
       {filteredTrips.length > 0 ? (
-        <section className="results" aria-label="Найденные поездки">
+        <section className={styles.results} aria-label="Найденные поездки">
           {filteredTrips.map((trip) => (
             <TripCard {...getTripCardProps(trip)} key={trip.id} />
           ))}
         </section>
       ) : (
-        <section className="find-trip-pattern__empty">
+        <section className={styles.empty}>
           <h2>Подходящих поездок нет</h2>
           <p>Попробуйте расширить диапазон или выбрать другие параметры.</p>
         </section>

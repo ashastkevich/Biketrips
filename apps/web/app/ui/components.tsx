@@ -27,6 +27,9 @@ import {
   participantStatusLabels,
   tripStatusLabels,
 } from "../lib/labels";
+import filterStyles from "./route-filters.module.css";
+import styles from "./components.module.css";
+import tripCardStyles from "./trip-card.module.css";
 
 function classes(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
@@ -34,6 +37,17 @@ function classes(...values: Array<string | false | null | undefined>) {
 
 type ButtonTone = "primary" | "secondary" | "ghost" | "danger";
 type ButtonSize = "small" | "medium" | "large";
+const buttonToneClasses: Record<ButtonTone, string | undefined> = {
+  primary: styles.buttonPrimary,
+  secondary: styles.buttonSecondary,
+  ghost: styles.buttonGhost,
+  danger: styles.buttonDanger,
+};
+const buttonSizeClasses: Record<ButtonSize, string | undefined> = {
+  small: styles.buttonSmall,
+  medium: styles.buttonMedium,
+  large: styles.buttonLarge,
+};
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   tone?: ButtonTone;
@@ -52,13 +66,13 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={classes("ui-button", `ui-button--${tone}`, `ui-button--${size}`, className)}
+      className={classes(styles.button, buttonToneClasses[tone], buttonSizeClasses[size], className)}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       {...props}
     >
-      {loading ? <span className="ui-spinner" aria-hidden="true" /> : null}
-      <span className="ui-button__label">{children}</span>
+      {loading ? <span className={styles.spinner} aria-hidden="true" /> : null}
+      <span className={styles.buttonLabel} data-button-label>{children}</span>
     </button>
   );
 }
@@ -78,10 +92,10 @@ export function LinkButton({
 }) {
   return (
     <Link
-      className={classes("ui-button", `ui-button--${tone}`, `ui-button--${size}`, className)}
+      className={classes(styles.button, buttonToneClasses[tone], buttonSizeClasses[size], className)}
       href={href}
     >
-      <span className="ui-button__label">{children}</span>
+      <span className={styles.buttonLabel} data-button-label>{children}</span>
     </Link>
   );
 }
@@ -99,7 +113,11 @@ export function IconButton({
 }) {
   return (
     <button
-      className={classes("ui-icon-button", `ui-icon-button--${tone}`, className)}
+      className={classes(
+        styles.iconButton,
+        tone === "dark" && styles.iconButtonDark,
+        className,
+      )}
       type="button"
       aria-label={label}
       {...props}
@@ -120,7 +138,7 @@ export function CloseButton({
   return (
     <IconButton label={label} tone={tone} {...props}>
       <svg
-        className="ui-close-button__icon"
+        className={styles.closeButtonIcon}
         viewBox="0 0 24 24"
         aria-hidden="true"
       >
@@ -131,19 +149,29 @@ export function CloseButton({
 }
 
 type BadgeTone = "neutral" | "brand" | "success" | "warning" | "danger" | "info";
+const badgeToneClasses: Record<BadgeTone, string | undefined> = {
+  neutral: undefined,
+  brand: styles.badgeBrand,
+  success: styles.badgeSuccess,
+  warning: styles.badgeWarning,
+  danger: styles.badgeDanger,
+  info: styles.badgeInfo,
+};
 
 export function Badge({
   children,
   tone = "neutral",
   dot = false,
+  className,
 }: {
   children: ReactNode;
   tone?: BadgeTone;
   dot?: boolean;
+  className?: string;
 }) {
   return (
-    <span className={classes("ui-badge", `ui-badge--${tone}`)}>
-      {dot ? <span className="ui-badge__dot" aria-hidden="true" /> : null}
+    <span className={classes(styles.badge, badgeToneClasses[tone], className)}>
+      {dot ? <span className={styles.badgeDot} aria-hidden="true" /> : null}
       {children}
     </span>
   );
@@ -160,7 +188,7 @@ export function Chip({
 }) {
   return (
     <button
-      className={classes("ui-chip", selected && "is-selected")}
+      className={classes(styles.chip, selected && styles.selected)}
       type="button"
       aria-pressed={selected}
       onClick={onClick}
@@ -238,7 +266,7 @@ export function RouteFilterBar({
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
       const trigger =
-        target instanceof Element ? target.closest(".route-filter-trigger") : null;
+        target instanceof Element ? target.closest(`.${filterStyles.trigger}`) : null;
       const clickedTrigger =
         trigger !== null && filterTriggersRef.current?.contains(trigger);
       const clickedPopover = filterPopoverRef.current?.contains(target);
@@ -280,9 +308,9 @@ export function RouteFilterBar({
   }
 
   return (
-    <div className="route-filter-bar">
+    <div className={filterStyles.bar}>
       <div
-        className="route-filter-bar__triggers"
+        className={filterStyles.triggers}
         aria-label="Фильтры маршрутов"
         ref={filterTriggersRef}
       >
@@ -313,23 +341,23 @@ export function RouteFilterBar({
 
       {openFilter ? (
         <section
-          className="route-filter-popover"
+          className={filterStyles.popover}
           aria-label="Настройка фильтра"
           ref={filterPopoverRef}
         >
           {openFilter === "measure" ? (
             <>
-              <div className="route-filter-popover__heading">
+              <div className={filterStyles.popoverHeading}>
                 <div>
                   <strong>{value.measure === "distance" ? "Дистанция" : "Время"}</strong>
                 </div>
-                <strong className="route-filter-popover__value">
+                <strong className={filterStyles.popoverValue}>
                   {value.measure === "distance"
                     ? `${value.distanceFromKm}–${value.distanceToKm} км`
                     : `${value.durationFromHours}–${value.durationToHours} ч`}
                 </strong>
               </div>
-              <div className="route-filter-segmented" role="group" aria-label="Единица маршрута">
+              <div className={filterStyles.segmented} role="group" aria-label="Единица маршрута">
                 <button
                   type="button"
                   aria-pressed={value.measure === "distance"}
@@ -346,13 +374,13 @@ export function RouteFilterBar({
                 </button>
               </div>
               <div
-                className="route-filter-dual-range"
+                className={filterStyles.dualRange}
                 style={{
                   "--range-from": `${fromPercentage}%`,
                   "--range-to": `${toPercentage}%`,
                 } as CSSProperties}
               >
-                <span className="route-filter-dual-range__track" aria-hidden="true" />
+                <span className={filterStyles.dualRangeTrack} aria-hidden="true" />
                 <input
                   type="range"
                   min={measureMin}
@@ -384,8 +412,8 @@ export function RouteFilterBar({
                   }}
                 />
               </div>
-              <div className="route-filter-manual">
-                <span className="route-filter-manual__control">
+              <div className={filterStyles.manual}>
+                <span className={filterStyles.manualControl}>
                   <input
                     type="number"
                     min={measureMin}
@@ -402,8 +430,8 @@ export function RouteFilterBar({
                   />
                   <span>{value.measure === "distance" ? "км" : "ч"}</span>
                 </span>
-                <span className="route-filter-manual__dash" aria-hidden="true">—</span>
-                <span className="route-filter-manual__control">
+                <span className={filterStyles.manualDash} aria-hidden="true">—</span>
+                <span className={filterStyles.manualControl}>
                   <input
                     type="number"
                     min={value.measure === "distance" ? value.distanceFromKm : value.durationFromHours}
@@ -426,17 +454,23 @@ export function RouteFilterBar({
 
           {openFilter === "difficulty" ? (
             <>
-              <strong className="route-filter-popover__title">Сложность маршрута</strong>
-              <div className="route-difficulty-options">
+              <strong className={filterStyles.popoverTitle}>Сложность маршрута</strong>
+              <div className={filterStyles.difficultyOptions}>
                 {difficultyOptions.map((option) => (
-                  <label className="route-difficulty-option" key={option.value}>
+                  <label className={filterStyles.difficultyOption} key={option.value}>
                     <span
-                      className={`route-difficulty-option__level is-${option.value}`}
+                      className={classes(
+                        filterStyles.difficultyLevel,
+                        option.value === "beginner" && filterStyles.difficultyLevelBeginner,
+                        option.value === "medium" && filterStyles.difficultyLevelMedium,
+                        option.value === "hard" && filterStyles.difficultyLevelHard,
+                        option.value === "sport" && filterStyles.difficultyLevelSport,
+                      )}
                       aria-hidden="true"
                     />
-                    <span className="route-difficulty-option__copy">
-                      <span className="route-difficulty-option__label">{option.label}</span>
-                      <span className="route-difficulty-option__description">
+                    <span>
+                      <span className={filterStyles.difficultyLabel}>{option.label}</span>
+                      <span className={filterStyles.difficultyDescription}>
                         {option.description}
                       </span>
                     </span>
@@ -453,10 +487,13 @@ export function RouteFilterBar({
           ) : null}
 
           {openFilter === "surface" ? (
-            <div className="route-filter-options route-filter-options--surface">
+            <div className={`${filterStyles.options} ${filterStyles.surfaceOptions}`}>
               {surfaceOptions.map((option) => (
                 <button
-                  className={classes("route-filter-option", value.surface === option.value && "is-selected")}
+                  className={classes(
+                    filterStyles.option,
+                    value.surface === option.value && filterStyles.optionSelected,
+                  )}
                   type="button"
                   aria-pressed={value.surface === option.value}
                   onClick={() => onChange({ ...value, surface: option.value })}
@@ -466,15 +503,15 @@ export function RouteFilterBar({
                     <strong>{option.label}</strong>
                     <small>{option.description}</small>
                   </span>
-                  <span className="route-filter-option__check">✓</span>
+                  <span className={filterStyles.optionCheck}>✓</span>
                 </button>
               ))}
             </div>
           ) : null}
 
-          <div className="route-filter-popover__footer">
+          <div className={filterStyles.popoverFooter}>
             <button
-              className="route-filter-reset"
+              className={filterStyles.reset}
               type="button"
               disabled={
                 openFilter === "measure"
@@ -532,21 +569,21 @@ function FilterTrigger({
   return (
     <button
       className={classes(
-        "route-filter-trigger",
-        (active || summary) && "is-active",
-        filtered && "is-filtered",
+        filterStyles.trigger,
+        (active || summary) && filterStyles.triggerActive,
+        filtered && filterStyles.triggerFiltered,
       )}
       type="button"
       aria-expanded={active}
       onClick={onClick}
     >
       {label === "Сложность маршрута" ? (
-        <svg className="route-filter-trigger__icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <svg className={filterStyles.triggerIcon} viewBox="0 0 20 20" fill="none" aria-hidden="true">
           <path d="M2.5 14.87V17.5M10 8.95V17.5M6.25 12.24V17.5M13.75 5.66V17.5M17.5 2.5V17.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       ) : null}
       {label === "Покрытие" ? (
-        <svg className="route-filter-trigger__icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <svg className={filterStyles.triggerIcon} viewBox="0 0 20 20" fill="none" aria-hidden="true">
           <path
             d="M2.5 5.25C4.4 4.1 6.1 4.1 8 5.25C9.9 6.4 11.6 6.4 13.5 5.25C15.1 4.3 16.3 4.2 17.5 4.7M2.5 10C4.4 8.85 6.1 8.85 8 10C9.9 11.15 11.6 11.15 13.5 10C15.1 9.05 16.3 8.95 17.5 9.45M2.5 14.75C4.4 13.6 6.1 13.6 8 14.75C9.9 15.9 11.6 15.9 13.5 14.75C15.1 13.8 16.3 13.7 17.5 14.2"
             stroke="currentColor"
@@ -556,16 +593,16 @@ function FilterTrigger({
         </svg>
       ) : null}
       {label === "Дистанция / время" ? (
-        <svg className="route-filter-trigger__icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <svg className={filterStyles.triggerIcon} viewBox="0 0 20 20" fill="none" aria-hidden="true">
           <circle cx="10" cy="10" r="7.25" stroke="currentColor" strokeWidth="1.5" />
           <path d="M10 5.75V10L13 11.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ) : null}
-      <span className="route-filter-trigger__copy"><strong>{label}</strong>{summary ? <small>{summary}</small> : null}</span>
+      <span className={filterStyles.triggerCopy}><strong>{label}</strong>{summary ? <small>{summary}</small> : null}</span>
       {label !== "Сложность маршрута" && label !== "Покрытие" && label !== "Дистанция / время" ? (
-        <span className="route-filter-trigger__chevron" aria-hidden="true">⌄</span>
+        <span className={filterStyles.triggerChevron} aria-hidden="true">⌄</span>
       ) : null}
-      {filtered ? <span className="route-filter-trigger__badge" aria-label="Фильтр применён">1</span> : null}
+      {filtered ? <span className={filterStyles.triggerBadge} aria-label="Фильтр применён">1</span> : null}
     </button>
   );
 }
@@ -579,7 +616,14 @@ export function Card({
   className?: string;
   padding?: "none" | "small" | "medium" | "large";
 }) {
-  return <div className={classes("ui-card", `ui-card--${padding}`, className)}>{children}</div>;
+  const paddingClass = {
+    none: styles.cardNone,
+    small: styles.cardSmall,
+    medium: styles.cardMedium,
+    large: styles.cardLarge,
+  }[padding];
+
+  return <div className={classes(styles.card, paddingClass, className)}>{children}</div>;
 }
 
 export function FormField({
@@ -598,21 +642,21 @@ export function FormField({
   className?: string;
 }) {
   return (
-    <label className={classes("ui-field", error && "has-error", className)}>
-      <span className="ui-field__label">
+    <label className={classes(styles.field, error && styles.fieldHasError, className)}>
+      <span className={styles.fieldLabel}>
         {label}
         {required ? <span aria-hidden="true"> *</span> : null}
       </span>
       {children}
-      {error ? <span className="ui-field__error">{error}</span> : null}
-      {!error && hint ? <span className="ui-field__hint">{hint}</span> : null}
+      {error ? <span className={styles.fieldError}>{error}</span> : null}
+      {!error && hint ? <span className={styles.fieldHint}>{hint}</span> : null}
     </label>
   );
 }
 
 export function BackLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <Link className="ui-back-link" href={href}>
+    <Link className={styles.backLink} href={href}>
       <span aria-hidden="true">←</span>
       {children}
     </Link>
@@ -620,11 +664,11 @@ export function BackLink({ href, children }: { href: string; children: ReactNode
 }
 
 export function TextField({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={classes("ui-input", className)} {...props} />;
+  return <input className={classes(styles.input, className)} {...props} />;
 }
 
 export function TextareaField({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={classes("ui-input", "ui-textarea", className)} {...props} />;
+  return <textarea className={classes(styles.input, styles.textarea, className)} {...props} />;
 }
 
 export function SelectField({
@@ -633,7 +677,7 @@ export function SelectField({
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={classes("ui-input", "ui-select", className)} {...props}>
+    <select className={classes(styles.input, styles.select, className)} {...props}>
       {children}
     </select>
   );
@@ -672,10 +716,10 @@ export function DifficultySelect({
   }, [open]);
 
   return (
-    <div className="ui-difficulty-select" ref={rootRef}>
+    <div className={styles.difficultySelect} ref={rootRef}>
       {name ? <input name={name} type="hidden" value={value} /> : null}
       <button
-        className="ui-difficulty-select__trigger"
+        className={styles.difficultySelectTrigger}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -683,18 +727,27 @@ export function DifficultySelect({
         aria-label={`Сложность маршрута: ${difficultyLabels[value]}`}
         onClick={() => setOpen((current) => !current)}
       >
-        <span className={`ui-difficulty-select__marker is-${value}`} aria-hidden="true" />
-        <span className="ui-difficulty-select__trigger-copy">
+        <span
+          className={classes(
+            styles.difficultySelectMarker,
+            value === "beginner" && styles.difficultySelectMarkerBeginner,
+            value === "medium" && styles.difficultySelectMarkerMedium,
+            value === "hard" && styles.difficultySelectMarkerHard,
+            value === "sport" && styles.difficultySelectMarkerSport,
+          )}
+          aria-hidden="true"
+        />
+        <span className={styles.difficultySelectTriggerCopy}>
           <strong>{difficultyLabels[value]}</strong>
           <span>{difficultyDescriptions[value]}</span>
         </span>
-        <span className="ui-difficulty-select__chevron" aria-hidden="true">
+        <span className={styles.difficultySelectChevron} aria-hidden="true">
           ⌄
         </span>
       </button>
       {open ? (
         <div
-          className="ui-difficulty-select__menu"
+          className={styles.difficultySelectMenu}
           id={listboxId}
           role="listbox"
           aria-label="Сложность маршрута"
@@ -702,8 +755,8 @@ export function DifficultySelect({
           {options.map(([option, label]) => (
             <button
               className={classes(
-                "ui-difficulty-select__option",
-                option === value && "is-selected",
+                styles.difficultySelectOption,
+                option === value && styles.difficultySelectOptionSelected,
               )}
               key={option}
               type="button"
@@ -714,12 +767,21 @@ export function DifficultySelect({
                 setOpen(false);
               }}
             >
-              <span className={`ui-difficulty-select__marker is-${option}`} aria-hidden="true" />
-              <span className="ui-difficulty-select__option-copy">
+              <span
+                className={classes(
+                  styles.difficultySelectMarker,
+                  option === "beginner" && styles.difficultySelectMarkerBeginner,
+                  option === "medium" && styles.difficultySelectMarkerMedium,
+                  option === "hard" && styles.difficultySelectMarkerHard,
+                  option === "sport" && styles.difficultySelectMarkerSport,
+                )}
+                aria-hidden="true"
+              />
+              <span className={styles.difficultySelectOptionCopy}>
                 <strong>{label}</strong>
                 <span>{difficultyDescriptions[option]}</span>
               </span>
-              <span className="ui-difficulty-select__check" aria-hidden="true">
+              <span className={styles.difficultySelectCheck} aria-hidden="true">
                 {option === value ? "✓" : ""}
               </span>
             </button>
@@ -740,15 +802,15 @@ export function Switch({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="ui-switch">
-      <span className="ui-switch__label">{label}</span>
+    <label className={styles.switch}>
+      <span className={styles.switchLabel}>{label}</span>
       <input
         type="checkbox"
         role="switch"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
       />
-      <span className="ui-switch__track" aria-hidden="true" />
+      <span className={styles.switchTrack} aria-hidden="true" />
     </label>
   );
 }
@@ -767,7 +829,7 @@ export function FileField({
   inputRef?: RefObject<HTMLInputElement | null>;
 }) {
   return (
-    <label className={classes("ui-file-field", selected && "is-selected", className)}>
+    <label className={classes(styles.fileField, selected && styles.fileFieldSelected, className)}>
       <input ref={inputRef} type="file" {...props} />
       <span>{label}</span>
       <small>{hint}</small>
@@ -785,8 +847,16 @@ export function Alert({
   tone?: "info" | "success" | "warning" | "danger";
 }) {
   return (
-    <div className={classes("ui-alert", `ui-alert--${tone}`)} role={tone === "danger" ? "alert" : "status"}>
-      <span className="ui-alert__icon" aria-hidden="true">
+    <div
+      className={classes(
+        styles.alert,
+        tone === "success" && styles.alertSuccess,
+        tone === "warning" && styles.alertWarning,
+        tone === "danger" && styles.alertDanger,
+      )}
+      role={tone === "danger" ? "alert" : "status"}
+    >
+      <span className={styles.alertIcon} aria-hidden="true">
         {tone === "success" ? "✓" : tone === "warning" || tone === "danger" ? "!" : "i"}
       </span>
       <div>
@@ -798,7 +868,7 @@ export function Alert({
 }
 
 export function Skeleton({ width = "100%", height = 16 }: { width?: string; height?: number }) {
-  return <span className="ui-skeleton" style={{ width, height }} aria-hidden="true" />;
+  return <span className={styles.skeleton} style={{ width, height }} aria-hidden="true" />;
 }
 
 export interface StepperStep {
@@ -836,9 +906,9 @@ export function Stepper({
   };
 
   return (
-    <div className={classes("ui-stepper", className)}>
+    <div className={classes(styles.stepper, className)}>
       <ol
-        className="ui-stepper__list"
+        className={styles.stepperList}
         aria-label="Шаги создания поездки"
         style={{ "--stepper-columns": steps.length } as CSSProperties}
       >
@@ -848,13 +918,13 @@ export function Stepper({
           const canNavigate = isCompleted && Boolean(onStepChange);
           const content = (
             <>
-              <span className="ui-stepper__marker" aria-hidden="true">
+              <span className={styles.stepperMarker} aria-hidden="true">
                 {isCompleted ? "✓" : index + 1}
               </span>
-              <span className="ui-stepper__copy">
-                <span className="ui-stepper__label">{step.label}</span>
+              <span className={styles.stepperCopy}>
+                <span className={styles.stepperLabel}>{step.label}</span>
                 {step.description ? (
-                  <span className="ui-stepper__description">{step.description}</span>
+                  <span className={styles.stepperDescription}>{step.description}</span>
                 ) : null}
               </span>
             </>
@@ -863,15 +933,15 @@ export function Stepper({
           return (
             <li
               className={classes(
-                "ui-stepper__step",
-                isCurrent && "is-current",
-                isCompleted && "is-completed",
+                styles.stepperStep,
+                isCurrent && styles.stepperStepCurrent,
+                isCompleted && styles.stepperStepCompleted,
               )}
               key={step.id}
             >
               {canNavigate ? (
                 <button
-                  className="ui-stepper__control"
+                  className={styles.stepperControl}
                   type="button"
                   onClick={() => onStepChange?.(step.id)}
                   aria-label={`Вернуться к шагу «${step.label}»`}
@@ -879,7 +949,7 @@ export function Stepper({
                   {content}
                 </button>
               ) : (
-                <div className="ui-stepper__control" aria-current={isCurrent ? "step" : undefined}>
+                <div className={styles.stepperControl} aria-current={isCurrent ? "step" : undefined}>
                   {content}
                 </div>
               )}
@@ -888,11 +958,15 @@ export function Stepper({
         })}
       </ol>
       <div
-        className={classes("ui-stepper__save", `ui-stepper__save--${saveStatus}`)}
+        className={classes(
+          styles.stepperSave,
+          saveStatus === "saving" && styles.stepperSaveSaving,
+          saveStatus === "error" && styles.stepperSaveError,
+        )}
         role="status"
         aria-live="polite"
       >
-        <span className="ui-stepper__save-icon" aria-hidden="true">
+        <span className={styles.stepperSaveIcon} aria-hidden="true">
           {saveStatus === "saving" ? "" : saveStatus === "error" ? "!" : saveStatus === "saved" ? "✓" : "●"}
         </span>
         {saveCopy[saveStatus]}
@@ -911,11 +985,11 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="ui-empty-state">
-      <span className="ui-empty-state__icon" aria-hidden="true">↗</span>
+    <div className={styles.emptyState}>
+      <span className={styles.emptyStateIcon} aria-hidden="true">↗</span>
       <h3>{title}</h3>
       <p>{children}</p>
-      {action ? <div className="ui-empty-state__action">{action}</div> : null}
+      {action ? <div className={styles.emptyStateAction}>{action}</div> : null}
     </div>
   );
 }
@@ -936,16 +1010,16 @@ export function Dialog({
   if (!open) return null;
 
   return (
-    <div className="ui-dialog-backdrop" role="presentation" onMouseDown={onClose}>
+    <div className={styles.dialogBackdrop} role="presentation" onMouseDown={onClose}>
       <section
-        className="ui-dialog"
+        className={styles.dialog}
         role="dialog"
         aria-modal="true"
         aria-labelledby="ui-dialog-title"
         aria-describedby={description ? "ui-dialog-description" : undefined}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <CloseButton className="ui-dialog__close" onClick={onClose} />
+        <CloseButton className={styles.dialogClose} onClick={onClose} />
         <h2 id="ui-dialog-title">{title}</h2>
         {description ? <p id="ui-dialog-description">{description}</p> : null}
         {children}
@@ -968,16 +1042,20 @@ export function BottomSheet({
   if (!open) return null;
 
   return (
-    <div className="ui-dialog-backdrop ui-bottom-sheet-backdrop" role="presentation" onMouseDown={onClose}>
+    <div
+      className={`${styles.dialogBackdrop} ${styles.bottomSheetBackdrop}`}
+      role="presentation"
+      onMouseDown={onClose}
+    >
       <section
-        className="ui-bottom-sheet"
+        className={styles.bottomSheet}
         role="dialog"
         aria-modal="true"
         aria-labelledby="ui-bottom-sheet-title"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <span className="ui-bottom-sheet__handle" aria-hidden="true" />
-        <div className="ui-bottom-sheet__heading">
+        <span className={styles.bottomSheetHandle} aria-hidden="true" />
+        <div className={styles.bottomSheetHeading}>
           <h2 id="ui-bottom-sheet-title">{title}</h2>
           <button type="button" onClick={onClose}>Закрыть</button>
         </div>
@@ -1050,7 +1128,7 @@ export function TripCard({
 
   return (
     <article
-      className={classes("trip-card", onOpen && "trip-card--interactive")}
+      className={classes(tripCardStyles.card, onOpen && tripCardStyles.interactive)}
       role={onOpen ? "button" : undefined}
       tabIndex={onOpen ? 0 : undefined}
       aria-label={onOpen ? `Открыть поездку «${title}»` : undefined}
@@ -1063,7 +1141,7 @@ export function TripCard({
       } : undefined}
     >
       <div
-        className="trip-card__cover"
+        className={tripCardStyles.cover}
         style={{
           backgroundImage: coverImage
             ? `linear-gradient(180deg, transparent, rgba(5, 18, 11, 0.52)), url("${coverImage}")`
@@ -1072,16 +1150,16 @@ export function TripCard({
       >
         <span>{distanceKm || "—"} км</span>
       </div>
-      <div className="trip-card__body">
-        <p className="trip-card__date">
+      <div className={tripCardStyles.body}>
+        <p className={tripCardStyles.date}>
           {date || "Выберите дату"} · {time || "—:—"}
         </p>
         <h2>{titleContent}</h2>
         <p>{startLocationName || "Укажите место старта"}</p>
-        <div className="trip-card__tags">
+        <div className={tripCardStyles.tags}>
           <DifficultyBadge difficulty={difficulty} />
-          <span>{averageSpeed || "—"} км/ч</span>
-          {maxParticipants ? <span>{maxParticipants} мест</span> : null}
+          <span className={tripCardStyles.tagText}>{averageSpeed || "—"} км/ч</span>
+          {maxParticipants ? <span className={tripCardStyles.tagText}>{maxParticipants} мест</span> : null}
         </div>
       </div>
     </article>
@@ -1090,7 +1168,7 @@ export function TripCard({
 
 export function TripMeta({ trip }: { trip: Pick<TripSummary, "startDateTime" | "city" | "distanceKm"> }) {
   return (
-    <div className="trip-meta">
+    <div className={styles.tripMeta}>
       <span><span aria-hidden="true">◷</span>{formatDateTime(trip.startDateTime)}</span>
       <span><span aria-hidden="true">⌖</span>{trip.city}</span>
       <span><span aria-hidden="true">↔</span>{trip.distanceKm} км</span>
@@ -1110,12 +1188,12 @@ export function CapacityIndicator({
   const percentage = Math.min((confirmed / capacity) * 100, 100);
 
   return (
-    <div className={classes("capacity", full && "is-full")}>
-      <div className="capacity__copy">
+    <div className={classes(styles.capacity, full && styles.capacityFull)}>
+      <div className={styles.capacityCopy}>
         <strong>{full ? "Лист ожидания" : `${placesLeft} ${placesLeft === 1 ? "место" : "мест"} свободно`}</strong>
         <span>{confirmed} из {capacity}</span>
       </div>
-      <div className="capacity__track" aria-label={`Занято ${confirmed} из ${capacity} мест`}>
+      <div className={styles.capacityTrack} aria-label={`Занято ${confirmed} из ${capacity} мест`}>
         <span style={{ width: `${percentage}%` }} />
       </div>
     </div>
@@ -1136,14 +1214,14 @@ export function ParticipantRow({
     .join("");
 
   return (
-    <div className="participant-row">
-      <span className="participant-row__avatar" aria-hidden="true">{initials}</span>
-      <div className="participant-row__person">
+    <div className={styles.participantRow}>
+      <span className={styles.participantRowAvatar} aria-hidden="true">{initials}</span>
+      <div className={styles.participantRowPerson}>
         <strong>{participant.name}</strong>
         <span>{participant.telegramUsername ? `@${participant.telegramUsername}` : "Telegram не указан"}</span>
       </div>
       <ParticipationStatusBadge status={participant.status} />
-      {actions ? <div className="participant-row__actions">{actions}</div> : null}
+      {actions ? <div className={styles.participantRowActions}>{actions}</div> : null}
     </div>
   );
 }
@@ -1165,7 +1243,7 @@ export function TripFilters({
     onChange({ ...value, difficulty: difficulty.length ? difficulty : undefined });
   };
   return (
-    <div className="trip-filters">
+    <div className={styles.tripFilters}>
       <FormField label="Город">
         <TextField
           value={value.city ?? ""}
@@ -1180,9 +1258,9 @@ export function TripFilters({
           onChange={(event) => onChange({ ...value, dateFrom: event.target.value || undefined })}
         />
       </FormField>
-      <fieldset className="ui-field trip-filters__choice">
-        <legend className="ui-field__label">Сложность маршрута</legend>
-        <div className="trip-filters__options">
+      <fieldset className={`${styles.field} ${styles.tripFiltersChoice}`}>
+        <legend className={styles.fieldLabel}>Сложность маршрута</legend>
+        <div className={styles.tripFiltersOptions}>
           {difficultyOptions.map(([option, label]) => (
             <Chip
               key={option}
@@ -1212,9 +1290,9 @@ export function StickyActionBar({
   secondaryAction?: ReactNode;
 }) {
   return (
-    <div className="sticky-action-bar">
-      {summary ? <div className="sticky-action-bar__summary">{summary}</div> : null}
-      <div className="sticky-action-bar__actions">
+    <div className={styles.stickyActionBar}>
+      {summary ? <div className={styles.stickyActionBarSummary}>{summary}</div> : null}
+      <div className={styles.stickyActionBarActions}>
         {secondaryAction}
         {primaryAction}
       </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Button } from "../ui/components";
+import styles from "./profile.module.css";
 
 interface ProfileData {
   name: string;
@@ -46,10 +47,10 @@ export function ProfileEditor() {
 
   if (!editing) {
     return (
-      <section className="profile-card" aria-labelledby="profile-about-title">
-        <div className="profile-card__heading">
+      <section className={styles.card} aria-labelledby="profile-about-title">
+        <div className={styles.cardHeading}>
           <div>
-            <p className="profile-section-label">О себе</p>
+            <p className={styles.sectionLabel}>О себе</p>
             <h2 id="profile-about-title">Личные данные</h2>
           </div>
           <Button tone="secondary" size="small" onClick={() => setEditing(true)}>
@@ -58,12 +59,12 @@ export function ProfileEditor() {
         </div>
 
         {saved ? (
-          <p className="profile-save-notice" role="status">
+          <p className={styles.saveNotice} role="status">
             Изменения сохранены
           </p>
         ) : null}
 
-        <dl className="profile-data-list">
+        <dl className={styles.dataList}>
           <div>
             <dt>Имя</dt>
             <dd>{profile.name}</dd>
@@ -78,9 +79,9 @@ export function ProfileEditor() {
           </div>
         </dl>
 
-        <p className="profile-bio">{profile.bio}</p>
+        <p className={styles.bio}>{profile.bio}</p>
 
-        <div className="profile-preferences">
+        <div className={styles.preferences}>
           <span>≈ {profile.pace}</span>
         </div>
       </section>
@@ -88,15 +89,15 @@ export function ProfileEditor() {
   }
 
   return (
-    <form className="profile-card profile-form" onSubmit={save}>
-      <div className="profile-card__heading">
+    <form className={`${styles.card} ${styles.form}`} onSubmit={save}>
+      <div className={styles.cardHeading}>
         <div>
-          <p className="profile-section-label">О себе</p>
+          <p className={styles.sectionLabel}>О себе</p>
           <h2>Редактирование профиля</h2>
         </div>
       </div>
 
-      <div className="profile-form__grid">
+      <div className={styles.formGrid}>
         <label>
           Имя
           <input
@@ -107,7 +108,7 @@ export function ProfileEditor() {
         </label>
         <label>
           Telegram
-          <span className="profile-username-field">
+          <span className={styles.usernameField}>
             <span aria-hidden="true">@</span>
             <input
               required
@@ -133,7 +134,7 @@ export function ProfileEditor() {
             <option>30+ км/ч</option>
           </select>
         </label>
-        <label className="profile-form__wide">
+        <label className={styles.formWide}>
           О себе
           <textarea
             rows={4}
@@ -145,7 +146,7 @@ export function ProfileEditor() {
         </label>
       </div>
 
-      <div className="profile-form__actions">
+      <div className={styles.formActions}>
         <Button type="submit">Сохранить</Button>
         <Button type="button" tone="ghost" onClick={cancel}>
           Отмена

@@ -6,6 +6,7 @@ import { CITY_COOKIE_NAME, fallbackCities, selectCity } from "./lib/cities";
 import { ArrowIcon } from "./lib/components";
 import { CreateTripLauncher } from "./lib/create-trip-launcher";
 import { LinkButton } from "./ui/components";
+import styles from "./home.module.css";
 
 interface HomePageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -41,14 +42,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     <>
       <HomeHeader isAuthorized={isAuthorized} />
 
-      <section className="hero" id="hero" aria-labelledby="hero-title">
-        <div className="page hero-content">
+      <section className={styles.hero} id="hero" data-home-hero aria-labelledby="hero-title">
+        <div className={`page ${styles.heroContent}`}>
           <h1 id="hero-title">Совместные велопоездки рядом</h1>
-          <p className="lead">
+          <p className={styles.lead}>
             Найдите компанию, маршрут и подходящий темп без бесконечного поиска по чатам.
           </p>
 
-          <div className="hero-actions">
+          <div className={styles.heroActions}>
             <LinkButton href="#rides">
               <ArrowIcon />
               Найти поездку
@@ -59,7 +60,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       </section>
 
       <main>
-        <div className="page section search-section" id="rides">
+        <div className={`page ${styles.section} ${styles.searchSection}`} id="rides">
       <FindTripSection
         trips={trips}
         isAuthenticated={isAuthorized}
@@ -69,9 +70,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       />
         </div>
 
-        <section className="how-section" id="how" aria-labelledby="how-title">
+        <section className={styles.howSection} id="how" aria-labelledby="how-title">
           <div className="page">
-            <div className="how-head">
+            <div className={styles.howHead}>
               <h2 id="how-title">Как это работает</h2>
               <p>
                 BikeTrips собирает поездки в понятную афишу: участник быстро оценивает маршрут, а
@@ -79,19 +80,19 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </p>
             </div>
 
-            <div className="steps">
-              <article className="step">
-                <div className="step-number">1</div>
+            <div className={styles.steps}>
+              <article className={styles.step}>
+                <div className={styles.stepNumber}>1</div>
                 <h3>Организатор публикует поездку</h3>
                 <p>Указывает старт, время, сложность, длину маршрута, темп и лимит мест.</p>
               </article>
-              <article className="step">
-                <div className="step-number">2</div>
+              <article className={styles.step}>
+                <div className={styles.stepNumber}>2</div>
                 <h3>Участник выбирает подходящую</h3>
                 <p>Фильтры и карточки помогают быстро понять, подходит ли поездка по уровню.</p>
               </article>
-              <article className="step">
-                <div className="step-number">3</div>
+              <article className={styles.step}>
+                <div className={styles.stepNumber}>3</div>
                 <h3>Все получают обновления</h3>
                 <p>Запись, отмены и изменения маршрута остаются в одной карточке и уведомлениях.</p>
               </article>
@@ -100,10 +101,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </section>
       </main>
 
-      <footer className="footer">
-        <div className="page footer-inner">
-          <div className="footer-brand">BikeTrips</div>
-          <nav className="footer-links" aria-label="Юридическая информация">
+      <footer className={styles.footer}>
+        <div className={`page ${styles.footerInner}`}>
+          <div className={styles.footerBrand}>BikeTrips</div>
+          <nav className={styles.footerLinks} aria-label="Юридическая информация">
             <a href="#">Политика конфиденциальности</a>
             <a href="#">Пользовательское соглашение</a>
             <a href="#">Контакты</a>

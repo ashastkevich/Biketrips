@@ -1,0 +1,16 @@
+.compact {
+  min-height: 42px;
+  padding: 0 16px;
+}
+
+@media (max-width: 680px) {
+  .compact {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+
+  .compact [data-button-label] > span {
+    display: none;
+  }
+}

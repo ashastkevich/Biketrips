@@ -1,4 +1,4 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Inject } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 
 import { CitiesService } from "./cities.service.js";
@@ -6,7 +6,7 @@ import { CitiesService } from "./cities.service.js";
 @ApiTags("cities")
 @Controller("cities")
 export class CitiesController {
-  constructor(private readonly citiesService: CitiesService) {}
+  constructor(@Inject(CitiesService) private readonly citiesService: CitiesService) {}
 
   @Get()
   async list() {

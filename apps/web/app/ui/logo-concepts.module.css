@@ -1,0 +1,296 @@
+.storyShell {
+  min-height: 100vh;
+  padding: 42px;
+  color: var(--text);
+  background:
+    linear-gradient(180deg, rgba(251, 250, 249, 0.72), rgba(245, 243, 236, 0.96)),
+    var(--soft);
+}
+
+.storyShellCompact {
+  display: grid;
+  place-items: start center;
+}
+
+.storyHero {
+  width: min(1120px, 100%);
+  margin: 0 auto 28px;
+}
+
+.storyHero h1 {
+  max-width: 720px;
+  margin: 0 0 12px;
+  font-size: clamp(34px, 5vw, 68px);
+}
+
+.eyebrow {
+  width: fit-content;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 16px;
+  padding: 0 12px;
+  color: var(--green-dark);
+  background: rgba(79, 104, 20, 0.1);
+  border: 1px solid rgba(79, 104, 20, 0.18);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.storyHero p:not(.eyebrow) {
+  max-width: 680px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.conceptGrid {
+  width: min(1120px, 100%);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 auto;
+}
+
+.conceptCard {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  padding: 22px;
+  background: rgba(251, 250, 249, 0.78);
+  border: 1px solid var(--dark-line);
+  border-radius: 18px;
+  box-shadow: 0 16px 44px rgba(28, 26, 24, 0.08);
+}
+
+.conceptCard:first-child {
+  grid-column: span 2;
+}
+
+.conceptCardPreview {
+  min-height: 126px;
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  background:
+    linear-gradient(135deg, rgba(237, 233, 222, 0.72), rgba(251, 250, 249, 0.86));
+  border: 1px solid rgba(64, 72, 35, 0.12);
+  border-radius: 14px;
+}
+
+.conceptCard h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.conceptCard p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.conceptCardSwatches {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.conceptCardAppbar,
+.conceptCardDark {
+  min-width: 0;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  padding: 14px;
+  border-radius: 14px;
+}
+
+.conceptCardAppbar {
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--dark-line);
+}
+
+.conceptCardDark {
+  background:
+    linear-gradient(135deg, rgba(18, 37, 29, 0.98), rgba(64, 72, 35, 0.92));
+}
+
+.concept {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: var(--text);
+}
+
+.conceptLight {
+  color: var(--soft);
+}
+
+.mark {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.mark svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  color: currentColor;
+  font-family:
+    var(--font-unbounded),
+    var(--font-manrope),
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-size: 25px;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.wordmark span:last-child {
+  color: var(--green-dark);
+}
+
+.conceptLight .wordmark span:last-child {
+  color: #e3efc5;
+}
+
+.fillSoft {
+  fill: #e7e8d1;
+}
+
+.fillStrong {
+  fill: var(--green-dark);
+}
+
+.fillLight {
+  fill: #cbd5ab;
+}
+
+.strokeStrong,
+.strokeLight {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.strokeStrong {
+  stroke: var(--green-dark);
+  stroke-width: 4.2;
+}
+
+.strokeLight {
+  stroke: #9aa66d;
+  stroke-width: 3.2;
+}
+
+.conceptLight .fillSoft {
+  fill: rgba(255, 255, 255, 0.16);
+}
+
+.conceptLight .fillStrong {
+  fill: #e3efc5;
+}
+
+.conceptLight .fillLight {
+  fill: var(--soft);
+}
+
+.conceptLight .strokeStrong {
+  stroke: #e3efc5;
+}
+
+.conceptLight .strokeLight {
+  stroke: var(--soft);
+}
+
+.headerComparison {
+  width: min(980px, 100%);
+  display: grid;
+  gap: 12px;
+}
+
+.headerComparisonRow {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 16px;
+  background: rgba(251, 250, 249, 0.9);
+  border: 1px solid rgba(64, 72, 35, 0.14);
+  border-radius: 18px;
+  box-shadow: 0 10px 32px rgba(28, 26, 24, 0.08);
+}
+
+.headerComparisonRow nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #3f4a44;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.headerComparisonRow a {
+  padding: 10px 12px;
+  border-radius: 999px;
+}
+
+.headerComparisonRow a:hover {
+  color: var(--green-dark);
+  background: rgba(79, 104, 20, 0.09);
+}
+
+@media (max-width: 760px) {
+  .storyShell {
+    padding: 24px 18px;
+  }
+
+  .conceptGrid,
+  .conceptCard:first-child {
+    grid-template-columns: 1fr;
+    grid-column: auto;
+  }
+
+  .conceptCard {
+    padding: 16px;
+  }
+
+  .conceptCardPreview {
+    min-height: 104px;
+    padding: 16px;
+  }
+
+  .conceptCardSwatches {
+    grid-template-columns: 74px minmax(0, 1fr);
+  }
+
+  .mark {
+    width: 44px;
+    height: 44px;
+  }
+
+  .wordmark {
+    font-size: 20px;
+  }
+
+  .headerComparisonRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

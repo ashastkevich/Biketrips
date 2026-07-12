@@ -7,6 +7,7 @@ import type { ParticipantStatus, TripDetail } from "@biketrips/domain";
 
 import { Button, CapacityIndicator, CloseButton, TextField } from "./components";
 import { TripDetailsCard } from "./trip-details-card";
+import styles from "./trip-details.module.css";
 
 export interface TripDetailsModalProps {
   open: boolean;
@@ -226,7 +227,7 @@ export function TripDetailsModal({
   }
 
   return (
-    <div className="trip-details-backdrop" onMouseDown={handleBackdropClick}>
+    <div className={styles.backdrop} onMouseDown={handleBackdropClick}>
       <TripDetailsCard
         trip={trip}
         coverImage={coverImage}
@@ -237,7 +238,7 @@ export function TripDetailsModal({
         tabIndex={-1}
         overlay={
           <CloseButton
-            className="trip-details-modal__close"
+            className={styles.close}
             label="Закрыть карточку поездки"
             tone="dark"
             onClick={onClose}
@@ -245,13 +246,13 @@ export function TripDetailsModal({
         }
         aside={
           <aside
-            className="trip-details-modal__join"
+            className={styles.join}
             aria-label={isOrganizer ? "Участники поездки" : "Запись на поездку"}
           >
             {isOrganizer ? (
               <>
-                <p className="trip-details-modal__join-kicker">Участники</p>
-                <p className="trip-details-modal__participant-count">
+                <p className={styles.joinKicker}>Участники</p>
+                <p className={styles.participantCount}>
                   Записались: <strong>{trip.confirmedParticipants}</strong>
                   {hasParticipantLimit ? ` из ${trip.capacity}` : " участников"}
                 </p>
@@ -263,6 +264,7 @@ export function TripDetailsModal({
                 ) : null}
                 {canCancelTrip ? (
                   <Button
+                    className={styles.joinButton}
                     tone="secondary"
                     onClick={() => {
                       window.location.assign(editTripHref);
@@ -272,17 +274,17 @@ export function TripDetailsModal({
                   </Button>
                 ) : null}
                 {tripCancelled ? (
-                  <p className="trip-details-modal__cancelled" role="status">
+                  <p className={styles.cancelled} role="status">
                     Поездка отменена
                   </p>
                 ) : canCancelTrip ? (
-                  <Button tone="danger" onClick={() => setShowCancelConfirmation(true)}>
+                  <Button className={styles.joinButton} tone="danger" onClick={() => setShowCancelConfirmation(true)}>
                     Отменить поездку
                   </Button>
                 ) : null}
               </>
             ) : participationStatus || joined ? (
-              <div className="trip-details-success" role="status">
+              <div className={styles.success} role="status">
                 <span aria-hidden="true">✓</span>
                 <h3>
                   {(participationStatus === "waitlisted" || (!participationStatus && waitlist))
@@ -297,10 +299,11 @@ export function TripDetailsModal({
                     : "Эта поездка добавлена в ваш список."}
                 </p>
                 {participationError ? (
-                  <p className="trip-details-modal__error" role="alert">{participationError}</p>
+                  <p className={styles.error} role="alert">{participationError}</p>
                 ) : null}
                 {participationStatus ? (
                   <Button
+                    className={`${styles.joinButton} ${styles.successButton}`}
                     tone="secondary"
                     disabled={participationLoading}
                     onClick={handleCancelParticipation}
@@ -310,45 +313,45 @@ export function TripDetailsModal({
                 ) : null}
               </div>
             ) : showForm ? (
-              <form className="trip-details-join-form" onSubmit={handleSubmit}>
+              <form className={styles.joinForm} onSubmit={handleSubmit}>
                 <div><button type="button" onClick={() => setShowForm(false)} aria-label="Назад">←</button><h3>{waitlist ? "Встать в лист ожидания" : "Записаться"}</h3></div>
                 <label><span>Как вас зовут</span><TextField name="name" placeholder="Алексей" required minLength={2} autoFocus /></label>
                 <label><span>Telegram</span><TextField name="telegramUsername" placeholder="@username" required /></label>
-                <Button type="submit">
+                <Button className={styles.joinButton} type="submit">
                   {waitlist ? "Встать в лист ожидания" : hasParticipantLimit ? "Подтвердить запись" : "Записаться"}
                 </Button>
                 <small>Контакт увидит только организатор.</small>
               </form>
             ) : (
               <>
-                <p className="trip-details-modal__join-kicker">{waitlist ? "Места закончились" : "Можно присоединиться"}</p>
+                <p className={styles.joinKicker}>{waitlist ? "Места закончились" : "Можно присоединиться"}</p>
                 {hasParticipantLimit ? (
                   <CapacityIndicator capacity={trip.capacity!} confirmed={trip.confirmedParticipants} />
                 ) : (
-                  <p className="trip-details-modal__participant-count">
+                  <p className={styles.participantCount}>
                     Записались: <strong>{trip.confirmedParticipants}</strong> участников
                   </p>
                 )}
                 {participationError ? (
-                  <p className="trip-details-modal__error" role="alert">{participationError}</p>
+                  <p className={styles.error} role="alert">{participationError}</p>
                 ) : null}
-                <Button size="large" disabled={participationLoading} onClick={handleJoin}>
+                <Button className={styles.joinButton} size="large" disabled={participationLoading} onClick={handleJoin}>
                   {participationLoading
                     ? "Проверяем…"
                     : waitlist
                       ? "Встать в лист ожидания"
                       : "Записаться"}
                 </Button>
-                <p className="trip-details-modal__join-note">{trip.registrationMode === "automatic" ? "Запись подтвердится сразу" : "Организатор подтвердит заявку"}</p>
+                <p className={styles.joinNote}>{trip.registrationMode === "automatic" ? "Запись подтвердится сразу" : "Организатор подтвердит заявку"}</p>
               </>
             )}
           </aside>
         }
       />
       {showCancelConfirmation ? (
-        <div className="trip-cancel-confirm-backdrop">
+        <div className={styles.confirmBackdrop}>
           <section
-            className="trip-cancel-confirm"
+            className={styles.confirm}
             role="alertdialog"
             aria-modal="true"
             aria-labelledby={cancelTitleId}
@@ -356,9 +359,9 @@ export function TripDetailsModal({
             <h2 id={cancelTitleId}>Отменить поездку?</h2>
             <p>Поездка получит статус «Отменена». Участники увидят обновлённый статус.</p>
             {tripCancellationError ? (
-              <p className="trip-details-modal__error" role="alert">{tripCancellationError}</p>
+              <p className={styles.error} role="alert">{tripCancellationError}</p>
             ) : null}
-            <div className="trip-cancel-confirm__actions">
+            <div className={styles.confirmActions}>
               <Button
                 tone="danger"
                 loading={tripCancellationLoading}
@@ -381,9 +384,9 @@ export function TripDetailsModal({
         </div>
       ) : null}
       {showSavedConfirmation ? (
-        <div className="trip-cancel-confirm-backdrop">
+        <div className={styles.confirmBackdrop}>
           <section
-            className="trip-cancel-confirm"
+            className={styles.confirm}
             role="dialog"
             aria-modal="true"
             aria-labelledby={`${titleId}-saved`}
@@ -400,7 +403,7 @@ export function TripDetailsModal({
             ) : (
               <p>Новых значений в полях не обнаружено.</p>
             )}
-            <div className="trip-cancel-confirm__actions trip-cancel-confirm__actions--center">
+            <div className={`${styles.confirmActions} ${styles.confirmActionsCenter}`}>
               <Button
                 onClick={() => {
                   setShowSavedConfirmation(false);

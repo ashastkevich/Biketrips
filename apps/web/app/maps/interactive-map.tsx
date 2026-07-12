@@ -5,6 +5,9 @@ import { useEffect, useRef } from "react";
 
 import { DEFAULT_MAP_ZOOM, getMapStyleUrl } from "./map-config";
 import type { MapPoint } from "./map-types";
+import styles from "./interactive-map.module.css";
+
+const markerClassName = styles.marker ?? "";
 
 interface InteractiveMapProps {
   apiKey: string;
@@ -59,7 +62,7 @@ export default function InteractiveMap({
 
     if (pointRef.current) {
       const element = document.createElement("div");
-      element.className = "start-location-map__marker";
+      element.className = markerClassName;
       element.setAttribute("aria-hidden", "true");
       markerRef.current = new maplibregl.Marker({ element, anchor: "bottom" })
         .setLngLat([pointRef.current.lng, pointRef.current.lat])
@@ -90,7 +93,7 @@ export default function InteractiveMap({
 
     if (!markerRef.current) {
       const element = document.createElement("div");
-      element.className = "start-location-map__marker";
+      element.className = markerClassName;
       element.setAttribute("aria-hidden", "true");
       markerRef.current = new maplibregl.Marker({ element, anchor: "bottom" })
         .setLngLat([pointLng, pointLat])
@@ -127,7 +130,7 @@ export default function InteractiveMap({
   return (
     <div
       ref={containerRef}
-      className="start-location-map__canvas"
+      className={styles.canvas}
       role="application"
       aria-label="Интерактивная карта выбора точки старта"
     />

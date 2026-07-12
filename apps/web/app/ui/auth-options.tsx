@@ -1,6 +1,8 @@
 "use client";
 
 import { CloseButton } from "./components";
+import componentStyles from "./components.module.css";
+import styles from "./auth-options.module.css";
 
 export type AuthProvider = "telegram" | "phone" | "email" | "vk" | "yandex";
 
@@ -63,36 +65,40 @@ const authOptions: Array<{
   },
 ];
 
+function classes(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(" ");
+}
+
 export function AuthOptions({ onSelect, onClose }: AuthOptionsProps) {
   return (
-    <section className="auth-options" aria-labelledby="auth-options-title">
+    <section className={styles.options} aria-labelledby="auth-options-title">
       {onClose ? (
         <CloseButton
-          className="ui-dialog__close"
+          className={componentStyles.dialogClose}
           onClick={onClose}
         />
       ) : null}
-      <div className="auth-options__header">
+      <div className={styles.header}>
         <h2 id="auth-options-title">Войти</h2>
         <p>Выберите удобный способ. Это займёт меньше минуты.</p>
       </div>
 
-      <div className="auth-options__list">
+      <div className={styles.list}>
         {authOptions.map(({ provider, label, icon, recommended }) => (
           <button
-            className={`auth-option auth-option--${provider}`}
+            className={classes(styles.option, styles[provider])}
             key={provider}
             type="button"
             onClick={() => onSelect?.(provider)}
           >
-            <span className="auth-option__icon">{icon}</span>
+            <span className={styles.icon}>{icon}</span>
             <span>{label}</span>
-            {recommended ? <span className="auth-option__badge">Рекомендуем</span> : null}
+            {recommended ? <span className={styles.badge}>Рекомендуем</span> : null}
           </button>
         ))}
       </div>
 
-      <p className="auth-options__legal">
+      <p className={styles.legal}>
         Продолжая, вы принимаете условия использования и политику конфиденциальности.
       </p>
     </section>

@@ -11,6 +11,7 @@ import {
   TextField,
 } from "../../ui/components";
 import { TripDetailsCard } from "../../ui/trip-details-card";
+import tripDetailsStyles from "../../ui/trip-details.module.css";
 
 interface TripPageProps {
   params: Promise<{ slug: string }>;
@@ -102,28 +103,32 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
         coverImage={coverImage}
         titleId="trip-page-title"
         headingLevel="h1"
-        className="trip-details-page-card"
+        className={tripDetailsStyles.pageCard}
         aside={
           <aside
-            className="trip-details-modal__join"
+            className={tripDetailsStyles.join}
             aria-label={isOrganizer ? "Участники поездки" : "Запись на поездку"}
           >
             {isOrganizer ? (
               <>
-                <p className="trip-details-modal__join-kicker">Участники</p>
-                <p className="trip-details-modal__participant-count">
+                <p className={tripDetailsStyles.joinKicker}>Участники</p>
+                <p className={tripDetailsStyles.participantCount}>
                   Записались: <strong>{trip.confirmedParticipants}</strong>
                   {hasParticipantLimit ? ` из ${trip.capacity}` : " участников"}
                 </p>
                 {hasParticipantLimit ? (
                   <CapacityIndicator capacity={trip.capacity!} confirmed={trip.confirmedParticipants} />
                 ) : null}
-                <LinkButton href={`/trips/${encodeURIComponent(trip.slug)}/edit?returnTo=/&scope=feed`} tone="secondary">
+                <LinkButton
+                  className={tripDetailsStyles.joinButton}
+                  href={`/trips/${encodeURIComponent(trip.slug)}/edit?returnTo=/&scope=feed`}
+                  tone="secondary"
+                >
                   Редактировать поездку
                 </LinkButton>
                 {canCancelTrip ? (
                   <form action={cancelTripAction}>
-                    <Button tone="danger" type="submit">
+                    <Button className={tripDetailsStyles.joinButton} tone="danger" type="submit">
                       Отменить поездку
                     </Button>
                   </form>
@@ -131,17 +136,20 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
               </>
             ) : (
               <>
-                <p className="trip-details-modal__join-kicker">
+                <p className={tripDetailsStyles.joinKicker}>
                   {waitlist ? "Места закончились" : "Можно присоединиться"}
                 </p>
                 {hasParticipantLimit ? (
                   <CapacityIndicator capacity={trip.capacity!} confirmed={trip.confirmedParticipants} />
                 ) : (
-                  <p className="trip-details-modal__participant-count">
+                  <p className={tripDetailsStyles.participantCount}>
                     Записались: <strong>{trip.confirmedParticipants}</strong> участников
                   </p>
                 )}
-                <form action={joinAction} className="trip-details-join-form trip-details-page-form">
+                <form
+                  action={joinAction}
+                  className={`${tripDetailsStyles.joinForm} ${tripDetailsStyles.pageForm}`}
+                >
                   <input name="userId" type="hidden" value={`web-${trip.id}`} />
                   <label>
                     <span>Как вас зовут</span>
@@ -151,12 +159,12 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
                     <span>Telegram</span>
                     <TextField name="telegramUsername" required placeholder="@username" />
                   </label>
-                  <Button type="submit">
+                  <Button className={tripDetailsStyles.joinButton} type="submit">
                     {waitlist ? "Встать в лист ожидания" : "Записаться"}
                   </Button>
                   <small>Контакт увидит только организатор.</small>
                 </form>
-                <p className="trip-details-modal__join-note">
+                <p className={tripDetailsStyles.joinNote}>
                   {trip.registrationMode === "automatic" ? "Запись подтвердится сразу" : "Организатор подтвердит заявку"}
                 </p>
               </>

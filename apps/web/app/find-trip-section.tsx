@@ -4,13 +4,15 @@ import { useMemo, useState } from "react";
 import type { TripDetail } from "@biketrips/domain";
 
 import { getTripCardProps } from "./lib/components";
-import { RouteFilterBar, TripCard } from "./ui/components";
+import { Button, RouteFilterBar, TripCard } from "./ui/components";
 import { TripDetailsModal } from "./ui/trip-details-modal";
 import { useTripModal } from "./ui/use-trip-modal";
 import type { RouteFilterValue } from "./ui/components";
 import type { City } from "@biketrips/domain";
 import { CitySelector } from "./city-selector";
 import { LinkButton } from "./ui/components";
+import styles from "./find-trip-section.module.css";
+import filterStyles from "./ui/route-filters.module.css";
 
 const initialFilters: RouteFilterValue = {
   measure: "distance",
@@ -73,8 +75,8 @@ export function FindTripSection({
   );
 
   return (
-    <section className="find-trip-pattern" aria-labelledby="rides-title">
-      <header className="find-trip-pattern__header">
+    <section className={styles.pattern} aria-labelledby="rides-title">
+      <header className={styles.header}>
         <div>
           <h1 id="rides-title">Найдите подходящую поездку</h1>
           <p>Настройте маршрут, сложность и покрытие — карточки обновятся сразу.</p>
@@ -82,13 +84,13 @@ export function FindTripSection({
         <strong>{filteredTrips.length} из {trips.length}</strong>
       </header>
 
-      <div className="find-trip-filters">
+      <div className={filterStyles.findTripFilters}>
         <CitySelector cities={cities} selectedCity={selectedCity} />
         <RouteFilterBar value={filters} onChange={setFilters} />
       </div>
 
       {filteredTrips.length > 0 ? (
-        <section className="results" aria-label="Найденные поездки">
+        <section className={styles.results} aria-label="Найденные поездки">
           {filteredTrips.map((trip) => (
             <TripCard
               {...getTripCardProps(trip)}
@@ -98,24 +100,28 @@ export function FindTripSection({
           ))}
         </section>
       ) : trips.length === 0 ? (
-        <section className="find-trip-pattern__empty">
+        <section className={styles.empty}>
           <h2>Пока нет ближайших поездок</h2>
           <p>{selectedCity.name}: создайте первую поездку или выберите другой город.</p>
-          <LinkButton href={`/trips/new?city=${encodeURIComponent(selectedCity.slug)}`}>
+          <LinkButton
+            className={styles.emptyAction}
+            href={`/trips/new?city=${encodeURIComponent(selectedCity.slug)}`}
+          >
             Создать поездку
           </LinkButton>
         </section>
       ) : (
-        <section className="find-trip-pattern__empty">
+        <section className={styles.empty}>
           <h2>Подходящих поездок нет</h2>
           <p>Попробуйте расширить диапазон или сбросить выбранные параметры.</p>
-          <button
-            className="ui-button ui-button--secondary"
+          <Button
+            className={styles.emptyAction}
+            tone="secondary"
             type="button"
             onClick={() => setFilters(initialFilters)}
           >
             Сбросить фильтры
-          </button>
+          </Button>
         </section>
       )}
 

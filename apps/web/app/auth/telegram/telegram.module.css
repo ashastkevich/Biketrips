@@ -1,0 +1,21 @@
+.card {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--dark-line);
+  border-radius: 18px;
+  box-shadow: 0 14px 38px rgba(18, 32, 24, 0.06);
+}
+
+.card h2 {
+  margin: 0 0 16px;
+  font-size: 24px;
+  font-weight: 560;
+  line-height: 1.16;
+}
+
+.widget {
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  margin: 8px 0;
+}

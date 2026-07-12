@@ -8,6 +8,8 @@ import { storyTrips } from "./story-fixtures";
 import { AppTopbar, getTripCardProps, PageHeader } from "../lib/components";
 import { ProfileMenu } from "../home-auth-control";
 import { CityFilter } from "../city-selector";
+import filterStyles from "./route-filters.module.css";
+import storyStyles from "./storybook-patterns.module.css";
 import {
   difficultyLabels,
   unpavedSurfaceDetailLabels,
@@ -54,7 +56,7 @@ type Story = StoryObj<typeof meta>;
 export const Actions: Story = {
   render: () => (
     <StorySection title="Кнопки и ссылки">
-      <div className="story-row">
+      <div className={storyStyles.row}>
         <Button>Записаться</Button>
         <Button tone="secondary">Подробнее</Button>
         <Button tone="ghost">Отмена</Button>
@@ -76,22 +78,22 @@ export const Actions: Story = {
 export const BadgesAndChips: Story = {
   render: () => (
     <StorySection title="Статусы, метки и фильтры">
-      <div className="story-column">
-        <div className="story-row">
+      <div className={storyStyles.column}>
+        <div className={storyStyles.row}>
           <TripStatusBadge status="draft" />
           <TripStatusBadge status="published" />
           <TripStatusBadge status="cancelled" />
           <TripStatusBadge status="finished" />
         </div>
-        <div className="story-row">
+        <div className={storyStyles.row}>
           <ParticipationStatusBadge status="pending" />
           <ParticipationStatusBadge status="confirmed" />
           <ParticipationStatusBadge status="waitlisted" />
           <ParticipationStatusBadge status="cancelled" />
         </div>
-        <div className="story-chip-group">
+        <div className={storyStyles.chipGroup}>
           <strong>Сложность маршрута</strong>
-          <div className="story-row">
+          <div className={storyStyles.row}>
             <DifficultyBadge difficulty="easy" />
             <DifficultyBadge difficulty="medium" />
             <DifficultyBadge difficulty="hard" />
@@ -106,7 +108,7 @@ export const BadgesAndChips: Story = {
 export const FormControls: Story = {
   render: () => (
     <StorySection title="Поля формы">
-      <div className="story-form-grid">
+      <div className={storyStyles.formGrid}>
         <FormField label="Название" hint="Коротко опишите характер поездки" required>
           <TextField defaultValue="Вечерний gravel по паркам" />
         </FormField>
@@ -138,7 +140,7 @@ export const DifficultyDropdown: Story = {
 export const Navigation: Story = {
   render: () => (
     <StorySection title="Навигация">
-      <div className="story-row">
+      <div className={storyStyles.row}>
         <BackLink href="/">На главную</BackLink>
         <LinkButton href="/trips/new">Создать поездку</LinkButton>
         <ProfileMenu tone="dark" />
@@ -149,7 +151,7 @@ export const Navigation: Story = {
 
 export const SiteShell: Story = {
   render: () => (
-    <div className="story-column">
+    <div className={storyStyles.column}>
       <AppTopbar />
       <PageHeader
         eyebrow="Поездки рядом"
@@ -166,12 +168,12 @@ export const SiteShell: Story = {
 export const Feedback: Story = {
   render: () => (
     <StorySection title="Обратная связь и состояния">
-      <div className="story-column">
+      <div className={storyStyles.column}>
         <Alert title="Вы записаны" tone="success">Подтверждение отправлено в Telegram.</Alert>
         <Alert title="Осталось одно место" tone="warning">После заполнения откроется лист ожидания.</Alert>
         <Alert title="Не удалось сохранить" tone="danger">Проверьте соединение и попробуйте снова.</Alert>
         <Card>
-          <div className="story-column">
+          <div className={storyStyles.column}>
             <Skeleton width="42%" height={24} />
             <Skeleton width="100%" />
             <Skeleton width="76%" />
@@ -191,7 +193,7 @@ export const Feedback: Story = {
 export const TripInformation: Story = {
   render: () => (
     <StorySection title="Данные поездки">
-      <div className="story-column">
+      <div className={storyStyles.column}>
         <TripMeta trip={storyTrips[0]!} />
         <CapacityIndicator capacity={14} confirmed={8} />
         <CapacityIndicator capacity={18} confirmed={18} />
@@ -269,7 +271,7 @@ export const MobileActionBar: Story = {
 
 function StorySection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="story-section">
+    <section className={storyStyles.section}>
       <h2>{title}</h2>
       {children}
     </section>
@@ -293,10 +295,10 @@ function ChipDemo() {
   }
 
   return (
-    <div className="story-column">
-      <div className="story-chip-group">
+    <div className={storyStyles.column}>
+      <div className={storyStyles.chipGroup}>
         <strong>Сложность маршрута</strong>
-        <div className="story-row">
+        <div className={storyStyles.row}>
           {difficultyOptions.map(([value, label]) => (
             <Chip
               key={value}
@@ -308,9 +310,9 @@ function ChipDemo() {
           ))}
         </div>
       </div>
-      <div className="story-chip-group">
+      <div className={storyStyles.chipGroup}>
         <strong>Уточнение грунтовой части</strong>
-        <div className="story-row">
+        <div className={storyStyles.row}>
           {surfaceOptions.map(([value, label]) => (
             <Chip
               key={value}
@@ -364,7 +366,7 @@ function RouteFilterDemo() {
 
   return (
     <StorySection title="Фильтры маршрутов">
-      <div className="find-trip-filters">
+      <div className={filterStyles.findTripFilters}>
         <CityFilter cities={cities} selectedCity={selectedCity} onChange={setSelectedCity} />
         <RouteFilterBar value={filters} onChange={setFilters} />
       </div>

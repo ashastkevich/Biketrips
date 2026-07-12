@@ -20,8 +20,15 @@ import {
   type StepperSaveStatus,
 } from "../../ui/components";
 import { AuthOptions, type AuthProvider } from "../../ui/auth-options";
+import authOptionStyles from "../../ui/auth-options.module.css";
+import componentStyles from "../../ui/components.module.css";
 import { StartLocationPicker } from "./start-location-picker";
 import { NEW_TRIP_DRAFT_KEY } from "./draft-storage";
+import styles from "./trip-creation-wizard.module.css";
+
+function classes(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(" ");
+}
 
 const coverTemplates = [
   { src: "/img/Photo1.jpg", label: "Велосипедисты на лесной дороге" },
@@ -270,7 +277,7 @@ export function TripCreationWizard({
   return (
     <form
       action={action}
-      className="wizard-layout"
+      className={styles.layout}
       onSubmit={(event) => {
         if (!canPublish) {
           event.preventDefault();
@@ -312,7 +319,7 @@ export function TripCreationWizard({
       <input name="registrationMode" type="hidden" value={draft.registrationMode} />
       <input name="coverImage" type="hidden" value={customCoverUrl ? "" : selectedCover} />
 
-      <div className="wizard-main">
+      <div className={styles.main}>
         <Stepper
           steps={[
             { id: "1", label: "Когда и где" },
@@ -324,18 +331,18 @@ export function TripCreationWizard({
           onStepChange={(stepId) => setStep(Number(stepId))}
         />
 
-        <Card className="wizard-panel" padding="large">
+        <Card className={styles.panel} padding="large">
           {step === 1 ? (
             <>
-              <div className="wizard-heading">
-                <p className="eyebrow">{mode === "edit" ? "Редактирование · шаг 1 из 3" : "Шаг 1 из 3"}</p>
+              <div className={styles.heading}>
+                <p className={styles.eyebrow}>{mode === "edit" ? "Редактирование · шаг 1 из 3" : "Шаг 1 из 3"}</p>
                 <h1>Когда и где встречаемся?</h1>
                 <p>Начните с главного — участники сразу поймут, подходит ли им поездка.</p>
               </div>
-              <div className="form-grid">
-                <FormField className="span-2" label="Город" required>
+              <div className={styles.formGrid}>
+                <FormField className={styles.span2} label="Город" required>
                   <select
-                    className="ui-input"
+                    className={componentStyles.input}
                     required
                     value={draft.cityId}
                     onChange={(event) => update("cityId", event.target.value)}
@@ -346,7 +353,7 @@ export function TripCreationWizard({
                   </select>
                 </FormField>
                 <FormField
-                  className="span-2"
+                  className={styles.span2}
                   label="Название"
                   hint={!draft.title ? "Мы предложили название — его можно изменить" : undefined}
                   required
@@ -378,7 +385,7 @@ export function TripCreationWizard({
                     onChange={(event) => update("time", event.target.value)}
                   />
                 </FormField>
-                <div className="span-2">
+                <div className={styles.span2}>
                   <StartLocationPicker
                     cityCenter={
                       selectedCity?.centerLat != null && selectedCity?.centerLng != null
@@ -423,14 +430,14 @@ export function TripCreationWizard({
 
           {step === 2 ? (
             <>
-              <div className="wizard-heading">
-                <p className="eyebrow">{mode === "edit" ? "Редактирование · шаг 2 из 3" : "Шаг 2 из 3"}</p>
+              <div className={styles.heading}>
+                <p className={styles.eyebrow}>{mode === "edit" ? "Редактирование · шаг 2 из 3" : "Шаг 2 из 3"}</p>
                 <h1>Кому подойдёт поездка?</h1>
                 <p>Темп и покрытие помогут собрать совместимую группу.</p>
               </div>
-              <div className="form-grid conditions-form">
+              <div className={`${styles.formGrid} ${styles.conditionsForm}`}>
                 <input name="bikeType" type="hidden" value="any" />
-                <div className="condition-field">
+                <div className={styles.conditionField}>
                   <span>Сложность маршрута</span>
                   <DifficultySelect
                     name="difficulty"
@@ -438,13 +445,14 @@ export function TripCreationWizard({
                     onChange={(value) => update("difficulty", value)}
                   />
                 </div>
-                <div className="condition-field surface-condition-field">
+                <div className={`${styles.conditionField} ${styles.surfaceConditionField}`}>
                   <span>Покрытие</span>
-                  <div className="surface-composition">
-                    <div className="surface-composition__fields">
+                  <div className={styles.surfaceComposition}>
+                    <div className={styles.surfaceFields}>
                       <FormField label="Грунт">
-                        <div className="surface-percent-field">
+                        <div className={styles.surfacePercentField}>
                           <TextField
+                            className={styles.surfaceInput}
                             name="unpavedPercent"
                             type="number"
                             min="0"
@@ -458,8 +466,9 @@ export function TripCreationWizard({
                         </div>
                       </FormField>
                       <FormField label="Асфальт">
-                        <div className="surface-percent-field">
+                        <div className={styles.surfacePercentField}>
                           <TextField
+                            className={styles.surfaceInput}
                             name="asphaltPercent"
                             type="number"
                             min="0"
@@ -471,12 +480,12 @@ export function TripCreationWizard({
                         </div>
                       </FormField>
                     </div>
-                    <div className="surface-composition__range-wrap">
-                      <span className="surface-composition__range-track" aria-hidden="true">
+                    <div className={styles.surfaceRangeWrap}>
+                      <span className={styles.surfaceRangeTrack} aria-hidden="true">
                         <span style={{ width: `${draft.asphaltPercent}%` }} />
                       </span>
                       <input
-                        className="surface-composition__range"
+                        className={styles.surfaceRange}
                         type="range"
                         min="0"
                         max="100"
@@ -489,12 +498,12 @@ export function TripCreationWizard({
                     </div>
                   </div>
                   {Number(draft.unpavedPercent) > 0 ? (
-                    <div className="unpaved-details">
+                    <div className={styles.unpavedDetails}>
                       <span>
                         Что встретится на грунтовой части? <small>Необязательно</small>
                       </span>
                       <div
-                        className="condition-chips"
+                        className={styles.conditionChips}
                         role="group"
                         aria-label="Уточнение грунтовой части"
                       >
@@ -523,14 +532,14 @@ export function TripCreationWizard({
                     </div>
                   ) : null}
                 </div>
-                <div className="participant-limit-field">
+                <div className={styles.participantLimitField}>
                   <Switch
                     label="Лимит мест"
                     checked={draft.hasParticipantLimit}
                     onChange={(checked) => update("hasParticipantLimit", checked)}
                   />
                   {draft.hasParticipantLimit ? (
-                    <FormField className="condition-field" label="Количество мест" required>
+                    <FormField className={styles.conditionField} label="Количество мест" required>
                       <TextField
                         name="maxParticipants"
                         type="number"
@@ -550,21 +559,21 @@ export function TripCreationWizard({
 
           {step === 3 ? (
             <>
-              <div className="wizard-heading">
-                <p className="eyebrow">{mode === "edit" ? "Редактирование · шаг 3 из 3" : "Шаг 3 из 3"}</p>
+              <div className={styles.heading}>
+                <p className={styles.eyebrow}>{mode === "edit" ? "Редактирование · шаг 3 из 3" : "Шаг 3 из 3"}</p>
                 <h1>Расскажите о поездке</h1>
                 <p>
                   Короткого описания достаточно. Остальные детали можно добавить сейчас или позже.
                 </p>
               </div>
-              <fieldset className="cover-picker">
+              <fieldset className={styles.coverPicker}>
                 <legend>Обложка поездки</legend>
-                <div className="cover-templates">
+                <div className={styles.coverTemplates}>
                   {coverTemplates.map((cover) => (
                     <button
-                      className={
-                        selectedCover === cover.src && !customCoverUrl ? "is-selected" : ""
-                      }
+                      className={classes(
+                        selectedCover === cover.src && !customCoverUrl && styles.coverSelected,
+                      )}
                       type="button"
                       key={cover.src}
                       aria-label={cover.label}
@@ -608,18 +617,20 @@ export function TripCreationWizard({
                 />
               </FormField>
               <Button
-                className="details-toggle"
+                className={styles.detailsToggle}
                 tone="ghost"
                 type="button"
                 aria-expanded={showDetails}
                 onClick={() => setShowDetails((current) => !current)}
               >
-                <span>Дополнительные детали</span>
-                <span>{showDetails ? "−" : "+"}</span>
+                <span className={styles.detailsToggleLabel}>
+                  <span>Дополнительные детали</span>
+                  <span>{showDetails ? "−" : "+"}</span>
+                </span>
               </Button>
               {showDetails ? (
-                <div className="form-grid optional-fields">
-                  <FormField className="span-2" label="Маршрут">
+                <div className={`${styles.formGrid} ${styles.optionalFields}`}>
+                  <FormField className={styles.span2} label="Маршрут">
                     <TextareaField
                       name="routeDescription"
                       rows={3}
@@ -659,23 +670,24 @@ export function TripCreationWizard({
           ) : null}
 
           {stepError ? (
-            <div className="inline-error" role="alert">
+            <div className={styles.inlineError} role="alert">
               {stepError}
             </div>
           ) : null}
 
-          <div className="wizard-actions">
+          <div className={styles.actions}>
             {step > 1 ? (
-              <Button tone="secondary" type="button" onClick={goBack}>
+              <Button className={styles.actionButton} tone="secondary" type="button" onClick={goBack}>
                 Назад
               </Button>
             ) : (
-              <LinkButton href={cancelHref} tone="secondary">
+              <LinkButton className={styles.actionButton} href={cancelHref} tone="secondary">
                 Отмена
               </LinkButton>
             )}
             {step < 3 ? (
               <Button
+                className={styles.actionButton}
                 key="next-step"
                 type="button"
                 onClick={(event) => {
@@ -686,7 +698,7 @@ export function TripCreationWizard({
                 Продолжить
               </Button>
             ) : (
-              <Button key="submit-trip" type="submit">
+              <Button className={styles.actionButton} key="submit-trip" type="submit">
                 {mode === "edit" ? "Сохранить изменения" : "Опубликовать поездку"}
               </Button>
             )}
@@ -694,8 +706,8 @@ export function TripCreationWizard({
         </Card>
       </div>
 
-      <aside className="wizard-preview" aria-label="Предпросмотр поездки">
-        <p className="preview-label">
+      <aside className={styles.preview} aria-label="Предпросмотр поездки">
+        <p className={styles.previewLabel}>
           {mode === "edit" ? "Так поездка будет выглядеть" : "Так поездку увидят участники"}
         </p>
         <TripCard
@@ -712,7 +724,7 @@ export function TripCreationWizard({
       </aside>
       {showAuth ? (
         <div
-          className="ui-dialog-backdrop auth-options-backdrop"
+          className={`${componentStyles.dialogBackdrop} ${authOptionStyles.backdrop}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby="auth-options-title"

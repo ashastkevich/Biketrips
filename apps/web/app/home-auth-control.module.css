@@ -1,0 +1,181 @@
+.profileMenu {
+  position: relative;
+}
+
+.profileTrigger {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 16px 38px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(16px);
+  cursor: pointer;
+}
+
+.profileTrigger:hover,
+.profileTrigger[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.profileTrigger svg {
+  width: 23px;
+  height: 23px;
+}
+
+.profileTriggerDark {
+  color: var(--green-dark);
+  background: rgba(64, 72, 35, 0.08);
+  border-color: rgba(64, 72, 35, 0.22);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.profileTriggerDark:hover,
+.profileTriggerDark[aria-expanded="true"] {
+  background: rgba(64, 72, 35, 0.16);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 20;
+  width: 184px;
+  padding: 6px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--sand-200) 77%, transparent);
+  border: 1px solid rgba(64, 72, 35, 0.16);
+  border-radius: 9px;
+  box-shadow:
+    0 2px 6px rgba(28, 26, 24, 0.1),
+    0 16px 36px rgba(28, 26, 24, 0.2);
+  backdrop-filter: blur(18px);
+}
+
+.dropdown::before {
+  position: absolute;
+  right: 14px;
+  bottom: 100%;
+  width: 12px;
+  height: 12px;
+  background: color-mix(in srgb, var(--sand-200) 76%, transparent);
+  border-top: 1px solid rgba(64, 72, 35, 0.16);
+  border-left: 1px solid rgba(64, 72, 35, 0.16);
+  content: "";
+  transform: translateY(6px) rotate(45deg);
+}
+
+.dropdown a,
+.dropdown button {
+  width: 100%;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dropdown button {
+  margin-top: 3px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(64, 72, 35, 0.14);
+  border-radius: 0 0 6px 6px;
+}
+
+.dropdown svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  color: var(--green-dark);
+}
+
+.dropdown a:hover,
+.dropdown a:focus-visible,
+.dropdown button:hover:not(:disabled),
+.dropdown button:focus-visible:not(:disabled) {
+  color: var(--green-dark);
+  background: rgba(255, 255, 255, 0.48);
+  outline: none;
+}
+
+.dropdown button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.loginButton {
+  height: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 18px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 16px 38px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(16px);
+  font-weight: 650;
+  letter-spacing: 0;
+  white-space: nowrap;
+  transition:
+    background 170ms ease,
+    border-color 170ms ease,
+    box-shadow 170ms ease,
+    transform 170ms ease;
+}
+
+.loginButtonDark {
+  height: 42px;
+  min-height: 42px;
+  padding: 0 16px;
+  color: var(--green-dark);
+  background: rgba(64, 72, 35, 0.08);
+  border-color: rgba(64, 72, 35, 0.22);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.loginButtonDark:hover {
+  background: rgba(64, 72, 35, 0.16);
+}
+
+.loginButtonLight {
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 12px 28px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(16px);
+}
+
+.loginButtonLight:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+@media (max-width: 680px) {
+  .loginButton {
+    padding: 0 13px;
+  }
+}

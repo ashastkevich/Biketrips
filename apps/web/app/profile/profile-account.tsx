@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { CurrentUser } from "../lib/api";
 import type { City } from "@biketrips/domain";
 import { Button } from "../ui/components";
+import styles from "./profile.module.css";
 
 export function ProfileAccount({ initialUser, cities }: { initialUser: CurrentUser; cities: City[] }) {
   const router = useRouter();
@@ -79,11 +80,11 @@ export function ProfileAccount({ initialUser, cities }: { initialUser: CurrentUs
   }
 
   return (
-    <section className="profile-card" aria-labelledby="profile-data-title">
-      <div className="profile-card__heading">
+    <section className={styles.card} aria-labelledby="profile-data-title">
+      <div className={styles.cardHeading}>
         <div>
           <p
-            className="profile-section-label profile-section-label--profile"
+            className={`${styles.sectionLabel} ${styles.sectionLabelProfile}`}
             id="profile-data-title"
           >
             Профиль пользователя
@@ -97,8 +98,8 @@ export function ProfileAccount({ initialUser, cities }: { initialUser: CurrentUs
       </div>
 
       {editing ? (
-        <form className="profile-form profile-account-form" noValidate onSubmit={save}>
-          <div className="profile-form__grid">
+        <form className={`${styles.form} ${styles.accountForm}`} noValidate onSubmit={save}>
+          <div className={styles.formGrid}>
             <label>
               Имя
               <input
@@ -121,7 +122,7 @@ export function ProfileAccount({ initialUser, cities }: { initialUser: CurrentUs
                 onChange={(event) => setPhone(formatPhone(event.target.value))}
               />
               <small
-                className="profile-field-error"
+                className={styles.fieldError}
                 id="profile-phone-error"
                 aria-live="polite"
               >
@@ -165,7 +166,7 @@ export function ProfileAccount({ initialUser, cities }: { initialUser: CurrentUs
                 }}
               />
               <small
-                className="profile-field-error"
+                className={styles.fieldError}
                 id="profile-email-error"
                 aria-live="polite"
               >
@@ -182,8 +183,8 @@ export function ProfileAccount({ initialUser, cities }: { initialUser: CurrentUs
               </select>
             </label>
           </div>
-          {error ? <p className="profile-save-notice" role="alert">{error}</p> : null}
-          <div className="profile-form__actions">
+          {error ? <p className={styles.saveNotice} role="alert">{error}</p> : null}
+          <div className={styles.formActions}>
             <Button type="submit" loading={saving}>Сохранить</Button>
             <Button type="button" tone="ghost" disabled={saving} onClick={cancel}>
               Отмена
@@ -191,7 +192,7 @@ export function ProfileAccount({ initialUser, cities }: { initialUser: CurrentUs
           </div>
         </form>
       ) : (
-        <dl className="profile-data-list">
+        <dl className={styles.dataList}>
           <div>
             <dt>Имя</dt>
             <dd>{user.name}</dd>
@@ -238,12 +239,12 @@ export function ProfileAccount({ initialUser, cities }: { initialUser: CurrentUs
 
 function VerificationControl({ verified, href }: { verified: boolean; href: string }) {
   return verified ? (
-    <span className="profile-verification profile-verification--confirmed">
+    <span className={`${styles.verification} ${styles.verificationConfirmed}`}>
       <span aria-hidden="true">✓</span>
       Подтверждено
     </span>
   ) : (
-    <a className="profile-verification" href={href}>
+    <a className={styles.verification} href={href}>
       Подтвердить
     </a>
   );

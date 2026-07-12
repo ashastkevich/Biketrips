@@ -12,6 +12,8 @@ import {
   type AddressSuggestion,
   type MapPoint,
 } from "../../maps/map-types";
+import componentStyles from "../../ui/components.module.css";
+import styles from "./start-location-picker.module.css";
 
 interface StartLocationValue {
   name: string;
@@ -258,16 +260,16 @@ export function StartLocationPicker({ value, onChange, cityCenter }: StartLocati
   }
 
   return (
-    <div className="start-location-picker">
-      <div className="start-location-picker__field">
-        <label className="start-location-picker__label" htmlFor={inputId}>
+    <div className={styles.picker}>
+      <div className={styles.field}>
+        <label className={styles.label} htmlFor={inputId}>
           Место старта <span aria-hidden="true">*</span>
         </label>
-        <div className="start-location-picker__input-row">
-          <div className="start-location-picker__input-wrap">
+        <div className={styles.inputRow}>
+          <div className={styles.inputWrap}>
             <input
               id={inputId}
-              className="ui-input start-location-picker__input"
+              className={`${componentStyles.input} ${styles.input}`}
               placeholder="Начните вводить адрес"
               value={inputValue}
               role="combobox"
@@ -282,7 +284,7 @@ export function StartLocationPicker({ value, onChange, cityCenter }: StartLocati
               onBlur={closeSuggestions}
             />
             {showSuggestions ? (
-              <div className="start-location-picker__suggestions" id={listboxId} role="listbox">
+              <div className={styles.suggestions} id={listboxId} role="listbox">
                 {suggestions.map((suggestion, index) => (
                   <button
                     key={suggestion.id}
@@ -292,8 +294,8 @@ export function StartLocationPicker({ value, onChange, cityCenter }: StartLocati
                     aria-selected={index === activeSuggestionIndex}
                     className={
                       index === activeSuggestionIndex
-                        ? "start-location-picker__suggestion is-active"
-                        : "start-location-picker__suggestion"
+                        ? `${styles.suggestion} ${styles.suggestionActive}`
+                        : styles.suggestion
                     }
                     onMouseDown={(event) => {
                       event.preventDefault();
@@ -309,20 +311,20 @@ export function StartLocationPicker({ value, onChange, cityCenter }: StartLocati
           </div>
           <button
             type="button"
-            className="start-location-picker__map-toggle"
+            className={styles.mapToggle}
             aria-expanded={isMapVisible}
             onClick={toggleMap}
           >
             {isMapVisible ? "Скрыть карту" : "Показать карту"}
           </button>
         </div>
-        <small className="start-location-picker__hint" aria-live="polite">
+        <small className={styles.hint} aria-live="polite">
           {hintText}
         </small>
       </div>
 
       {hasOpenedMap && apiKey ? (
-        <div className="start-location-map" hidden={!isMapVisible}>
+        <div className={styles.map} hidden={!isMapVisible}>
           <InteractiveMapLoader
             apiKey={apiKey}
             center={selectedPoint ?? cityCenter ?? DEFAULT_MAP_CENTER}
@@ -336,7 +338,7 @@ export function StartLocationPicker({ value, onChange, cityCenter }: StartLocati
       {geocodingError && selectedPoint ? (
         <button
           type="button"
-          className="start-location-picker__retry"
+          className={styles.retry}
           onClick={() => void selectPoint(selectedPoint)}
         >
           Повторить определение адреса
@@ -344,17 +346,17 @@ export function StartLocationPicker({ value, onChange, cityCenter }: StartLocati
       ) : null}
 
       {geocodingError ? (
-        <p className="start-location-picker__warning" role="alert">
+        <p className={styles.warning} role="alert">
           {geocodingError}
         </p>
       ) : null}
       {suggestError ? (
-        <p className="start-location-picker__warning" role="alert">
+        <p className={styles.warning} role="alert">
           {suggestError}
         </p>
       ) : null}
       {mapError ? (
-        <p className="start-location-picker__warning" role="alert">
+        <p className={styles.warning} role="alert">
           {mapError}
         </p>
       ) : null}

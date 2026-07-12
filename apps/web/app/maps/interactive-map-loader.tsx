@@ -4,11 +4,12 @@ import dynamic from "next/dynamic";
 import type { ComponentProps } from "react";
 
 import type InteractiveMap from "./interactive-map";
+import styles from "./interactive-map.module.css";
 
 const DynamicInteractiveMap = dynamic(() => import("./interactive-map"), {
   ssr: false,
   loading: () => (
-    <div className="start-location-map__state" role="status">
+    <div className={styles.state} role="status">
       Загружаем карту…
     </div>
   ),

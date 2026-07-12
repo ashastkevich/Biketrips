@@ -1,6 +1,7 @@
 import { AppTopbar, PageHeader } from "../../lib/components";
 import { BackLink, Card } from "../../ui/components";
 import { TelegramLogin } from "./telegram-login";
+import styles from "./telegram.module.css";
 
 interface TelegramAuthPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -25,7 +26,7 @@ export default async function TelegramAuthPage({ searchParams }: TelegramAuthPag
         </p>
       </PageHeader>
 
-      <Card className="auth-card" padding="large">
+      <Card className={styles.card} padding="large">
         <h2 id="auth-title">Telegram-аккаунт</h2>
         <TelegramLogin
           botUsername={process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { LogoConcept, logoConceptDescriptions } from "./logo-concepts";
+import styles from "./logo-concepts.module.css";
 
 const meta = {
   title: "Design System/Foundations/Logo Concepts",
@@ -14,10 +15,10 @@ type Story = StoryObj<typeof meta>;
 
 export const Concepts: Story = {
   render: () => (
-    <main className="logo-story-shell">
-      <section className="logo-story-hero">
+    <main className={styles.storyShell}>
+      <section className={styles.storyHero}>
         <div>
-          <p className="eyebrow">BikeTrips identity</p>
+          <p className={styles.eyebrow}>BikeTrips identity</p>
           <h1>7 вариантов логотипа</h1>
           <p>
             Все варианты используют текущую оливково-песочную палитру, мягкую геометрию интерфейса
@@ -26,21 +27,21 @@ export const Concepts: Story = {
         </div>
       </section>
 
-      <section className="logo-concept-grid" aria-label="Варианты логотипа BikeTrips">
+      <section className={styles.conceptGrid} aria-label="Варианты логотипа BikeTrips">
         {logoConceptDescriptions.map((concept) => (
-          <article className="logo-concept-card" key={concept.variant}>
-            <div className="logo-concept-card__preview">
+          <article className={styles.conceptCard} key={concept.variant}>
+            <div className={styles.conceptCardPreview}>
               <LogoConcept variant={concept.variant} />
             </div>
             <div>
               <h2>{concept.title}</h2>
               <p>{concept.description}</p>
             </div>
-            <div className="logo-concept-card__swatches" aria-label="Примеры применения">
-              <span className="logo-concept-card__appbar">
+            <div className={styles.conceptCardSwatches} aria-label="Примеры применения">
+              <span className={styles.conceptCardAppbar}>
                 <LogoConcept variant={concept.variant} showName={false} />
               </span>
-              <span className="logo-concept-card__dark">
+              <span className={styles.conceptCardDark}>
                 <LogoConcept variant={concept.variant} tone="light" />
               </span>
             </div>
@@ -53,10 +54,10 @@ export const Concepts: Story = {
 
 export const HeaderScale: Story = {
   render: () => (
-    <main className="logo-story-shell logo-story-shell--compact">
-      <section className="logo-header-comparison">
+    <main className={`${styles.storyShell} ${styles.storyShellCompact}`}>
+      <section className={styles.headerComparison}>
         {logoConceptDescriptions.map((concept) => (
-          <div className="logo-header-comparison__row" key={concept.variant}>
+          <div className={styles.headerComparisonRow} key={concept.variant}>
             <LogoConcept variant={concept.variant} />
             <nav aria-label="Пример навигации">
               <a href="/">Поездки</a>
