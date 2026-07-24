@@ -223,7 +223,7 @@ export function ProfileAccount({ initialUser, cities }: { initialUser: CurrentUs
               <span>{user.email || "Не указана"}</span>
               <VerificationControl
                 verified={user.emailVerified && Boolean(user.email)}
-                href="/profile?verifyEmail=1"
+                href="/auth/email?returnTo=/profile"
               />
             </dd>
           </div>

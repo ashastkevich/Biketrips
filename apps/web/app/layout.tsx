@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { CookieNotice } from "./cookie-notice";
 import { fontVariables } from "./fonts";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./styles.css";
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="ru">
       <body className={`${fontVariables} typography-theme app-theme`}>
         {children}
+        <CookieNotice />
       </body>
     </html>
   );

@@ -3,6 +3,7 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 
 import { CityEntity } from "./entities/city.entity.js";
+import { EmailAuthCodeEntity } from "./entities/email-auth-code.entity.js";
 import { NotificationJobEntity } from "./entities/notification-job.entity.js";
 import { OrganizerEntity } from "./entities/organizer.entity.js";
 import { RouteFileEntity } from "./entities/route-file.entity.js";
@@ -21,12 +22,14 @@ import { MakeTripParticipantLimitOptional1737900000000 } from "./migrations/1737
 import { AddCityCentersAndSeedCities1738000000000 } from "./migrations/1738000000000-AddCityCentersAndSeedCities.js";
 import { AddUserCity1738100000000 } from "./migrations/1738100000000-AddUserCity.js";
 import { TransliterateTripSlugs1738200000000 } from "./migrations/1738200000000-TransliterateTripSlugs.js";
+import { AddEmailAuthCodes1738300000000 } from "./migrations/1738300000000-AddEmailAuthCodes.js";
 
 export const appDataSource = new DataSource({
   type: "postgres",
   url: process.env.DATABASE_URL ?? "postgres://biketrips:biketrips@localhost:5432/biketrips",
   entities: [
     CityEntity,
+    EmailAuthCodeEntity,
     NotificationJobEntity,
     OrganizerEntity,
     RouteFileEntity,
@@ -47,6 +50,7 @@ export const appDataSource = new DataSource({
     AddCityCentersAndSeedCities1738000000000,
     AddUserCity1738100000000,
     TransliterateTripSlugs1738200000000,
+    AddEmailAuthCodes1738300000000,
   ],
   synchronize: false,
 });

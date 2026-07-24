@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Inject, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { IsBoolean, IsIn, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, Matches } from "class-validator";
 import { userRoles } from "@biketrips/domain";
 import type { UserRole } from "@biketrips/domain";
 
@@ -60,6 +60,19 @@ class DevLoginDto {
   phone?: string;
 }
 
+class EmailCodeRequestDto {
+  @IsEmail()
+  email!: string;
+}
+
+class EmailCodeVerifyDto {
+  @IsEmail()
+  email!: string;
+
+  @Matches(/^\d{6}$/)
+  code!: string;
+}
+
 @ApiTags("auth")
 @Controller("auth")
 export class AuthController {
@@ -68,6 +81,16 @@ export class AuthController {
   @Post("telegram")
   async telegramLogin(@Body() dto: TelegramLoginDto) {
     return this.authService.loginWithTelegram({ ...dto });
+  }
+
+  @Post("email/request")
+  async requestEmailCode(@Body() dto: EmailCodeRequestDto) {
+    return this.authService.requestEmailCode(dto);
+  }
+
+  @Post("email/verify")
+  async verifyEmailCode(@Body() dto: EmailCodeVerifyDto) {
+    return this.authService.verifyEmailCode(dto);
   }
 
   @Post("dev-login")

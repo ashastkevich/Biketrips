@@ -17,6 +17,9 @@ export class UserEntity {
   @Column({ type: "text", nullable: true })
   email!: string | null;
 
+  @Column({ name: "email_verified_at", type: "timestamptz", nullable: true })
+  emailVerifiedAt!: Date | null;
+
   @Column({ type: "text", default: "user" })
   role!: UserRole;
 

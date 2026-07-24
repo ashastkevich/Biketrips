@@ -20,6 +20,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: payload.role ?? "user",
       phone: payload.phone,
       phoneVerified: payload.phoneVerified ?? false,
+      email: payload.email,
+      emailVerified: payload.emailVerified ?? false,
     };
   }
 }

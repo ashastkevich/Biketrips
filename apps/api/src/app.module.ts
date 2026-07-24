@@ -12,6 +12,7 @@ import { TelegramModule } from "./modules/telegram/telegram.module.js";
 import { TripsModule } from "./modules/trips/trips.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
 import { CityEntity } from "./infrastructure/database/entities/city.entity.js";
+import { EmailAuthCodeEntity } from "./infrastructure/database/entities/email-auth-code.entity.js";
 import { NotificationJobEntity } from "./infrastructure/database/entities/notification-job.entity.js";
 import { OrganizerEntity } from "./infrastructure/database/entities/organizer.entity.js";
 import { RouteFileEntity } from "./infrastructure/database/entities/route-file.entity.js";
@@ -24,12 +25,16 @@ import { WaitlistEntryEntity } from "./infrastructure/database/entities/waitlist
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      envFilePath: [".env", "../../.env"],
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: "postgres",
       url: process.env.DATABASE_URL ?? "postgres://biketrips:biketrips@localhost:5432/biketrips",
       entities: [
         CityEntity,
+        EmailAuthCodeEntity,
         NotificationJobEntity,
         OrganizerEntity,
         RouteFileEntity,

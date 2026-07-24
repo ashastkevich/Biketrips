@@ -18,6 +18,8 @@ export interface AuthenticatedUser {
   role: UserRole;
   phone?: string;
   phoneVerified: boolean;
+  email?: string;
+  emailVerified?: boolean;
 }
 
 export function canJoinTrips(user: AuthenticatedUser | null): boolean {

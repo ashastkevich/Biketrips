@@ -1,0 +1,48 @@
+.card {
+  display: grid;
+  gap: 20px;
+}
+
+.card h2 {
+  margin: 0;
+}
+
+.form {
+  display: grid;
+  gap: 16px;
+}
+
+.lead {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.field input {
+  width: 100%;
+  border: 1px solid var(--dark-line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.field input:focus {
+  border-color: var(--green);
+  outline: 3px solid rgb(48 111 88 / 0.16);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

@@ -91,6 +91,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     const databaseUser = await databaseResponse.json() as {
       name: string;
       email: string | null;
+      emailVerifiedAt: string | null;
       phoneNumber: string | null;
       phoneVerifiedAt: string | null;
       cityId: string | null;
@@ -100,6 +101,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       ...sessionUser,
       name: databaseUser.name,
       email: databaseUser.email ?? "",
+      emailVerified: databaseUser.emailVerifiedAt !== null,
       phone: databaseUser.phoneNumber ?? "",
       phoneVerified: databaseUser.phoneVerifiedAt !== null,
       cityId: databaseUser.cityId ?? "",

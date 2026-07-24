@@ -25,10 +25,12 @@ export class UsersService {
   }
 
   async create(input: { name: string; email?: string }): Promise<UserEntity> {
+    const email = input.email?.trim().toLowerCase() || null;
     return this.usersRepository.save(
       this.usersRepository.create({
         name: input.name,
-        email: input.email ?? null,
+        email,
+        emailVerifiedAt: null,
       })
     );
   }
@@ -46,7 +48,11 @@ export class UsersService {
       throw new BadRequestException("Unknown city");
     }
     user.name = input.name;
-    user.email = input.email?.trim() || null;
+    const nextEmail = input.email?.trim().toLowerCase() || null;
+    if (user.email !== nextEmail) {
+      user.emailVerifiedAt = null;
+    }
+    user.email = nextEmail;
     user.phoneNumber = input.phoneNumber?.trim() || null;
     user.cityId = cityId;
     user.city = city;
