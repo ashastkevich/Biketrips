@@ -8,6 +8,7 @@ import nodemailer from "nodemailer";
 import { IsNull, MoreThan, Repository } from "typeorm";
 
 import { EmailAuthCodeEntity } from "../../infrastructure/database/entities/email-auth-code.entity.js";
+import { TelegramAccountEntity } from "../../infrastructure/database/entities/telegram-account.entity.js";
 import { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
 
 export type TokenPayload = {
@@ -18,6 +19,8 @@ export type TokenPayload = {
   phoneVerified: boolean;
   email?: string;
   emailVerified?: boolean;
+  telegram?: string;
+  telegramVerified?: boolean;
 };
 
 const TELEGRAM_AUTH_MAX_AGE_SECONDS = 24 * 60 * 60;
@@ -62,11 +65,17 @@ function parseEmailFrom(value: string): { email: string; name?: string } {
   return { email: value.trim() };
 }
 
+function compactName(parts: Array<string | undefined>): string {
+  return parts.map((part) => part?.trim()).filter(Boolean).join(" ");
+}
+
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(EmailAuthCodeEntity)
     private readonly emailCodesRepository?: Repository<EmailAuthCodeEntity>,
+    @InjectRepository(TelegramAccountEntity)
+    private readonly telegramAccountsRepository?: Repository<TelegramAccountEntity>,
     @InjectRepository(UserEntity)
     private readonly usersRepository?: Repository<UserEntity>,
   ) {}
@@ -177,7 +186,14 @@ export class AuthService {
     });
   }
 
-  loginWithTelegram(data: Record<string, string | undefined>): { accessToken: string; tokenType: "Bearer" } {
+  async loginWithTelegram(
+    data: Record<string, string | undefined>,
+    authorizationHeader?: string,
+  ): Promise<{ accessToken: string; tokenType: "Bearer" }> {
+    if (!this.telegramAccountsRepository || !this.usersRepository) {
+      throw new ServiceUnavailableException("Telegram authorization storage is not configured");
+    }
+
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
 
     if (!botToken || botToken === "replace-with-telegram-bot-token") {
@@ -188,6 +204,11 @@ export class AuthService {
 
     if (!receivedHash) {
       throw new BadRequestException("Telegram auth hash is required");
+    }
+
+    const telegramId = data.id?.trim();
+    if (!telegramId || !/^\d+$/.test(telegramId)) {
+      throw new BadRequestException("Telegram user id is required");
     }
 
     const authDate = Number(data.auth_date);
@@ -218,12 +239,86 @@ export class AuthService {
       throw new BadRequestException("Invalid Telegram auth payload");
     }
 
-    return this.issueToken({
-      sub: stableTelegramUserId(data.id ?? ""),
-      name: data.username ?? data.first_name,
-      role: "user",
-      phoneVerified: false,
+    const currentUser = await this.findCurrentUser(authorizationHeader);
+    let account = await this.telegramAccountsRepository.findOne({
+      where: { telegramId },
+      relations: { user: true },
     });
+
+    if (currentUser && account && account.userId !== currentUser.id) {
+      throw new BadRequestException("Этот Telegram уже привязан к другому аккаунту");
+    }
+
+    const displayName = compactName([data.first_name, data.last_name]) || data.username || "Пользователь";
+    const username = data.username?.trim() || null;
+    const photoUrl = data.photo_url?.trim() || null;
+
+    let user = currentUser ?? account?.user ?? null;
+    if (!user) {
+      user = await this.usersRepository.save(
+        this.usersRepository.create({
+          id: stableTelegramUserId(telegramId),
+          name: displayName,
+          email: null,
+          emailVerifiedAt: null,
+          role: "user",
+          phoneNumber: null,
+          phoneVerifiedAt: null,
+          avatarUrl: photoUrl,
+        }),
+      );
+    } else {
+      if (!user.name?.trim()) {
+        user.name = displayName;
+      }
+      if (photoUrl && !user.avatarUrl) {
+        user.avatarUrl = photoUrl;
+      }
+      user = await this.usersRepository.save(user);
+    }
+
+    if (!account) {
+      account = this.telegramAccountsRepository.create({
+        telegramId,
+        user,
+        userId: user.id,
+      });
+    }
+
+    account.username = username;
+    account.firstName = data.first_name?.trim() || null;
+    account.lastName = data.last_name?.trim() || null;
+    account.photoUrl = photoUrl;
+    account.user = user;
+    account.userId = user.id;
+    await this.telegramAccountsRepository.save(account);
+
+    return this.issueToken({
+      sub: user.id,
+      name: user.name,
+      role: user.role,
+      phone: user.phoneNumber ?? undefined,
+      phoneVerified: user.phoneVerifiedAt !== null,
+      email: user.email ?? undefined,
+      emailVerified: user.emailVerifiedAt !== null,
+      telegram: username ?? undefined,
+      telegramVerified: true,
+    });
+  }
+
+  private async findCurrentUser(authorizationHeader?: string): Promise<UserEntity | null> {
+    const token = authorizationHeader?.match(/^Bearer\s+(.+)$/i)?.[1];
+    if (!token || !this.usersRepository) return null;
+
+    try {
+      const payload = jwt.verify(token, process.env.JWT_SECRET ?? "local-development-secret");
+      if (typeof payload === "string" || typeof payload.sub !== "string") {
+        return null;
+      }
+      return this.usersRepository.findOne({ where: { id: payload.sub } });
+    } catch {
+      return null;
+    }
   }
 
   private async findOrCreateEmailUser(email: string): Promise<UserEntity> {

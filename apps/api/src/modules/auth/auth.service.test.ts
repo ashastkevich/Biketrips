@@ -40,31 +40,74 @@ describe("AuthService Telegram login", () => {
     process.env.JWT_SECRET = originalJwtSecret;
   });
 
-  it("issues a JWT for a valid Telegram payload", () => {
+  it("creates a user and Telegram account for a valid Telegram payload", async () => {
     process.env.TELEGRAM_BOT_TOKEN = botToken;
+    process.env.JWT_SECRET = "test-secret";
+    const { service, accounts, users } = createTelegramAuthService();
 
-    const result = new AuthService().loginWithTelegram(signedTelegramPayload());
+    const result = await service.loginWithTelegram(signedTelegramPayload());
+    const payload = jwt.verify(result.accessToken, "test-secret");
 
     expect(result.tokenType).toBe("Bearer");
-    expect(result.accessToken.split(".")).toHaveLength(3);
+    expect(payload).toMatchObject({
+      name: "Alex",
+      role: "user",
+      telegram: "alex_rides",
+      telegramVerified: true,
+    });
+    expect(users).toHaveLength(1);
+    expect(accounts).toMatchObject([
+      {
+        telegramId: "123456789",
+        username: "alex_rides",
+        userId: users[0]?.id,
+      },
+    ]);
   });
 
-  it("rejects an expired Telegram payload", () => {
+  it("links Telegram to the current authenticated user", async () => {
     process.env.TELEGRAM_BOT_TOKEN = botToken;
+    process.env.JWT_SECRET = "test-secret";
+    const { service, accounts, users } = createTelegramAuthService();
+    users.push(createTestUser({ id: "user-existing", name: "Existing rider" }));
+    const currentToken = jwt.sign(
+      { sub: "user-existing", role: "user", phoneVerified: false },
+      "test-secret",
+    );
+
+    const result = await service.loginWithTelegram(
+      signedTelegramPayload(),
+      `Bearer ${currentToken}`,
+    );
+    const payload = jwt.verify(result.accessToken, "test-secret");
+
+    expect(payload).toMatchObject({
+      sub: "user-existing",
+      name: "Existing rider",
+      telegramVerified: true,
+    });
+    expect(users).toHaveLength(1);
+    expect(accounts[0]?.userId).toBe("user-existing");
+  });
+
+  it("rejects an expired Telegram payload", async () => {
+    process.env.TELEGRAM_BOT_TOKEN = botToken;
+    const { service } = createTelegramAuthService();
     const authDate = String(Math.floor(Date.now() / 1000) - 25 * 60 * 60);
 
-    expect(() =>
-      new AuthService().loginWithTelegram(signedTelegramPayload({ auth_date: authDate }))
-    ).toThrow(BadRequestException);
+    await expect(
+      service.loginWithTelegram(signedTelegramPayload({ auth_date: authDate })),
+    ).rejects.toThrow(BadRequestException);
   });
 
-  it("rejects a payload with an invalid signature", () => {
+  it("rejects a payload with an invalid signature", async () => {
     process.env.TELEGRAM_BOT_TOKEN = botToken;
+    const { service } = createTelegramAuthService();
     const payload = signedTelegramPayload();
 
-    expect(() =>
-      new AuthService().loginWithTelegram({ ...payload, username: "attacker" })
-    ).toThrow(BadRequestException);
+    await expect(
+      service.loginWithTelegram({ ...payload, username: "attacker" }),
+    ).rejects.toThrow(BadRequestException);
   });
 });
 
@@ -196,8 +239,89 @@ function createEmailAuthService() {
   };
 
   return {
-    service: new AuthService(emailCodesRepository as never, usersRepository as never),
+    service: new AuthService(emailCodesRepository as never, undefined, usersRepository as never),
     codes,
+    users,
+  };
+}
+
+function createTestUser(input: Partial<{
+  id: string;
+  name: string;
+  email: string | null;
+  emailVerifiedAt: Date | null;
+  role: "user" | "admin";
+  phoneNumber: string | null;
+  phoneVerifiedAt: Date | null;
+  avatarUrl: string | null;
+}> = {}) {
+  return {
+    id: input.id ?? "user-1",
+    name: input.name ?? "Пользователь",
+    email: input.email ?? null,
+    emailVerifiedAt: input.emailVerifiedAt ?? null,
+    role: input.role ?? "user",
+    phoneNumber: input.phoneNumber ?? null,
+    phoneVerifiedAt: input.phoneVerifiedAt ?? null,
+    avatarUrl: input.avatarUrl ?? null,
+  };
+}
+
+function createTelegramAuthService() {
+  const users: Array<ReturnType<typeof createTestUser>> = [];
+  const accounts: Array<{
+    id: string;
+    telegramId: string;
+    username: string | null;
+    firstName: string | null;
+    lastName: string | null;
+    photoUrl: string | null;
+    userId: string;
+    user: ReturnType<typeof createTestUser>;
+  }> = [];
+
+  const usersRepository = {
+    findOne: async ({ where }: { where: { id: string } }) =>
+      users.find((user) => user.id === where.id) ?? null,
+    create: (input: Partial<ReturnType<typeof createTestUser>>) => createTestUser(input),
+    save: async (user: ReturnType<typeof createTestUser>) => {
+      const existingIndex = users.findIndex((item) => item.id === user.id);
+      if (existingIndex >= 0) {
+        users[existingIndex] = user;
+      } else {
+        users.push(user);
+      }
+      return user;
+    },
+  };
+
+  const telegramAccountsRepository = {
+    findOne: async ({ where }: { where: { telegramId: string } }) =>
+      accounts.find((account) => account.telegramId === where.telegramId) ?? null,
+    create: (input: Partial<(typeof accounts)[number]>) => ({
+      id: `telegram-${accounts.length + 1}`,
+      telegramId: input.telegramId ?? "",
+      username: input.username ?? null,
+      firstName: input.firstName ?? null,
+      lastName: input.lastName ?? null,
+      photoUrl: input.photoUrl ?? null,
+      userId: input.userId ?? "",
+      user: input.user ?? createTestUser(),
+    }),
+    save: async (account: (typeof accounts)[number]) => {
+      const existingIndex = accounts.findIndex((item) => item.id === account.id);
+      if (existingIndex >= 0) {
+        accounts[existingIndex] = account;
+      } else {
+        accounts.push(account);
+      }
+      return account;
+    },
+  };
+
+  return {
+    service: new AuthService(undefined, telegramAccountsRepository as never, usersRepository as never),
+    accounts,
     users,
   };
 }

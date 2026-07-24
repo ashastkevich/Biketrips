@@ -79,8 +79,8 @@ export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
   @Post("telegram")
-  async telegramLogin(@Body() dto: TelegramLoginDto) {
-    return this.authService.loginWithTelegram({ ...dto });
+  async telegramLogin(@Body() dto: TelegramLoginDto, @Req() request: { headers: { authorization?: string } }) {
+    return this.authService.loginWithTelegram({ ...dto }, request.headers.authorization);
   }
 
   @Post("email/request")

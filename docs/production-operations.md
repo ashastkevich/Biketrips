@@ -32,8 +32,9 @@ pushed to `origin/main` so the next deploy does not revert it.
 
 - Provider: Selectel cloud server.
 - Public IP: `135.106.155.78`.
-- Public web URL without domain: `http://135.106.155.78`.
-- Public backend health URL: `http://135.106.155.78/backend/health`.
+- Public web URL: `https://biketrips.ru`.
+- Alternate web URL: `https://www.biketrips.ru`.
+- Public backend health URL: `https://biketrips.ru/backend/health`.
 - OS: Ubuntu 24.04 LTS.
 - Size: 2 vCPU, 4 GB RAM, 32 GB NVMe SSD.
 - SSH access used during setup: `root@135.106.155.78`.
@@ -46,10 +47,13 @@ pushed to `origin/main` so the next deploy does not revert it.
 Open inbound ports are intentionally minimal:
 
 - `22/tcp` for SSH.
-- `80/tcp` for HTTP.
+- `80/tcp` for HTTP redirect to HTTPS.
+- `443/tcp` for HTTPS.
 
-HTTPS is not enabled yet because there is no domain. Once a domain exists,
-point an `A` record to `135.106.155.78` and add TLS through nginx/certbot.
+HTTPS is enabled through Let's Encrypt/certbot for `biketrips.ru` and
+`www.biketrips.ru`. The certificate is stored under
+`/etc/letsencrypt/live/biketrips.ru/` and certbot's system timer handles
+automatic renewal.
 
 ## Production services
 
@@ -120,8 +124,8 @@ Important env names:
 - `NODE_ENV=production`
 - `WEB_PORT=3000`
 - `API_PORT=4000`
-- `NEXT_PUBLIC_API_URL=http://135.106.155.78/backend`
-- `API_CORS_ORIGIN=http://135.106.155.78`
+- `NEXT_PUBLIC_API_URL=https://biketrips.ru/backend`
+- `API_CORS_ORIGIN=https://biketrips.ru`
 - `DATABASE_URL`
 - `REDIS_URL`
 - `JWT_SECRET`
@@ -163,10 +167,10 @@ If email login fails:
 
 ## Known production notes
 
-- The site currently runs over HTTP by IP. Session cookies must not be forced to
-  `Secure` on this host. The web route handlers use the incoming request
-  protocol to decide the cookie `secure` flag, so when HTTPS is added the cookie
-  becomes secure automatically.
+- The site now runs over HTTPS on `biketrips.ru`. The web route handlers use the
+  incoming request protocol to decide the cookie `secure` flag, so session
+  cookies are secure on the HTTPS domain while still behaving correctly in local
+  HTTP development.
 - The API currently runs in production through:
 
   ```bash

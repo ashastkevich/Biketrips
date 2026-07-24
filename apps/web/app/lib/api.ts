@@ -96,7 +96,9 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       phoneVerifiedAt: string | null;
       cityId: string | null;
       city: { name: string } | null;
+      telegramAccounts?: Array<{ username: string | null }>;
     };
+    const verifiedTelegram = databaseUser.telegramAccounts?.find((account) => account.username)?.username ?? "";
     return {
       ...sessionUser,
       name: databaseUser.name,
@@ -104,6 +106,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       emailVerified: databaseUser.emailVerifiedAt !== null,
       phone: databaseUser.phoneNumber ?? "",
       phoneVerified: databaseUser.phoneVerifiedAt !== null,
+      telegram: verifiedTelegram || sessionUser.telegram,
+      telegramVerified: Boolean(verifiedTelegram) || sessionUser.telegramVerified,
       cityId: databaseUser.cityId ?? "",
       city: databaseUser.city?.name ?? "",
     };

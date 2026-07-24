@@ -83,7 +83,7 @@ Pull requests should include:
 
 Do not commit secrets, Telegram bot tokens, database credentials, or production environment files. When application setup begins, add `.env.example` with safe placeholder values and keep real `.env` files ignored.
 
-Production currently runs on `135.106.155.78` behind nginx. Web traffic is served
-over HTTP by IP until a domain and HTTPS are configured. Email login uses the
-UniSender transactional HTTPS API, not SMTP, because the production provider
-blocks outbound SMTP ports.
+Production currently runs on `135.106.155.78` behind nginx and is available at
+`https://biketrips.ru`. HTTPS is handled by Let's Encrypt/certbot. Email login
+uses the UniSender transactional HTTPS API, not SMTP, because the production
+provider blocks outbound SMTP ports.

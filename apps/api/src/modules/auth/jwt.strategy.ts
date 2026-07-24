@@ -22,6 +22,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       phoneVerified: payload.phoneVerified ?? false,
       email: payload.email,
       emailVerified: payload.emailVerified ?? false,
+      telegram: payload.telegram,
+      telegramVerified: payload.telegramVerified ?? false,
     };
   }
 }

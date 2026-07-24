@@ -15,7 +15,10 @@ export class UsersService {
   ) {}
 
   async get(id: string): Promise<UserEntity> {
-    const user = await this.usersRepository.findOne({ where: { id }, relations: { city: true } });
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: { city: true, telegramAccounts: true },
+    });
 
     if (!user) {
       throw new NotFoundException("User not found");
