@@ -5,6 +5,7 @@ import { getCities, getCurrentUser, getTrip, getTripDetails } from "./lib/api";
 import { CITY_COOKIE_NAME, fallbackCities, selectCity } from "./lib/cities";
 import { ArrowIcon } from "./lib/components";
 import { CreateTripLauncher } from "./lib/create-trip-launcher";
+import { legalLinks } from "./legal/legal-documents";
 import { LinkButton } from "./ui/components";
 import styles from "./home.module.css";
 
@@ -103,12 +104,20 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       <footer className={styles.footer}>
         <div className={`page ${styles.footerInner}`}>
-          <div className={styles.footerBrand}>BikeTrips</div>
-          <nav className={styles.footerLinks} aria-label="Юридическая информация">
-            <a href="#">Политика конфиденциальности</a>
-            <a href="#">Пользовательское соглашение</a>
-            <a href="#">Контакты</a>
-          </nav>
+          <div className={styles.footerIntro}>
+            <div className={styles.footerBrand}>BikeTrips</div>
+            <p>Совместные велопоездки рядом.</p>
+          </div>
+          <div className={styles.footerLegal}>
+            <p>Документы</p>
+            <nav className={styles.footerLinks} aria-label="Юридическая информация">
+              {legalLinks.map((link) => (
+                <a href={link.href} key={link.href}>
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+          </div>
         </div>
       </footer>
     </>
