@@ -5,6 +5,7 @@
 This repository contains the BikeTrips MVP TypeScript monorepo, planning documents, and shared assets for the web app.
 
 - `docs/` contains product and architecture notes, including `project-overview.md`, `architecture.md`, and `mvp-implementation-plan.md`.
+- `docs/production-operations.md` contains production deployment, server, email, and operations context. Read it before deployment, hosting, authentication, email, or production-debugging work.
 - `apps/web` is the Next.js web app scaffold.
 - `apps/web/public/img` stores local visual assets used by the web app.
 - `apps/api` is the Node.js API scaffold before the NestJS implementation stage.
@@ -28,6 +29,12 @@ The monorepo uses npm workspaces. Common commands:
 - `docker compose up -d postgres redis` starts local PostgreSQL and Redis.
 - Use `git status` before and after changes to review the working tree.
 - Use `rg "text"` to search project content quickly.
+
+Local development and production deployment are deliberately separate. Develop
+and test locally first. Production updates only after pushing committed changes
+to remote `main`, which triggers GitHub Actions and the server deploy script.
+Do not treat temporary SSH edits on production as the final source of truth;
+commit and push the fix to `origin/main`.
 
 ## Coding Style & Naming Conventions
 
@@ -75,3 +82,8 @@ Pull requests should include:
 ## Security & Configuration Tips
 
 Do not commit secrets, Telegram bot tokens, database credentials, or production environment files. When application setup begins, add `.env.example` with safe placeholder values and keep real `.env` files ignored.
+
+Production currently runs on `135.106.155.78` behind nginx. Web traffic is served
+over HTTP by IP until a domain and HTTPS are configured. Email login uses the
+UniSender transactional HTTPS API, not SMTP, because the production provider
+blocks outbound SMTP ports.
