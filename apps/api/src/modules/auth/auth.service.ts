@@ -23,6 +23,7 @@ export type TokenPayload = {
 const TELEGRAM_AUTH_MAX_AGE_SECONDS = 24 * 60 * 60;
 const EMAIL_CODE_TTL_MINUTES = 15;
 const EMAIL_CODE_MAX_ATTEMPTS = 5;
+const DEFAULT_UNISENDER_API_URL = "https://goapi.unisender.ru/ru/transactional/api/v1/email/send.json";
 
 function stableTelegramUserId(telegramId: string): string {
   const hash = createHash("sha256").update(`telegram:${telegramId}`).digest("hex");
@@ -47,6 +48,18 @@ function safeCompareHex(left: string, right: string): boolean {
   const rightBuffer = Buffer.from(right, "hex");
 
   return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function parseEmailFrom(value: string): { email: string; name?: string } {
+  const match = value.match(/^\s*(.*?)\s*<([^<>]+)>\s*$/);
+  if (match) {
+    return {
+      name: match[1]?.trim() || undefined,
+      email: match[2]?.trim() ?? value.trim(),
+    };
+  }
+
+  return { email: value.trim() };
 }
 
 @Injectable()
@@ -94,6 +107,8 @@ export class AuthService {
     const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
     const expiresAt = new Date(Date.now() + EMAIL_CODE_TTL_MINUTES * 60 * 1000);
 
+    const delivery = await this.deliverEmailCode(email, code);
+
     await this.emailCodesRepository.save(
       this.emailCodesRepository.create({
         email,
@@ -101,8 +116,6 @@ export class AuthService {
         expiresAt,
       }),
     );
-
-    const delivery = await this.deliverEmailCode(email, code);
 
     return delivery === "local" ? { ok: true, devCode: code } : { ok: true };
   }
@@ -243,6 +256,19 @@ export class AuthService {
   private async deliverEmailCode(email: string, code: string): Promise<"email" | "local"> {
     const subject = "Код входа в BikeTrips";
     const text = `Ваш код входа в BikeTrips: ${code}. Он действует ${EMAIL_CODE_TTL_MINUTES} минут.`;
+    const html = `<p>Ваш код входа в BikeTrips:</p><p><strong>${code}</strong></p><p>Он действует ${EMAIL_CODE_TTL_MINUTES} минут.</p>`;
+    const apiKey = process.env.UNISENDER_API_KEY?.trim() || process.env.SMTP_PASSWORD?.trim();
+
+    if (apiKey) {
+      await this.deliverEmailCodeWithUnisenderApi(email, {
+        subject,
+        text,
+        html,
+        apiKey,
+      });
+      return "email";
+    }
+
     const smtpHost = process.env.SMTP_HOST?.trim();
     const smtpUser = process.env.SMTP_USER?.trim();
     const smtpPassword = process.env.SMTP_PASSWORD;
@@ -277,11 +303,63 @@ export class AuthService {
         to: email,
         subject,
         text,
-        html: `<p>Ваш код входа в BikeTrips:</p><p><strong>${code}</strong></p><p>Он действует ${EMAIL_CODE_TTL_MINUTES} минут.</p>`,
+        html,
       });
       return "email";
     } catch {
       throw new ServiceUnavailableException("Не удалось отправить код входа");
+    }
+  }
+
+  private async deliverEmailCodeWithUnisenderApi(
+    email: string,
+    input: { subject: string; text: string; html: string; apiKey: string },
+  ): Promise<void> {
+    const from = parseEmailFrom(process.env.EMAIL_FROM ?? "BikeTrips <no-reply@biketrips.local>");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+
+    try {
+      const response = await fetch(process.env.UNISENDER_API_URL ?? DEFAULT_UNISENDER_API_URL, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "X-API-KEY": input.apiKey,
+        },
+        body: JSON.stringify({
+          message: {
+            recipients: [{ email }],
+            body: {
+              html: input.html,
+              plaintext: input.text,
+            },
+            subject: input.subject,
+            from_email: from.email,
+            from_name: from.name,
+          },
+        }),
+        signal: controller.signal,
+      });
+      const result = await response.json().catch(() => null) as
+        | { status?: string; message?: string; failed_emails?: unknown[] }
+        | null;
+
+      if (!response.ok || result?.status === "error" || (result?.failed_emails?.length ?? 0) > 0) {
+        console.error("[BikeTrips] UniSender email delivery failed", {
+          statusCode: response.status,
+          status: result?.status,
+          message: result?.message,
+          failedEmails: result?.failed_emails,
+        });
+        throw new ServiceUnavailableException("Не удалось отправить код входа");
+      }
+    } catch (error) {
+      if (error instanceof ServiceUnavailableException) throw error;
+      console.error("[BikeTrips] UniSender email delivery request failed", error);
+      throw new ServiceUnavailableException("Не удалось отправить код входа");
+    } finally {
+      clearTimeout(timeout);
     }
   }
 }
