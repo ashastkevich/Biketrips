@@ -301,6 +301,37 @@
   margin-top: 18px;
 }
 
+.routeGpxField {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 18px;
+}
+
+.routeGpxActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.routeGpxMap {
+  position: relative;
+  min-height: 320px;
+  overflow: hidden;
+  background: #e7eadf;
+  border: 1px solid #d8dbc7;
+  border-radius: 8px;
+}
+
+.routeGpxError {
+  margin: 0;
+  padding: 11px 13px;
+  color: #7c3328;
+  background: #fff4f0;
+  border: 1px solid #edc8bd;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
 .inlineError {
   margin-top: 16px;
   padding: 12px 14px;

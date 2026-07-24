@@ -1,5 +1,6 @@
 import type { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
 import type { TripParticipantEntity } from "../../infrastructure/database/entities/trip-participant.entity.js";
+import { normalizeRouteFileName } from "./route-file-names.js";
 
 function countParticipants(
   participants: TripParticipantEntity[] | undefined,
@@ -32,6 +33,8 @@ export function serializeTripSummary(trip: TripEntity) {
 }
 
 export function serializeTripDetail(trip: TripEntity) {
+  const routeGpxFile = trip.routeFiles?.[0] ?? null;
+
   return {
     ...serializeTripSummary(trip),
     description: trip.description,
@@ -43,6 +46,8 @@ export function serializeTripDetail(trip: TripEntity) {
     routeDescription: trip.routeDescription,
     equipmentRequirements: trip.equipmentRequirements,
     rules: trip.rules,
+    routeGpxFileName: routeGpxFile ? normalizeRouteFileName(routeGpxFile.originalName) : null,
+    routeGpxDownloadUrl: routeGpxFile ? `/trips/${trip.id}/route-file` : null,
     registrationMode: trip.registrationMode,
     organizer: {
       id: trip.organizer.id,

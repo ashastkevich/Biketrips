@@ -22,6 +22,8 @@ import {
 import { AuthOptions, type AuthProvider } from "../../ui/auth-options";
 import authOptionStyles from "../../ui/auth-options.module.css";
 import componentStyles from "../../ui/components.module.css";
+import { getMapTilerApiKey } from "../../maps/map-config";
+import { GpxRouteMapLoader } from "../../maps/gpx-route-map-loader";
 import { StartLocationPicker } from "./start-location-picker";
 import { NEW_TRIP_DRAFT_KEY } from "./draft-storage";
 import styles from "./trip-creation-wizard.module.css";
@@ -37,6 +39,8 @@ const coverTemplates = [
   { src: "/img/Photo4.jpg", label: "Совместная велопрогулка" },
 ];
 const defaultCoverImage = coverTemplates[1]!.src;
+const maxRouteGpxBytes = 1_000_000;
+
 export interface TripDraft {
   cityId: string;
   title: string;
@@ -60,6 +64,8 @@ export interface TripDraft {
   coverImage: string;
   description: string;
   routeDescription: string;
+  routeGpxFileName: string;
+  routeGpxDownloadUrl: string;
   equipmentRequirements: string;
   rules: string;
 }
@@ -87,9 +93,25 @@ const initialDraft: TripDraft = {
   coverImage: defaultCoverImage,
   description: "",
   routeDescription: "",
+  routeGpxFileName: "",
+  routeGpxDownloadUrl: "",
   equipmentRequirements: "",
   rules: "",
 };
+
+function getPersistableDraft(draft: TripDraft): TripDraft {
+  return {
+    ...draft,
+    routeGpxFileName: "",
+    routeGpxDownloadUrl: "",
+  };
+}
+
+function getDisplayCoverImage(coverImage: string): string {
+  return coverImage.startsWith("/trips/") && coverImage.includes("/cover-image")
+    ? `/api${coverImage}`
+    : coverImage;
+}
 
 interface TripCreationWizardProps {
   action: (formData: FormData) => void | Promise<void>;
@@ -121,6 +143,7 @@ export function TripCreationWizard({
   const [showDetails, setShowDetails] = useState(
     Boolean(
       initialValues?.routeDescription ||
+      initialValues?.routeGpxFileName ||
       initialValues?.equipmentRequirements ||
       initialValues?.rules,
     ),
@@ -130,7 +153,12 @@ export function TripCreationWizard({
   const [customCoverUrl, setCustomCoverUrl] = useState("");
   const [customCoverName, setCustomCoverName] = useState("");
   const [isTitleEdited, setIsTitleEdited] = useState(Boolean(defaultDraft.title));
+  const [routeGpxError, setRouteGpxError] = useState("");
+  const [showRouteMap, setShowRouteMap] = useState(false);
+  const [routeGpxPreviewContent, setRouteGpxPreviewContent] = useState("");
+  const [removeRouteGpx, setRemoveRouteGpx] = useState(false);
   const coverFileRef = useRef<HTMLInputElement>(null);
+  const routeGpxFileRef = useRef<HTMLInputElement>(null);
   const initialPersistSkippedRef = useRef(false);
   const restoredDraftPendingRef = useRef(false);
 
@@ -145,6 +173,8 @@ export function TripCreationWizard({
           ...defaultDraft,
           ...savedDraft,
           hasParticipantLimit: savedDraft.hasParticipantLimit ?? defaultDraft.hasParticipantLimit,
+          routeGpxFileName: defaultDraft.routeGpxFileName,
+          routeGpxDownloadUrl: defaultDraft.routeGpxDownloadUrl,
         });
         restoredDraftPendingRef.current = true;
       } catch {
@@ -169,7 +199,7 @@ export function TripCreationWizard({
     setSaveStatus("saving");
     const timeout = window.setTimeout(() => {
       try {
-        window.localStorage.setItem(NEW_TRIP_DRAFT_KEY, JSON.stringify(draft));
+        window.localStorage.setItem(NEW_TRIP_DRAFT_KEY, JSON.stringify(getPersistableDraft(draft)));
         setSaveStatus("saved");
       } catch {
         setSaveStatus("error");
@@ -226,6 +256,53 @@ export function TripCreationWizard({
     }));
   }
 
+  async function updateRouteGpx(file: File | undefined) {
+    setRouteGpxError("");
+    setShowRouteMap(false);
+    setRouteGpxPreviewContent("");
+
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".gpx")) {
+      setRouteGpxError("Загрузите файл с расширением .gpx.");
+      if (routeGpxFileRef.current) routeGpxFileRef.current.value = "";
+      return;
+    }
+    if (file.size > maxRouteGpxBytes) {
+      setRouteGpxError("GPX-файл должен быть не больше 1 МБ.");
+      if (routeGpxFileRef.current) routeGpxFileRef.current.value = "";
+      return;
+    }
+
+    const content = await file.text();
+    if (!/<gpx[\s>]/i.test(content)) {
+      setRouteGpxError("Не удалось найти GPX-разметку в файле.");
+      if (routeGpxFileRef.current) routeGpxFileRef.current.value = "";
+      return;
+    }
+
+    setDraft((current) => ({
+      ...current,
+      routeGpxFileName: file.name,
+    }));
+    setRouteGpxPreviewContent(content);
+    setRemoveRouteGpx(false);
+    setShowRouteMap(true);
+  }
+
+  function clearRouteGpx() {
+    const shouldRemoveSavedFile = Boolean(draft.routeGpxDownloadUrl);
+    setDraft((current) => ({
+      ...current,
+      routeGpxFileName: "",
+      routeGpxDownloadUrl: "",
+    }));
+    setRouteGpxPreviewContent("");
+    setRemoveRouteGpx(shouldRemoveSavedFile);
+    setRouteGpxError("");
+    setShowRouteMap(false);
+    if (routeGpxFileRef.current) routeGpxFileRef.current.value = "";
+  }
+
   function validateStep(currentStep: number): boolean {
     const effectiveTitle = draft.title || (isTitleEdited ? "" : suggestedTitle);
 
@@ -272,7 +349,9 @@ export function TripCreationWizard({
   const title = draft.title || (isTitleEdited ? "" : suggestedTitle);
   const startAt = draft.date && draft.time ? `${draft.date}T${draft.time}` : "";
   const selectedCover = customCoverUrl || draft.coverImage || defaultCoverImage;
+  const previewCover = customCoverUrl || getDisplayCoverImage(draft.coverImage || defaultCoverImage);
   const selectedCity = cities.find((city) => city.id === draft.cityId) ?? cities[0];
+  const mapTilerApiKey = getMapTilerApiKey();
 
   return (
     <form
@@ -318,6 +397,7 @@ export function TripCreationWizard({
       ) : null}
       <input name="registrationMode" type="hidden" value={draft.registrationMode} />
       <input name="coverImage" type="hidden" value={customCoverUrl ? "" : selectedCover} />
+      <input name="removeRouteGpx" type="hidden" value={String(removeRouteGpx)} />
 
       <div className={styles.main}>
         <Stepper
@@ -616,6 +696,47 @@ export function TripCreationWizard({
                   onChange={(event) => update("description", event.target.value)}
                 />
               </FormField>
+              <div className={styles.routeGpxField}>
+                <FileField
+                  inputRef={routeGpxFileRef}
+                  name="routeGpxFile"
+                  accept=".gpx,application/gpx+xml,application/xml,text/xml"
+                  selected={Boolean(draft.routeGpxFileName)}
+                  label={draft.routeGpxFileName || "Загрузить GPX-маршрут"}
+                  hint={draft.routeGpxFileName ? "Файл маршрута выбран" : "Необязательно, до 1 МБ"}
+                  onChange={(event) => void updateRouteGpx(event.target.files?.[0])}
+                />
+                {draft.routeGpxFileName ? (
+                  <div className={styles.routeGpxActions}>
+                    {routeGpxPreviewContent ? (
+                      <Button tone="secondary" type="button" onClick={() => setShowRouteMap((open) => !open)}>
+                        {showRouteMap ? "Скрыть карту" : "Открыть карту"}
+                      </Button>
+                    ) : null}
+                    <Button tone="ghost" type="button" onClick={clearRouteGpx}>
+                      Удалить GPX
+                    </Button>
+                  </div>
+                ) : null}
+                {routeGpxError ? (
+                  <p className={styles.routeGpxError} role="alert">{routeGpxError}</p>
+                ) : null}
+                {showRouteMap && routeGpxPreviewContent ? (
+                  mapTilerApiKey ? (
+                    <div className={styles.routeGpxMap}>
+                      <GpxRouteMapLoader
+                        apiKey={mapTilerApiKey}
+                        fileName={draft.routeGpxFileName}
+                        gpxContent={routeGpxPreviewContent}
+                      />
+                    </div>
+                  ) : (
+                    <p className={styles.routeGpxError}>
+                      Карта недоступна: не задан ключ MapTiler.
+                    </p>
+                  )
+                ) : null}
+              </div>
               <Button
                 className={styles.detailsToggle}
                 tone="ghost"
@@ -719,7 +840,7 @@ export function TripCreationWizard({
           difficulty={draft.difficulty as DifficultyLevel}
           averageSpeed={draft.averageSpeed}
           maxParticipants={draft.hasParticipantLimit ? draft.maxParticipants : undefined}
-          coverImage={selectedCover}
+          coverImage={previewCover}
         />
       </aside>
       {showAuth ? (

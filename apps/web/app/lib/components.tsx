@@ -286,5 +286,9 @@ export function Metric({ label, value }: { label: string; value: ReactNode }) {
 }
 
 function getTripImage(trip: TripSummary): string | undefined {
-  return trip.coverImage ?? undefined;
+  if (!trip.coverImage) return undefined;
+
+  return trip.coverImage.startsWith("/trips/") && trip.coverImage.includes("/cover-image")
+    ? `/api${trip.coverImage}`
+    : trip.coverImage;
 }

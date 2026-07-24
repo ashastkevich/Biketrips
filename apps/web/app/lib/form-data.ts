@@ -72,6 +72,12 @@ export function readTripInput(formData: FormData): CreateTripInput {
   };
 }
 
+export function readOptionalFile(formData: FormData, name: string): File | undefined {
+  const value = formData.get(name);
+
+  return value instanceof File && value.size > 0 ? value : undefined;
+}
+
 export function readTripUpdateInput(formData: FormData): UpdateTripInput {
   const { organizerId: _organizerId, ...input } = readTripInput(formData);
   return {

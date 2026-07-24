@@ -52,8 +52,39 @@ export class BikeTripsApiClient {
     return this.post<TripDetail>("/trips", input, true);
   }
 
+  async createTripWithRouteFile(
+    input: CreateTripInput,
+    routeFile: File | undefined,
+    coverImageFile?: File,
+  ): Promise<TripDetail> {
+    const formData = new FormData();
+    formData.set("payload", JSON.stringify(input));
+    if (routeFile) formData.set("routeGpxFile", routeFile);
+    if (coverImageFile) formData.set("coverImageFile", coverImageFile);
+
+    return this.postForm<TripDetail>("/trips/with-route-file", formData, true);
+  }
+
   async updateTrip(id: string, input: UpdateTripInput): Promise<TripDetail> {
     return this.patch<TripDetail>(`/trips/${encodeURIComponent(id)}`, input, true);
+  }
+
+  async updateTripWithRouteFile(
+    id: string,
+    input: UpdateTripInput,
+    options: { routeFile?: File; coverImageFile?: File; removeRouteFile?: boolean } = {},
+  ): Promise<TripDetail> {
+    const formData = new FormData();
+    formData.set("payload", JSON.stringify(input));
+    if (options.routeFile) formData.set("routeGpxFile", options.routeFile);
+    if (options.coverImageFile) formData.set("coverImageFile", options.coverImageFile);
+    if (options.removeRouteFile) formData.set("removeRouteFile", "true");
+
+    return this.patchForm<TripDetail>(
+      `/trips/${encodeURIComponent(id)}/with-route-file`,
+      formData,
+      true,
+    );
   }
 
   async publishTrip(id: string): Promise<TripDetail> {
@@ -142,6 +173,26 @@ export class BikeTripsApiClient {
     return (await response.json()) as TResponse;
   }
 
+  private async postForm<TResponse>(
+    path: string,
+    body: FormData,
+    authenticated = false,
+  ): Promise<TResponse> {
+    const response = await this.request(path, { method: "POST", body }, authenticated);
+
+    return (await response.json()) as TResponse;
+  }
+
+  private async patchForm<TResponse>(
+    path: string,
+    body: FormData,
+    authenticated = false,
+  ): Promise<TResponse> {
+    const response = await this.request(path, { method: "PATCH", body }, authenticated);
+
+    return (await response.json()) as TResponse;
+  }
+
   private async delete<TResponse>(
     path: string,
     authenticated = false,
@@ -159,7 +210,7 @@ export class BikeTripsApiClient {
     const headers = new Headers(init.headers);
     headers.set("Accept", "application/json");
 
-    if (init.body) {
+    if (init.body && !(init.body instanceof FormData)) {
       headers.set("Content-Type", "application/json");
     }
 

@@ -7,6 +7,7 @@ import {
   formatSurfaceComposition,
   unpavedSurfaceDetailLabels,
 } from "../lib/labels";
+import { RouteMapToggle } from "./route-map-toggle";
 import styles from "./trip-details.module.css";
 
 interface TripDetailsCardProps {
@@ -122,6 +123,17 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
               <h3>О поездке</h3>
               <p>{trip.description}</p>
             </section>
+
+            {trip.routeGpxDownloadUrl ? (
+              <section className={styles.section}>
+                <h3>Карта маршрута</h3>
+                <p>{trip.routeGpxFileName ?? "GPX-файл маршрута"} загружен организатором.</p>
+                <RouteMapToggle
+                  fileName={trip.routeGpxFileName}
+                  downloadUrl={trip.routeGpxDownloadUrl}
+                />
+              </section>
+            ) : null}
 
             {hasRouteConditions ? (
               <details className={styles.disclosure} open>

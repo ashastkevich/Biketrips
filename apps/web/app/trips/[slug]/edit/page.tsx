@@ -2,9 +2,15 @@ import { redirect } from "next/navigation";
 import type { TripDetail, UpdateTripInput } from "@biketrips/domain";
 
 import { fallbackCities } from "../../../lib/cities";
-import { getCities, getCurrentUser, getTrip, updateTrip } from "../../../lib/api";
+import {
+  getCities,
+  getCurrentUser,
+  getTrip,
+  updateTrip,
+  updateTripWithRouteFile,
+} from "../../../lib/api";
 import { AppTopbar } from "../../../lib/components";
-import { readTripUpdateInput } from "../../../lib/form-data";
+import { readOptionalFile, readString, readTripUpdateInput } from "../../../lib/form-data";
 import { getTripHref, getTripReference } from "../../../lib/trip-links";
 import { Alert, LinkButton } from "../../../ui/components";
 import {
@@ -48,6 +54,7 @@ function decodeTripReference(value: string): string {
 function getChangedFields(
   trip: TripDetail,
   input: UpdateTripInput,
+  formData: FormData,
   originalLocalStart: string,
 ): string[] {
   const changes: string[] = [];
@@ -83,10 +90,23 @@ function getChangedFields(
   if (differs(trip.dropPolicy, input.dropPolicy)) changes.push("Формат движения");
   if (differs(trip.capacity, input.maxParticipants ?? null)) changes.push("Лимит мест");
   if (differs(trip.registrationMode, input.registrationMode)) changes.push("Режим регистрации");
-  if (differs(optional(trip.coverImage), optional(input.coverImage))) changes.push("Обложка");
+  const coverImageChanged =
+    differs(optional(trip.coverImage), optional(input.coverImage)) ||
+    (formData.get("coverImageFile") instanceof File &&
+      (formData.get("coverImageFile") as File).size > 0);
+  if (coverImageChanged) changes.push("Обложка");
   if (differs(trip.description, input.description)) changes.push("Описание");
   if (differs(optional(trip.routeDescription), optional(input.routeDescription))) {
     changes.push("Маршрут");
+  }
+  if (
+    formData.get("routeGpxFile") instanceof File &&
+    (formData.get("routeGpxFile") as File).size > 0
+  ) {
+    changes.push("GPX-маршрут");
+  }
+  if (readString(formData, "removeRouteGpx") === "true" && trip.routeGpxFileName) {
+    changes.push("GPX-маршрут");
   }
   if (
     differs(optional(trip.equipmentRequirements), optional(input.equipmentRequirements))
@@ -183,6 +203,8 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
     coverImage: trip.coverImage ?? "",
     description: trip.description,
     routeDescription: trip.routeDescription ?? "",
+    routeGpxFileName: trip.routeGpxFileName ?? "",
+    routeGpxDownloadUrl: trip.routeGpxDownloadUrl ?? "",
     equipmentRequirements: trip.equipmentRequirements ?? "",
     rules: trip.rules ?? "",
   };
@@ -197,12 +219,23 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
         ...readTripUpdateInput(formData),
         bikeType: originalTrip.bikeType,
       };
+      const routeFile = readOptionalFile(formData, "routeGpxFile");
+      const coverImageFile = readOptionalFile(formData, "coverImageFile");
+      const removeRouteFile = readString(formData, "removeRouteGpx") === "true";
       const changes = getChangedFields(
         originalTrip,
         input,
+        formData,
         originalLocalStart,
       );
-      const updatedTrip = await updateTrip(tripId, input);
+      const updatedTrip =
+        routeFile || coverImageFile || removeRouteFile
+          ? await updateTripWithRouteFile(tripId, input, {
+              routeFile,
+              coverImageFile,
+              removeRouteFile,
+            })
+          : await updateTrip(tripId, input);
       const updatedTripReference = getTripReference(updatedTrip) ?? tripReference;
       const resultQuery = new URLSearchParams({
         trip: updatedTripReference,

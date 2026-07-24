@@ -1,3 +1,6 @@
+import { mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
+
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Not, Repository } from "typeorm";
@@ -8,8 +11,38 @@ import { TripUpdateEntity } from "../../infrastructure/database/entities/trip-up
 import { OrganizerEntity } from "../../infrastructure/database/entities/organizer.entity.js";
 import { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
 import { CityEntity } from "../../infrastructure/database/entities/city.entity.js";
+import { RouteFileEntity } from "../../infrastructure/database/entities/route-file.entity.js";
 import { NotificationsService } from "../notifications/notifications.service.js";
 import type { CreateTripDto, TripFiltersDto, UpdateTripDto } from "./dto/trip.dto.js";
+import { normalizeRouteFileName } from "./route-file-names.js";
+
+const maxRouteGpxBytes = 1_000_000;
+const maxCoverImageBytes = 5_000_000;
+const routeFilesDirectory =
+  process.env.ROUTE_FILES_DIR ?? path.join(process.cwd(), "storage", "route-files");
+const coverImagesDirectory =
+  process.env.COVER_IMAGES_DIR ?? path.join(process.cwd(), "storage", "cover-images");
+
+export interface UploadedFile {
+  originalname: string;
+  mimetype: string;
+  size: number;
+  buffer: Buffer;
+}
+
+export type UploadedRouteFile = UploadedFile;
+export type UploadedCoverImage = UploadedFile;
+
+export interface RouteFileDownload {
+  fileName: string;
+  contentType: string;
+  content: Buffer;
+}
+
+export interface CoverImageDownload {
+  contentType: string;
+  content: Buffer;
+}
 
 @Injectable()
 export class TripsService {
@@ -24,6 +57,8 @@ export class TripsService {
     private readonly usersRepository: Repository<UserEntity>,
     @InjectRepository(CityEntity)
     private readonly citiesRepository: Repository<CityEntity>,
+    @InjectRepository(RouteFileEntity)
+    private readonly routeFilesRepository: Repository<RouteFileEntity>,
     @Inject(NotificationsService)
     private readonly notificationsService: NotificationsService
   ) {}
@@ -119,6 +154,31 @@ export class TripsService {
     return this.getBySlugOrId(savedTrip.id);
   }
 
+  async createWithRouteFile(
+    dto: CreateTripDto,
+    routeFile: UploadedRouteFile | undefined,
+    coverImage: UploadedCoverImage | undefined,
+    actor: {
+      id: string;
+      name?: string;
+      role: "user" | "admin";
+      phone?: string;
+      phoneVerified: boolean;
+    },
+  ): Promise<TripEntity> {
+    if (routeFile) this.validateUploadedRouteFile(routeFile);
+    if (coverImage) this.validateUploadedCoverImage(coverImage);
+    const savedTrip = await this.create(dto, actor);
+    if (routeFile) {
+      await this.replaceRouteFile(savedTrip.id, routeFile);
+    }
+    if (coverImage) {
+      await this.replaceCoverImage(savedTrip.id, coverImage);
+    }
+
+    return this.getBySlugOrId(savedTrip.id);
+  }
+
   private async getOrCreateOrganizer(actor: {
     id: string;
     name?: string;
@@ -198,6 +258,32 @@ export class TripsService {
     return this.getBySlugOrId(savedTrip.id);
   }
 
+  async updateWithRouteFile(
+    id: string,
+    dto: UpdateTripDto,
+    routeFile: UploadedRouteFile | undefined,
+    coverImage: UploadedCoverImage | undefined,
+    removeRouteFile: boolean,
+    actor: { id: string; role: "user" | "admin" },
+  ): Promise<TripEntity> {
+    if (routeFile) this.validateUploadedRouteFile(routeFile);
+    if (coverImage) this.validateUploadedCoverImage(coverImage);
+    const savedTrip = await this.update(id, dto, actor);
+
+    if (routeFile) {
+      await this.replaceRouteFile(savedTrip.id, routeFile);
+    } else if (removeRouteFile) {
+      await this.deleteRouteFiles(savedTrip.id);
+    }
+    if (coverImage) {
+      await this.replaceCoverImage(savedTrip.id, coverImage);
+    } else if (dto.coverImage !== undefined && !this.isUploadedCoverImageUrl(dto.coverImage)) {
+      await this.deleteCoverImage(savedTrip.id);
+    }
+
+    return this.getBySlugOrId(savedTrip.id);
+  }
+
   async transition(
     id: string,
     status: Extract<TripStatus, "published" | "cancelled" | "finished">,
@@ -261,6 +347,179 @@ export class TripsService {
       organizerId: dto.organizerId,
       cityId: dto.cityId,
     };
+  }
+
+  async getRouteFileForDownload(id: string): Promise<RouteFileDownload> {
+    const trip = await this.getBySlugOrId(id);
+    if (trip.status !== "published") {
+      throw new NotFoundException("Route file not found");
+    }
+
+    const routeFile = trip.routeFiles?.[0];
+    if (!routeFile) {
+      throw new NotFoundException("Route file not found");
+    }
+
+    const filePath = this.getRouteFilePath(routeFile.storageKey);
+    try {
+      return {
+        fileName: normalizeRouteFileName(routeFile.originalName),
+        contentType: routeFile.contentType,
+        content: await readFile(filePath),
+      };
+    } catch {
+      throw new NotFoundException("Route file not found");
+    }
+  }
+
+  async getCoverImageForDownload(id: string): Promise<CoverImageDownload> {
+    const trip = await this.getBySlugOrId(id);
+    if (!trip.coverImage || !this.isUploadedCoverImageUrl(trip.coverImage)) {
+      throw new NotFoundException("Cover image not found");
+    }
+
+    const storageKey = await this.getStoredCoverImageKey(trip.id);
+    try {
+      return {
+        contentType: this.getCoverImageContentType(storageKey),
+        content: await readFile(this.getCoverImagePath(storageKey)),
+      };
+    } catch {
+      throw new NotFoundException("Cover image not found");
+    }
+  }
+
+  private async replaceRouteFile(
+    tripId: string,
+    routeFile: UploadedRouteFile,
+  ): Promise<void> {
+    this.validateUploadedRouteFile(routeFile);
+    await this.deleteRouteFiles(tripId);
+
+    const originalName = normalizeRouteFileName(routeFile.originalname);
+    const safeFileName = this.sanitizeRouteFileName(originalName);
+    const storageKey = `${tripId}/${Date.now()}-${safeFileName}`;
+    const filePath = this.getRouteFilePath(storageKey);
+
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await writeFile(filePath, routeFile.buffer);
+    await this.routeFilesRepository.save(
+      this.routeFilesRepository.create({
+        tripId,
+        originalName,
+        contentType: "application/gpx+xml",
+        storageKey,
+      }),
+    );
+  }
+
+  private async deleteRouteFiles(tripId: string): Promise<void> {
+    const routeFiles = await this.routeFilesRepository.find({ where: { tripId } });
+
+    await Promise.all(
+      routeFiles.map(async (routeFile) => {
+        await unlink(this.getRouteFilePath(routeFile.storageKey)).catch(() => undefined);
+      }),
+    );
+    await this.routeFilesRepository.delete({ tripId });
+  }
+
+  private async replaceCoverImage(
+    tripId: string,
+    coverImage: UploadedCoverImage,
+  ): Promise<void> {
+    this.validateUploadedCoverImage(coverImage);
+    await this.deleteCoverImage(tripId);
+
+    const extension = this.getCoverImageExtension(coverImage.mimetype);
+    const storageKey = `${tripId}/${Date.now()}-cover.${extension}`;
+    const filePath = this.getCoverImagePath(storageKey);
+    const coverImageUrl = `/trips/${tripId}/cover-image`;
+
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await writeFile(filePath, coverImage.buffer);
+    await this.tripsRepository.update({ id: tripId }, { coverImage: coverImageUrl });
+  }
+
+  private async deleteCoverImage(tripId: string): Promise<void> {
+    const trip = await this.tripsRepository.findOne({ where: { id: tripId } });
+    if (!trip?.coverImage || !this.isUploadedCoverImageUrl(trip.coverImage)) return;
+
+    await rm(path.join(coverImagesDirectory, tripId), { recursive: true, force: true });
+  }
+
+  private validateUploadedRouteFile(routeFile: UploadedRouteFile): void {
+    if (!normalizeRouteFileName(routeFile.originalname).toLowerCase().endsWith(".gpx")) {
+      throw new BadRequestException("Route file must use .gpx extension");
+    }
+    if (routeFile.size > maxRouteGpxBytes || routeFile.buffer.byteLength > maxRouteGpxBytes) {
+      throw new BadRequestException("Route GPX file is too large");
+    }
+    if (!/<gpx[\s>]/i.test(routeFile.buffer.toString("utf8", 0, 512))) {
+      throw new BadRequestException("Route file must contain GPX XML");
+    }
+  }
+
+  private validateUploadedCoverImage(coverImage: UploadedCoverImage): void {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(coverImage.mimetype)) {
+      throw new BadRequestException("Cover image must be JPEG, PNG or WebP");
+    }
+    if (coverImage.size > maxCoverImageBytes || coverImage.buffer.byteLength > maxCoverImageBytes) {
+      throw new BadRequestException("Cover image is too large");
+    }
+  }
+
+  private sanitizeRouteFileName(fileName: string): string {
+    const normalized = path.basename(fileName).replace(/[^a-zA-Z0-9._-]+/g, "-");
+    return normalized || "route.gpx";
+  }
+
+  private getRouteFilePath(storageKey: string): string {
+    const filePath = path.join(routeFilesDirectory, storageKey);
+    const relativePath = path.relative(routeFilesDirectory, filePath);
+    if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+      throw new BadRequestException("Invalid route file path");
+    }
+
+    return filePath;
+  }
+
+  private getCoverImagePath(storageKey: string): string {
+    const decodedKey = decodeURIComponent(storageKey);
+    const filePath = path.join(coverImagesDirectory, decodedKey);
+    const relativePath = path.relative(coverImagesDirectory, filePath);
+    if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+      throw new BadRequestException("Invalid cover image path");
+    }
+
+    return filePath;
+  }
+
+  private isUploadedCoverImageUrl(coverImage: string): boolean {
+    return /^\/trips\/[0-9a-f-]+\/cover-image$/i.test(coverImage);
+  }
+
+  private getCoverImageExtension(contentType: string): "jpg" | "png" | "webp" {
+    if (contentType === "image/png") return "png";
+    if (contentType === "image/webp") return "webp";
+    return "jpg";
+  }
+
+  private getCoverImageContentType(storageKey: string): string {
+    const extension = path.extname(storageKey).toLowerCase();
+    if (extension === ".png") return "image/png";
+    if (extension === ".webp") return "image/webp";
+    return "image/jpeg";
+  }
+
+  private async getStoredCoverImageKey(tripId: string): Promise<string> {
+    const directory = path.join(coverImagesDirectory, tripId);
+    const [fileName] = await readdir(directory);
+    if (!fileName) {
+      throw new NotFoundException("Cover image not found");
+    }
+
+    return `${tripId}/${fileName}`;
   }
 
   private validateSurfaceComposition(asphaltPercent: number, unpavedPercent: number): void {

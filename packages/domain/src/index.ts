@@ -175,6 +175,8 @@ export interface TripDetail extends TripSummary {
   routeDescription: string | null;
   equipmentRequirements: string | null;
   rules: string | null;
+  routeGpxFileName: string | null;
+  routeGpxDownloadUrl: string | null;
   registrationMode: RegistrationMode;
   organizer: TripOrganizer;
   participants: TripParticipant[];

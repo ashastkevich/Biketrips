@@ -1,4 +1,22 @@
-import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  Res,
+  StreamableFile,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+} from "@nestjs/common";
+import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
@@ -6,8 +24,52 @@ import { TripCreatorGuard } from "../auth/access.guards.js";
 import { ParticipantsService } from "../participants/participants.service.js";
 import { CreateParticipantDto, UpdateParticipantStatusDto } from "../participants/dto/participant.dto.js";
 import { CreateTripDto, TripFiltersDto, UpdateTripDto } from "./dto/trip.dto.js";
-import { TripsService } from "./trips.service.js";
+import { type UploadedCoverImage, type UploadedRouteFile, TripsService } from "./trips.service.js";
 import { serializeTripDetail, serializeTripSummary } from "./trips.serializer.js";
+
+interface MultipartTripBody {
+  payload?: string;
+  removeRouteFile?: string;
+}
+
+interface HeaderResponse {
+  setHeader(name: string, value: string): void;
+}
+
+const maxCoverImageBytes = 5_000_000;
+
+interface MultipartTripFiles {
+  routeGpxFile?: UploadedRouteFile[];
+  coverImageFile?: UploadedCoverImage[];
+}
+
+const multipartTripFilesInterceptor = FileFieldsInterceptor(
+  [
+    { name: "routeGpxFile", maxCount: 1 },
+    { name: "coverImageFile", maxCount: 1 },
+  ],
+  { limits: { fileSize: maxCoverImageBytes } },
+);
+
+function parseTripPayload<TPayload>(body: MultipartTripBody): TPayload {
+  if (!body.payload) {
+    throw new BadRequestException("Multipart trip payload is required");
+  }
+
+  try {
+    return JSON.parse(body.payload) as TPayload;
+  } catch {
+    throw new BadRequestException("Multipart trip payload must be valid JSON");
+  }
+}
+
+function encodeDownloadFileName(fileName: string): string {
+  return encodeURIComponent(fileName)
+    .replace(/'/g, "%27")
+    .replace(/\(/g, "%28")
+    .replace(/\)/g, "%29")
+    .replace(/\*/g, "%2A");
+}
 
 @ApiTags("trips")
 @Controller("trips")
@@ -25,9 +87,63 @@ export class TripsController {
     return trips.map(serializeTripSummary);
   }
 
+  @Get(":id/route-file")
+  async downloadRouteFile(
+    @Param("id") id: string,
+    @Res({ passthrough: true }) response: HeaderResponse,
+  ) {
+    const routeFile = await this.tripsService.getRouteFileForDownload(id);
+    response.setHeader("Content-Type", routeFile.contentType);
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename*=UTF-8''${encodeDownloadFileName(routeFile.fileName)}`,
+    );
+
+    return new StreamableFile(routeFile.content);
+  }
+
+  @Get(":id/cover-image")
+  async downloadCoverImage(
+    @Param("id") id: string,
+    @Res({ passthrough: true }) response: HeaderResponse,
+  ) {
+    const coverImage = await this.tripsService.getCoverImageForDownload(id);
+    response.setHeader("Content-Type", coverImage.contentType);
+    response.setHeader("Cache-Control", "public, max-age=3600");
+
+    return new StreamableFile(coverImage.content);
+  }
+
   @Get(":slugOrId")
   async get(@Param("slugOrId") slugOrId: string) {
     return serializeTripDetail(await this.tripsService.getBySlugOrId(slugOrId));
+  }
+
+  @Post("with-route-file")
+  @UseGuards(JwtAuthGuard, TripCreatorGuard)
+  @UseInterceptors(multipartTripFilesInterceptor)
+  @ApiBearerAuth()
+  async createWithRouteFile(
+    @UploadedFiles() files: MultipartTripFiles | undefined,
+    @Body() body: MultipartTripBody,
+    @Req() request: {
+      user: {
+        id: string;
+        name?: string;
+        role: "user" | "admin";
+        phone?: string;
+        phoneVerified: boolean;
+      };
+    },
+  ) {
+    return serializeTripDetail(
+      await this.tripsService.createWithRouteFile(
+        parseTripPayload<CreateTripDto>(body),
+        files?.routeGpxFile?.[0],
+        files?.coverImageFile?.[0],
+        request.user,
+      ),
+    );
   }
 
   @Post()
@@ -46,6 +162,28 @@ export class TripsController {
     },
   ) {
     return serializeTripDetail(await this.tripsService.create(dto, request.user));
+  }
+
+  @Patch(":id/with-route-file")
+  @UseGuards(JwtAuthGuard, TripCreatorGuard)
+  @UseInterceptors(multipartTripFilesInterceptor)
+  @ApiBearerAuth()
+  async updateWithRouteFile(
+    @Param("id") id: string,
+    @UploadedFiles() files: MultipartTripFiles | undefined,
+    @Body() body: MultipartTripBody,
+    @Req() request: { user: { id: string; role: "user" | "admin" } },
+  ) {
+    return serializeTripDetail(
+      await this.tripsService.updateWithRouteFile(
+        id,
+        parseTripPayload<UpdateTripDto>(body),
+        files?.routeGpxFile?.[0],
+        files?.coverImageFile?.[0],
+        body.removeRouteFile === "true",
+        request.user,
+      ),
+    );
   }
 
   @Patch(":id")

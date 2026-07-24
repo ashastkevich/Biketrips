@@ -6,6 +6,7 @@ import { TripUpdateEntity } from "../../infrastructure/database/entities/trip-up
 import { OrganizerEntity } from "../../infrastructure/database/entities/organizer.entity.js";
 import { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
 import { CityEntity } from "../../infrastructure/database/entities/city.entity.js";
+import { RouteFileEntity } from "../../infrastructure/database/entities/route-file.entity.js";
 import { NotificationsModule } from "../notifications/notifications.module.js";
 import { ParticipantsModule } from "../participants/participants.module.js";
 import { TripsController } from "./trips.controller.js";
@@ -13,7 +14,14 @@ import { TripsService } from "./trips.service.js";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TripEntity, TripUpdateEntity, OrganizerEntity, UserEntity, CityEntity]),
+    TypeOrmModule.forFeature([
+      TripEntity,
+      TripUpdateEntity,
+      OrganizerEntity,
+      UserEntity,
+      CityEntity,
+      RouteFileEntity,
+    ]),
     NotificationsModule,
     ParticipantsModule,
   ],

@@ -1,10 +1,16 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
-import { createTrip, getCities, getOrganizerAuthState, updateTripStatus } from "../../lib/api";
+import {
+  createTrip,
+  createTripWithRouteFile,
+  getCities,
+  getOrganizerAuthState,
+  updateTripStatus,
+} from "../../lib/api";
 import { CITY_COOKIE_NAME, fallbackCities, selectCity } from "../../lib/cities";
 import { AppTopbar } from "../../lib/components";
-import { readTripInput } from "../../lib/form-data";
+import { readOptionalFile, readTripInput } from "../../lib/form-data";
 import { Alert } from "../../ui/components";
 import { TripCreationWizard } from "./trip-creation-wizard";
 
@@ -14,7 +20,12 @@ async function createTripAction(formData: FormData) {
   let destination = "/trips/new?error=Не удалось создать поездку";
 
   try {
-    const trip = await createTrip(readTripInput(formData));
+    const input = readTripInput(formData);
+    const routeFile = readOptionalFile(formData, "routeGpxFile");
+    const coverImageFile = readOptionalFile(formData, "coverImageFile");
+    const trip = routeFile || coverImageFile
+      ? await createTripWithRouteFile(input, routeFile, coverImageFile)
+      : await createTrip(input);
     await updateTripStatus(trip.id, "publish");
     destination = "/#rides";
   } catch (error) {

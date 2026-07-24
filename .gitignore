@@ -4,6 +4,7 @@ node_modules/
 dist/
 coverage/
 storybook-static/
+storage/
 *.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*

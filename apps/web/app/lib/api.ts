@@ -160,9 +160,27 @@ export async function createTrip(input: CreateTripInput): Promise<TripDetail> {
   return client.createTrip(input);
 }
 
+export async function createTripWithRouteFile(
+  input: CreateTripInput,
+  routeFile: File | undefined,
+  coverImageFile?: File,
+): Promise<TripDetail> {
+  const client = await createClient();
+  return client.createTripWithRouteFile(input, routeFile, coverImageFile);
+}
+
 export async function updateTrip(tripId: string, input: UpdateTripInput): Promise<TripDetail> {
   const client = await createClient();
   return client.updateTrip(tripId, input);
+}
+
+export async function updateTripWithRouteFile(
+  tripId: string,
+  input: UpdateTripInput,
+  options: { routeFile?: File; coverImageFile?: File; removeRouteFile?: boolean },
+): Promise<TripDetail> {
+  const client = await createClient();
+  return client.updateTripWithRouteFile(tripId, input, options);
 }
 
 export async function joinTrip(
