@@ -19,7 +19,7 @@
     var(--green-dark);
 }
 
-.header h1 {
+.header.header h1 {
   max-width: 860px;
   margin: 0;
   color: var(--white);
