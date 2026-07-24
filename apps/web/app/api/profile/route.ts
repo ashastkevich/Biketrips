@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 
+import { isSecureRequest } from "../auth/session-cookie";
+
 const authCookieName = "biketrips_session";
 
 export async function PATCH(request: Request) {
@@ -126,7 +128,7 @@ export async function PATCH(request: Request) {
   response.cookies.set(authCookieName, updatedToken, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureRequest(request),
     path: "/",
     maxAge: 7 * 24 * 60 * 60,
   });

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { isSecureRequest } from "../../session-cookie";
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const authCookieName = "biketrips_session";
 
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
   response.cookies.set(authCookieName, result.accessToken, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureRequest(request),
     path: "/",
     maxAge: 7 * 24 * 60 * 60,
   });
