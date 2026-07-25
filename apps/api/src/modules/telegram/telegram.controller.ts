@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Inject, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, HttpCode, Inject, Post } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 
 import { AuthService } from "../auth/auth.service.js";
@@ -32,6 +32,7 @@ export class TelegramController {
   }
 
   @Post("webhook")
+  @HttpCode(200)
   async webhook(
     @Body() update: TelegramWebhookUpdate,
     @Headers("x-telegram-bot-api-secret-token") secretToken?: string,
