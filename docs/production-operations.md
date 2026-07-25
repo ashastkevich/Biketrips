@@ -61,9 +61,11 @@ Production runs on one virtual machine:
 
 - `biketrips-web.service`: Next.js web app on `127.0.0.1:3000`.
 - `biketrips-api.service`: NestJS API on `127.0.0.1:4000`.
-- `biketrips-bot.service`: Telegram bot worker. At the time of writing the bot
-  app is still a scaffold that exits successfully, so the service may be
-  `inactive` without indicating a production incident.
+- `biketrips-stack.service`: starts the production Docker Compose stack for
+  PostgreSQL and Redis before API/web services start.
+- `biketrips-bot.service`: Telegram bot worker. It handles Telegram deep-link
+  login confirmations and should stay active when `TELEGRAM_BOT_TOKEN` is
+  configured.
 - `nginx.service`: reverse proxy.
 - Docker containers:
   - `biketrips-postgres`, bound to `127.0.0.1:5432`.
@@ -136,6 +138,7 @@ Important env names:
 - `NEXT_PUBLIC_MAPTILER_API_KEY`
 - `DADATA_API_KEY`
 - `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_LOGIN_SECRET`
 - `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`
 
 ## Email delivery
@@ -183,3 +186,6 @@ If email login fails:
   `npm run start -w @biketrips/api`.
 - Backups are not configured yet. Add PostgreSQL backups before collecting
   valuable production data.
+- `apps/bot` exits successfully only when `TELEGRAM_BOT_TOKEN` is missing or
+  left as a placeholder. With a real token, `biketrips-bot.service` should keep
+  running to process Telegram deep-link login confirmations.
