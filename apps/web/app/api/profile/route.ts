@@ -1,8 +1,10 @@
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 
+import { getServerApiUrl } from "../../lib/server-api-url";
 import { isSecureRequest } from "../auth/session-cookie";
 
+const apiUrl = getServerApiUrl();
 const authCookieName = "biketrips_session";
 
 export async function PATCH(request: Request) {
@@ -76,7 +78,7 @@ export async function PATCH(request: Request) {
   }
 
   const apiResponse = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/users/${payload.sub}`,
+    `${apiUrl}/users/${payload.sub}`,
     {
       method: "PATCH",
       headers: {

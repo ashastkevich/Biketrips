@@ -43,6 +43,7 @@ pushed to `origin/main` so the next deploy does not revert it.
 - Server deploy script: `/usr/local/bin/biketrips-deploy`.
 - Production env file: `/etc/biketrips/biketrips.env`.
 - Production Compose file: `/srv/biketrips/docker-compose.production.yml`.
+- Production stack service: `biketrips-stack.service`.
 
 Open inbound ports are intentionally minimal:
 
@@ -61,6 +62,8 @@ Production runs on one virtual machine:
 
 - `biketrips-web.service`: Next.js web app on `127.0.0.1:3000`.
 - `biketrips-api.service`: NestJS API on `127.0.0.1:4000`.
+- `biketrips-stack.service`: starts the production Docker Compose stack for
+  PostgreSQL and Redis before API/web services start.
 - `biketrips-bot.service`: Telegram bot worker. At the time of writing the bot
   app is still a scaffold that exits successfully, so the service may be
   `inactive` without indicating a production incident.
@@ -79,8 +82,8 @@ Nginx routes:
 Useful production checks:
 
 ```bash
-ssh root@135.106.155.78 'systemctl is-active biketrips-api.service biketrips-web.service nginx.service docker.service'
-ssh root@135.106.155.78 'curl -sS http://127.0.0.1/backend/health'
+ssh root@135.106.155.78 'systemctl is-active docker.service nginx.service biketrips-stack.service biketrips-api.service biketrips-web.service'
+ssh root@135.106.155.78 'curl -sS https://biketrips.ru/backend/health'
 ssh root@135.106.155.78 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
 ssh root@135.106.155.78 'cd /srv/biketrips/app && sudo -u deploy git log -1 --oneline'
 ```
@@ -114,6 +117,15 @@ The server deploy script:
 5. Runs API migrations.
 6. Restarts API, web, and bot systemd services.
 
+The production VM is configured for reboot recovery:
+
+- `docker.service`, `nginx.service`, `biketrips-stack.service`,
+  `biketrips-api.service`, `biketrips-web.service`, and
+  `biketrips-bot.service` are enabled in systemd.
+- `biketrips-api.service` and `biketrips-web.service` depend on
+  `biketrips-stack.service`, so PostgreSQL and Redis are started before the app.
+- PostgreSQL and Redis containers use Docker `restart: unless-stopped`.
+
 ## Production environment
 
 Real production values live only on the server and in GitHub Actions secrets.
@@ -125,6 +137,7 @@ Important env names:
 - `WEB_PORT=3000`
 - `API_PORT=4000`
 - `NEXT_PUBLIC_API_URL=https://biketrips.ru/backend`
+- `API_INTERNAL_URL=http://127.0.0.1:4000`
 - `API_CORS_ORIGIN=https://biketrips.ru`
 - `DATABASE_URL`
 - `REDIS_URL`

@@ -14,7 +14,9 @@ import type {
   UpdateTripInput,
 } from "@biketrips/domain";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+import { getServerApiUrl } from "./server-api-url";
+
+const apiUrl = getServerApiUrl();
 const organizerToken = process.env.BIKETRIPS_ORGANIZER_TOKEN;
 const authCookieName = "biketrips_session";
 

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 
+import { getServerApiUrl } from "../../../../lib/server-api-url";
 import { isSecureRequest } from "../../session-cookie";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const apiUrl = getServerApiUrl();
 const authCookieName = "biketrips_session";
 
 export async function POST(request: Request) {
