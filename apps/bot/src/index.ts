@@ -22,6 +22,7 @@ const apiUrl = readOptionalEnv(
   readOptionalEnv("NEXT_PUBLIC_API_URL", "http://localhost:4000"),
 ).replace(/\/$/, "");
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
+const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL?.trim();
 
 interface TelegramUpdate {
   update_id: number;
@@ -137,6 +138,12 @@ async function main(): Promise<void> {
 
   if (!botToken || botToken === "replace-with-telegram-bot-token") {
     console.log("Telegram bot token is not configured. Bot worker is idle.");
+    return;
+  }
+
+  if (webhookUrl) {
+    console.log(`Telegram webhook is configured: ${webhookUrl}`);
+    console.log("Bot worker is idle because Telegram updates are handled by the API webhook.");
     return;
   }
 

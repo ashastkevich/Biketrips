@@ -139,6 +139,8 @@ Important env names:
 - `DADATA_API_KEY`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_LOGIN_SECRET`
+- `TELEGRAM_WEBHOOK_SECRET`
+- `TELEGRAM_WEBHOOK_URL=https://biketrips.ru/backend/telegram/webhook`
 - `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`
 
 ## Email delivery
@@ -187,5 +189,5 @@ If email login fails:
 - Backups are not configured yet. Add PostgreSQL backups before collecting
   valuable production data.
 - `apps/bot` exits successfully only when `TELEGRAM_BOT_TOKEN` is missing or
-  left as a placeholder. With a real token, `biketrips-bot.service` should keep
-  running to process Telegram deep-link login confirmations.
+  left as a placeholder. With `TELEGRAM_WEBHOOK_URL` configured, Telegram
+  updates are handled by the API webhook and the bot worker idles successfully.
