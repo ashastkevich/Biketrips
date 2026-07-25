@@ -1,99 +1,148 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
+import { Button } from "../../ui/components";
 import componentStyles from "../../ui/components.module.css";
 import styles from "./telegram.module.css";
 
-interface TelegramUser {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  allows_write_to_pm?: boolean;
-  auth_date: number;
-  hash: string;
-}
-
-declare global {
-  interface Window {
-    onTelegramAuth?: (user: TelegramUser) => void;
-  }
+interface TelegramLoginRequest {
+  loginId: string;
+  pollToken: string;
+  botUrl: string;
+  expiresAt: string;
 }
 
 function safeReturnTo(value: string): string {
   return value.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
-export function TelegramLogin({
-  botUsername,
-  returnTo,
-}: {
-  botUsername?: string;
-  returnTo: string;
-}) {
-  const widgetRef = useRef<HTMLDivElement>(null);
+export function TelegramLogin({ returnTo }: { returnTo: string }) {
+  const [request, setRequest] = useState<TelegramLoginRequest | null>(null);
+  const [status, setStatus] = useState<"idle" | "starting" | "pending" | "confirmed" | "expired">("idle");
   const [error, setError] = useState("");
 
+  async function startLogin() {
+    setStatus("starting");
+    setError("");
+
+    const response = await fetch("/api/auth/telegram/request", {
+      method: "POST",
+    }).catch(() => null);
+    const result = (await response?.json().catch(() => null)) as
+      | (Partial<TelegramLoginRequest> & { message?: string })
+      | null;
+
+    if (!response?.ok || !result?.loginId || !result.pollToken || !result.botUrl || !result.expiresAt) {
+      setStatus("idle");
+      setError(result?.message ?? "Не удалось начать вход через Telegram");
+      return;
+    }
+
+    setRequest({
+      loginId: result.loginId,
+      pollToken: result.pollToken,
+      botUrl: result.botUrl,
+      expiresAt: result.expiresAt,
+    });
+    setStatus("pending");
+  }
+
   useEffect(() => {
-    if (!botUsername || !widgetRef.current) return;
+    if (!request || status !== "pending") return;
 
-    window.onTelegramAuth = async (user) => {
-      setError("");
-
-      const response = await fetch("/api/auth/telegram", {
+    let cancelled = false;
+    const interval = window.setInterval(async () => {
+      const response = await fetch("/api/auth/telegram/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          Object.fromEntries(
-            Object.entries(user).map(([key, value]) => [key, String(value)])
-          )
-        ),
+        body: JSON.stringify({
+          loginId: request.loginId,
+          pollToken: request.pollToken,
+        }),
       }).catch(() => null);
+      const result = (await response?.json().catch(() => null)) as
+        | { status?: string; message?: string }
+        | null;
+
+      if (cancelled) return;
 
       if (!response?.ok) {
-        const result = (await response?.json().catch(() => null)) as { message?: string } | null;
-        setError(result?.message ?? "Не удалось войти через Telegram");
+        setError(result?.message ?? "Не удалось проверить вход через Telegram");
         return;
       }
 
-      window.location.assign(safeReturnTo(returnTo));
-    };
+      if (result?.status === "confirmed") {
+        setStatus("confirmed");
+        window.location.assign(safeReturnTo(returnTo));
+        return;
+      }
 
-    const script = document.createElement("script");
-    script.src = "https://telegram.org/js/telegram-widget.js?22";
-    script.async = true;
-    script.setAttribute("data-telegram-login", botUsername.replace(/^@/, ""));
-    script.setAttribute("data-size", "large");
-    script.setAttribute("data-radius", "12");
-    script.setAttribute("data-userpic", "false");
-    script.setAttribute("data-request-access", "write");
-    script.setAttribute("data-onauth", "onTelegramAuth(user)");
-    widgetRef.current.appendChild(script);
+      if (result?.status === "expired" || result?.status === "consumed") {
+        setStatus("expired");
+      }
+    }, 2000);
 
     return () => {
-      delete window.onTelegramAuth;
-      script.remove();
+      cancelled = true;
+      window.clearInterval(interval);
     };
-  }, [botUsername, returnTo]);
-
-  if (!botUsername) {
-    return (
-      <p className={`${componentStyles.alert} ${componentStyles.alertWarning}`} role="alert">
-        Telegram-вход не настроен. Укажите NEXT_PUBLIC_TELEGRAM_BOT_USERNAME.
-      </p>
-    );
-  }
+  }, [request, returnTo, status]);
 
   return (
-    <>
-      <div className={styles.widget} ref={widgetRef} />
+    <div className={styles.telegramLogin}>
+      <p className={styles.lead}>
+        Откройте BikeTrips-бота в Telegram и нажмите Start. После подтверждения сайт войдёт автоматически.
+      </p>
+
+      {request ? (
+        <div className={styles.loginLinkPanel}>
+          <a className={styles.telegramLink} href={request.botUrl} target="_blank" rel="noreferrer">
+            Открыть Telegram
+          </a>
+          <p className={styles.hint}>
+            Ссылка действует до {new Date(request.expiresAt).toLocaleTimeString("ru-RU", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}.
+          </p>
+        </div>
+      ) : (
+        <Button type="button" loading={status === "starting"} onClick={startLogin}>
+          Войти через Telegram
+        </Button>
+      )}
+
+      {status === "pending" ? (
+        <p className={`${componentStyles.alert} ${componentStyles.alertWarning}`} role="status">
+          Ждём подтверждение в Telegram...
+        </p>
+      ) : null}
+
+      {status === "expired" ? (
+        <div className={styles.retry}>
+          <p className={`${componentStyles.alert} ${componentStyles.alertDanger}`} role="alert">
+            Ссылка истекла. Запустите вход ещё раз.
+          </p>
+          <Button
+            type="button"
+            tone="secondary"
+            onClick={() => {
+              setRequest(null);
+              setStatus("idle");
+              setError("");
+            }}
+          >
+            Начать заново
+          </Button>
+        </div>
+      ) : null}
+
       {error ? (
         <p className={`${componentStyles.alert} ${componentStyles.alertDanger}`} role="alert">
           {error}
         </p>
       ) : null}
-    </>
+    </div>
   );
 }

@@ -17,6 +17,7 @@ import { NotificationJobEntity } from "./infrastructure/database/entities/notifi
 import { OrganizerEntity } from "./infrastructure/database/entities/organizer.entity.js";
 import { RouteFileEntity } from "./infrastructure/database/entities/route-file.entity.js";
 import { TelegramAccountEntity } from "./infrastructure/database/entities/telegram-account.entity.js";
+import { TelegramLoginNonceEntity } from "./infrastructure/database/entities/telegram-login-nonce.entity.js";
 import { TripEntity } from "./infrastructure/database/entities/trip.entity.js";
 import { TripParticipantEntity } from "./infrastructure/database/entities/trip-participant.entity.js";
 import { TripUpdateEntity } from "./infrastructure/database/entities/trip-update.entity.js";
@@ -39,6 +40,7 @@ import { WaitlistEntryEntity } from "./infrastructure/database/entities/waitlist
         OrganizerEntity,
         RouteFileEntity,
         TelegramAccountEntity,
+        TelegramLoginNonceEntity,
         TripEntity,
         TripParticipantEntity,
         TripUpdateEntity,

@@ -22,16 +22,13 @@ export default async function TelegramAuthPage({ searchParams }: TelegramAuthPag
       </BackLink>
       <PageHeader eyebrow="Telegram" title="Вход и привязка">
         <p>
-          Подтвердите вход в защищённом окне Telegram. После авторизации вы вернётесь на сайт.
+          Откройте BikeTrips-бота по одноразовой ссылке и подтвердите вход сообщением Start.
         </p>
       </PageHeader>
 
       <Card className={styles.card} padding="large">
         <h2 id="auth-title">Telegram-аккаунт</h2>
-        <TelegramLogin
-          botUsername={process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
-          returnTo={returnTo}
-        />
+        <TelegramLogin returnTo={returnTo} />
       </Card>
     </main>
   );

@@ -1,4 +1,4 @@
-import { createHmac, createHash, randomInt, timingSafeEqual } from "node:crypto";
+import { createHmac, createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 
 import { BadRequestException, HttpException, HttpStatus, Injectable, ServiceUnavailableException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -9,6 +9,7 @@ import { IsNull, MoreThan, Repository } from "typeorm";
 
 import { EmailAuthCodeEntity } from "../../infrastructure/database/entities/email-auth-code.entity.js";
 import { TelegramAccountEntity } from "../../infrastructure/database/entities/telegram-account.entity.js";
+import { TelegramLoginNonceEntity } from "../../infrastructure/database/entities/telegram-login-nonce.entity.js";
 import { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
 
 export type TokenPayload = {
@@ -23,14 +24,23 @@ export type TokenPayload = {
   telegramVerified?: boolean;
 };
 
-const TELEGRAM_AUTH_MAX_AGE_SECONDS = 24 * 60 * 60;
 const EMAIL_CODE_TTL_MINUTES = 15;
 const EMAIL_CODE_MAX_ATTEMPTS = 5;
+const TELEGRAM_LOGIN_TTL_MINUTES = 10;
 const DEFAULT_UNISENDER_API_URL = "https://goapi.unisender.ru/ru/transactional/api/v1/email/send.json";
 
 function stableTelegramUserId(telegramId: string): string {
   const hash = createHash("sha256").update(`telegram:${telegramId}`).digest("hex");
   return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-5${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
+}
+
+function randomBase64Url(bytes = 32): string {
+  return randomBytes(bytes).toString("base64url");
+}
+
+function hashTelegramLoginToken(token: string): string {
+  const secret = process.env.TELEGRAM_LOGIN_SECRET ?? process.env.JWT_SECRET ?? "local-development-secret";
+  return createHmac("sha256", secret).update(token).digest("hex");
 }
 
 function normalizeEmail(email: string): string {
@@ -69,6 +79,16 @@ function compactName(parts: Array<string | undefined>): string {
   return parts.map((part) => part?.trim()).filter(Boolean).join(" ");
 }
 
+function getTelegramBotUsername(): string | null {
+  const username = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME?.trim().replace(/^@/, "");
+  return username || null;
+}
+
+function parseTelegramStartToken(startParam: string): string {
+  const value = startParam.trim();
+  return value.startsWith("login_") ? value.slice("login_".length) : value;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -76,6 +96,8 @@ export class AuthService {
     private readonly emailCodesRepository?: Repository<EmailAuthCodeEntity>,
     @InjectRepository(TelegramAccountEntity)
     private readonly telegramAccountsRepository?: Repository<TelegramAccountEntity>,
+    @InjectRepository(TelegramLoginNonceEntity)
+    private readonly telegramLoginNoncesRepository?: Repository<TelegramLoginNonceEntity>,
     @InjectRepository(UserEntity)
     private readonly usersRepository?: Repository<UserEntity>,
   ) {}
@@ -186,74 +208,166 @@ export class AuthService {
     });
   }
 
-  async loginWithTelegram(
-    data: Record<string, string | undefined>,
-    authorizationHeader?: string,
-  ): Promise<{ accessToken: string; tokenType: "Bearer" }> {
-    if (!this.telegramAccountsRepository || !this.usersRepository) {
+  async requestTelegramLogin(authorizationHeader?: string): Promise<{
+    loginId: string;
+    pollToken: string;
+    botUrl: string;
+    expiresAt: string;
+  }> {
+    if (!this.telegramLoginNoncesRepository) {
+      throw new ServiceUnavailableException("Telegram authorization storage is not configured");
+    }
+
+    const botUsername = getTelegramBotUsername();
+    if (!botUsername || botUsername === "replace-with-telegram-bot-username") {
+      throw new BadRequestException("Telegram bot username is not configured");
+    }
+
+    const currentUser = await this.findCurrentUser(authorizationHeader);
+    const startToken = randomBase64Url();
+    const pollToken = randomBase64Url();
+    const expiresAt = new Date(Date.now() + TELEGRAM_LOGIN_TTL_MINUTES * 60 * 1000);
+    const nonce = await this.telegramLoginNoncesRepository.save(
+      this.telegramLoginNoncesRepository.create({
+        startTokenHash: hashTelegramLoginToken(startToken),
+        pollTokenHash: hashTelegramLoginToken(pollToken),
+        requestedUserId: currentUser?.id ?? null,
+        status: "pending",
+        expiresAt,
+      }),
+    );
+
+    return {
+      loginId: nonce.id,
+      pollToken,
+      botUrl: `https://t.me/${botUsername}?start=login_${startToken}`,
+      expiresAt: expiresAt.toISOString(),
+    };
+  }
+
+  async getTelegramLoginStatus(input: {
+    loginId: string;
+    pollToken: string;
+  }): Promise<
+    | { status: "pending" | "expired" | "consumed"; expiresAt?: string }
+    | ({ status: "confirmed" } & { accessToken: string; tokenType: "Bearer" })
+  > {
+    if (
+      !this.telegramLoginNoncesRepository ||
+      !this.telegramAccountsRepository ||
+      !this.usersRepository
+    ) {
+      throw new ServiceUnavailableException("Telegram authorization storage is not configured");
+    }
+
+    const nonce = await this.telegramLoginNoncesRepository.findOne({ where: { id: input.loginId } });
+    if (!nonce || !safeCompareHex(nonce.pollTokenHash, hashTelegramLoginToken(input.pollToken))) {
+      throw new BadRequestException("Telegram login request not found");
+    }
+
+    if (nonce.expiresAt <= new Date() && nonce.status === "pending") {
+      return { status: "expired" };
+    }
+
+    if (nonce.status === "pending") {
+      return { status: "pending", expiresAt: nonce.expiresAt.toISOString() };
+    }
+
+    if (nonce.status === "consumed" || !nonce.confirmedUserId) {
+      return { status: "consumed" };
+    }
+
+    const user = await this.usersRepository.findOne({ where: { id: nonce.confirmedUserId } });
+    if (!user) {
+      throw new BadRequestException("Telegram login user not found");
+    }
+
+    const account = await this.telegramAccountsRepository.findOne({ where: { userId: user.id } });
+    nonce.status = "consumed";
+    nonce.consumedAt = new Date();
+    await this.telegramLoginNoncesRepository.save(nonce);
+
+    return {
+      status: "confirmed",
+      ...this.issueToken({
+        sub: user.id,
+        name: user.name,
+        role: user.role,
+        phone: user.phoneNumber ?? undefined,
+        phoneVerified: user.phoneVerifiedAt !== null,
+        email: user.email ?? undefined,
+        emailVerified: user.emailVerifiedAt !== null,
+        telegram: account?.username ?? undefined,
+        telegramVerified: true,
+      }),
+    };
+  }
+
+  async confirmTelegramLogin(
+    input: {
+      startParam: string;
+      telegramId: string;
+      username?: string;
+      firstName?: string;
+      lastName?: string;
+      photoUrl?: string;
+    },
+    botAuthorization?: string,
+  ): Promise<{ ok: true; linkedExistingUser: boolean }> {
+    if (
+      !this.telegramLoginNoncesRepository ||
+      !this.telegramAccountsRepository ||
+      !this.usersRepository
+    ) {
       throw new ServiceUnavailableException("Telegram authorization storage is not configured");
     }
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
-
     if (!botToken || botToken === "replace-with-telegram-bot-token") {
       throw new BadRequestException("Telegram bot token is not configured");
     }
 
-    const receivedHash = data.hash;
-
-    if (!receivedHash) {
-      throw new BadRequestException("Telegram auth hash is required");
+    if (botAuthorization !== `Bearer ${botToken}`) {
+      throw new BadRequestException("Invalid bot authorization");
     }
 
-    const telegramId = data.id?.trim();
+    const telegramId = input.telegramId.trim();
     if (!telegramId || !/^\d+$/.test(telegramId)) {
       throw new BadRequestException("Telegram user id is required");
     }
 
-    const authDate = Number(data.auth_date);
-    const now = Math.floor(Date.now() / 1000);
-
-    if (
-      !Number.isInteger(authDate) ||
-      authDate > now + 60 ||
-      now - authDate > TELEGRAM_AUTH_MAX_AGE_SECONDS
-    ) {
-      throw new BadRequestException("Telegram auth payload has expired");
+    const startToken = parseTelegramStartToken(input.startParam);
+    if (!/^[A-Za-z0-9_-]{20,64}$/.test(startToken)) {
+      throw new BadRequestException("Invalid Telegram login token");
     }
 
-    const checkString = Object.entries(data)
-      .filter(([key, value]) => key !== "hash" && value !== undefined)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, value]) => `${key}=${value}`)
-      .join("\n");
-    const secretKey = createHash("sha256").update(botToken).digest();
-    const expectedHash = createHmac("sha256", secretKey).update(checkString).digest("hex");
-    const receivedHashBuffer = Buffer.from(receivedHash, "hex");
-    const expectedHashBuffer = Buffer.from(expectedHash, "hex");
-
-    if (
-      receivedHashBuffer.length !== expectedHashBuffer.length ||
-      !timingSafeEqual(receivedHashBuffer, expectedHashBuffer)
-    ) {
-      throw new BadRequestException("Invalid Telegram auth payload");
+    const nonce = await this.telegramLoginNoncesRepository.findOne({
+      where: {
+        startTokenHash: hashTelegramLoginToken(startToken),
+        status: "pending",
+      },
+    });
+    if (!nonce || nonce.expiresAt <= new Date()) {
+      throw new BadRequestException("Telegram login request expired");
     }
 
-    const currentUser = await this.findCurrentUser(authorizationHeader);
+    const requestedUser = nonce.requestedUserId
+      ? await this.usersRepository.findOne({ where: { id: nonce.requestedUserId } })
+      : null;
     let account = await this.telegramAccountsRepository.findOne({
       where: { telegramId },
       relations: { user: true },
     });
 
-    if (currentUser && account && account.userId !== currentUser.id) {
+    if (requestedUser && account && account.userId !== requestedUser.id) {
       throw new BadRequestException("Этот Telegram уже привязан к другому аккаунту");
     }
 
-    const displayName = compactName([data.first_name, data.last_name]) || data.username || "Пользователь";
-    const username = data.username?.trim() || null;
-    const photoUrl = data.photo_url?.trim() || null;
+    const displayName = compactName([input.firstName, input.lastName]) || input.username || "Пользователь";
+    const username = input.username?.trim().replace(/^@/, "") || null;
+    const photoUrl = input.photoUrl?.trim() || null;
 
-    let user = currentUser ?? account?.user ?? null;
+    let user = requestedUser ?? account?.user ?? null;
     if (!user) {
       user = await this.usersRepository.save(
         this.usersRepository.create({
@@ -286,24 +400,19 @@ export class AuthService {
     }
 
     account.username = username;
-    account.firstName = data.first_name?.trim() || null;
-    account.lastName = data.last_name?.trim() || null;
+    account.firstName = input.firstName?.trim() || null;
+    account.lastName = input.lastName?.trim() || null;
     account.photoUrl = photoUrl;
     account.user = user;
     account.userId = user.id;
     await this.telegramAccountsRepository.save(account);
 
-    return this.issueToken({
-      sub: user.id,
-      name: user.name,
-      role: user.role,
-      phone: user.phoneNumber ?? undefined,
-      phoneVerified: user.phoneVerifiedAt !== null,
-      email: user.email ?? undefined,
-      emailVerified: user.emailVerifiedAt !== null,
-      telegram: username ?? undefined,
-      telegramVerified: true,
-    });
+    nonce.status = "confirmed";
+    nonce.confirmedUserId = user.id;
+    nonce.confirmedAt = new Date();
+    await this.telegramLoginNoncesRepository.save(nonce);
+
+    return { ok: true, linkedExistingUser: Boolean(requestedUser) };
   }
 
   private async findCurrentUser(authorizationHeader?: string): Promise<UserEntity | null> {

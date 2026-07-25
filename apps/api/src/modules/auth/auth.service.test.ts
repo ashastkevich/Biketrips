@@ -1,5 +1,3 @@
-import { createHash, createHmac } from "node:crypto";
-
 import { BadRequestException } from "@nestjs/common";
 import { afterEach, describe, expect, it } from "vitest";
 import jwt from "jsonwebtoken";
@@ -8,26 +6,9 @@ import { AuthService } from "./auth.service.js";
 
 const botToken = "123456:test-token";
 const originalBotToken = process.env.TELEGRAM_BOT_TOKEN;
+const originalBotUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
 const originalNodeEnv = process.env.NODE_ENV;
 const originalJwtSecret = process.env.JWT_SECRET;
-
-function signedTelegramPayload(overrides: Record<string, string> = {}) {
-  const payload = {
-    id: "123456789",
-    first_name: "Alex",
-    username: "alex_rides",
-    auth_date: String(Math.floor(Date.now() / 1000)),
-    ...overrides,
-  };
-  const checkString = Object.entries(payload)
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([key, value]) => `${key}=${value}`)
-    .join("\n");
-  const secretKey = createHash("sha256").update(botToken).digest();
-  const hash = createHmac("sha256", secretKey).update(checkString).digest("hex");
-
-  return { ...payload, hash };
-}
 
 describe("AuthService Telegram login", () => {
   afterEach(() => {
@@ -36,19 +17,39 @@ describe("AuthService Telegram login", () => {
     } else {
       process.env.TELEGRAM_BOT_TOKEN = originalBotToken;
     }
+    if (originalBotUsername === undefined) {
+      delete process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
+    } else {
+      process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME = originalBotUsername;
+    }
     process.env.NODE_ENV = originalNodeEnv;
     process.env.JWT_SECRET = originalJwtSecret;
   });
 
-  it("creates a user and Telegram account for a valid Telegram payload", async () => {
+  it("creates a user and Telegram account after bot confirmation", async () => {
     process.env.TELEGRAM_BOT_TOKEN = botToken;
+    process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME = "biketrips_bot";
     process.env.JWT_SECRET = "test-secret";
     const { service, accounts, users } = createTelegramAuthService();
 
-    const result = await service.loginWithTelegram(signedTelegramPayload());
-    const payload = jwt.verify(result.accessToken, "test-secret");
+    const request = await service.requestTelegramLogin();
+    await service.confirmTelegramLogin(
+      {
+        startParam: extractStartParam(request.botUrl),
+        telegramId: "123456789",
+        firstName: "Alex",
+        username: "alex_rides",
+      },
+      `Bearer ${botToken}`,
+    );
+    const result = await service.getTelegramLoginStatus({
+      loginId: request.loginId,
+      pollToken: request.pollToken,
+    });
 
-    expect(result.tokenType).toBe("Bearer");
+    expect(result.status).toBe("confirmed");
+    if (result.status !== "confirmed") throw new Error("Expected confirmed login");
+    const payload = jwt.verify(result.accessToken, "test-secret");
     expect(payload).toMatchObject({
       name: "Alex",
       role: "user",
@@ -67,6 +68,7 @@ describe("AuthService Telegram login", () => {
 
   it("links Telegram to the current authenticated user", async () => {
     process.env.TELEGRAM_BOT_TOKEN = botToken;
+    process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME = "biketrips_bot";
     process.env.JWT_SECRET = "test-secret";
     const { service, accounts, users } = createTelegramAuthService();
     users.push(createTestUser({ id: "user-existing", name: "Existing rider" }));
@@ -75,10 +77,23 @@ describe("AuthService Telegram login", () => {
       "test-secret",
     );
 
-    const result = await service.loginWithTelegram(
-      signedTelegramPayload(),
-      `Bearer ${currentToken}`,
+    const request = await service.requestTelegramLogin(`Bearer ${currentToken}`);
+    await service.confirmTelegramLogin(
+      {
+        startParam: extractStartParam(request.botUrl),
+        telegramId: "123456789",
+        firstName: "Alex",
+        username: "alex_rides",
+      },
+      `Bearer ${botToken}`,
     );
+    const result = await service.getTelegramLoginStatus({
+      loginId: request.loginId,
+      pollToken: request.pollToken,
+    });
+
+    expect(result.status).toBe("confirmed");
+    if (result.status !== "confirmed") throw new Error("Expected confirmed login");
     const payload = jwt.verify(result.accessToken, "test-secret");
 
     expect(payload).toMatchObject({
@@ -90,24 +105,45 @@ describe("AuthService Telegram login", () => {
     expect(accounts[0]?.userId).toBe("user-existing");
   });
 
-  it("rejects an expired Telegram payload", async () => {
+  it("rejects bot confirmation without bot authorization", async () => {
     process.env.TELEGRAM_BOT_TOKEN = botToken;
+    process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME = "biketrips_bot";
     const { service } = createTelegramAuthService();
-    const authDate = String(Math.floor(Date.now() / 1000) - 25 * 60 * 60);
+    const request = await service.requestTelegramLogin();
 
     await expect(
-      service.loginWithTelegram(signedTelegramPayload({ auth_date: authDate })),
+      service.confirmTelegramLogin({
+        startParam: extractStartParam(request.botUrl),
+        telegramId: "123456789",
+      }),
     ).rejects.toThrow(BadRequestException);
   });
 
-  it("rejects a payload with an invalid signature", async () => {
+  it("does not allow consuming a confirmed login twice", async () => {
     process.env.TELEGRAM_BOT_TOKEN = botToken;
+    process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME = "biketrips_bot";
+    process.env.JWT_SECRET = "test-secret";
     const { service } = createTelegramAuthService();
-    const payload = signedTelegramPayload();
+    const request = await service.requestTelegramLogin();
+
+    await service.confirmTelegramLogin(
+      {
+        startParam: extractStartParam(request.botUrl),
+        telegramId: "123456789",
+      },
+      `Bearer ${botToken}`,
+    );
+    await service.getTelegramLoginStatus({
+      loginId: request.loginId,
+      pollToken: request.pollToken,
+    });
 
     await expect(
-      service.loginWithTelegram({ ...payload, username: "attacker" }),
-    ).rejects.toThrow(BadRequestException);
+      service.getTelegramLoginStatus({
+        loginId: request.loginId,
+        pollToken: request.pollToken,
+      }),
+    ).resolves.toMatchObject({ status: "consumed" });
   });
 });
 
@@ -239,7 +275,12 @@ function createEmailAuthService() {
   };
 
   return {
-    service: new AuthService(emailCodesRepository as never, undefined, usersRepository as never),
+    service: new AuthService(
+      emailCodesRepository as never,
+      undefined,
+      undefined,
+      usersRepository as never,
+    ),
     codes,
     users,
   };
@@ -269,6 +310,18 @@ function createTestUser(input: Partial<{
 
 function createTelegramAuthService() {
   const users: Array<ReturnType<typeof createTestUser>> = [];
+  const nonces: Array<{
+    id: string;
+    startTokenHash: string;
+    pollTokenHash: string;
+    requestedUserId: string | null;
+    status: "pending" | "confirmed" | "consumed";
+    confirmedUserId: string | null;
+    expiresAt: Date;
+    confirmedAt: Date | null;
+    consumedAt: Date | null;
+    createdAt: Date;
+  }> = [];
   const accounts: Array<{
     id: string;
     telegramId: string;
@@ -296,8 +349,11 @@ function createTelegramAuthService() {
   };
 
   const telegramAccountsRepository = {
-    findOne: async ({ where }: { where: { telegramId: string } }) =>
-      accounts.find((account) => account.telegramId === where.telegramId) ?? null,
+    findOne: async ({ where }: { where: { telegramId?: string; userId?: string } }) =>
+      accounts.find((account) =>
+        (where.telegramId ? account.telegramId === where.telegramId : true) &&
+        (where.userId ? account.userId === where.userId : true),
+      ) ?? null,
     create: (input: Partial<(typeof accounts)[number]>) => ({
       id: `telegram-${accounts.length + 1}`,
       telegramId: input.telegramId ?? "",
@@ -319,9 +375,51 @@ function createTelegramAuthService() {
     },
   };
 
+  const telegramLoginNoncesRepository = {
+    create: (input: Partial<(typeof nonces)[number]>) => ({
+      id: `nonce-${nonces.length + 1}`,
+      startTokenHash: input.startTokenHash ?? "",
+      pollTokenHash: input.pollTokenHash ?? "",
+      requestedUserId: input.requestedUserId ?? null,
+      status: input.status ?? "pending",
+      confirmedUserId: input.confirmedUserId ?? null,
+      expiresAt: input.expiresAt ?? new Date(),
+      confirmedAt: input.confirmedAt ?? null,
+      consumedAt: input.consumedAt ?? null,
+      createdAt: input.createdAt ?? new Date(),
+    }),
+    findOne: async ({ where }: {
+      where: Partial<Pick<(typeof nonces)[number], "id" | "startTokenHash" | "status">>;
+    }) =>
+      nonces.find((nonce) =>
+        (where.id ? nonce.id === where.id : true) &&
+        (where.startTokenHash ? nonce.startTokenHash === where.startTokenHash : true) &&
+        (where.status ? nonce.status === where.status : true),
+      ) ?? null,
+    save: async (nonce: (typeof nonces)[number]) => {
+      const existingIndex = nonces.findIndex((item) => item.id === nonce.id);
+      if (existingIndex >= 0) {
+        nonces[existingIndex] = nonce;
+      } else {
+        nonces.push(nonce);
+      }
+      return nonce;
+    },
+  };
+
   return {
-    service: new AuthService(undefined, telegramAccountsRepository as never, usersRepository as never),
+    service: new AuthService(
+      undefined,
+      telegramAccountsRepository as never,
+      telegramLoginNoncesRepository as never,
+      usersRepository as never,
+    ),
     accounts,
+    nonces,
     users,
   };
+}
+
+function extractStartParam(botUrl: string): string {
+  return new URL(botUrl).searchParams.get("start") ?? "";
 }

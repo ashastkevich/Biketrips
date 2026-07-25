@@ -13,9 +13,43 @@
   line-height: 1.16;
 }
 
-.widget {
-  min-height: 42px;
+.telegramLogin {
   display: grid;
-  place-items: center;
-  margin: 8px 0;
+  gap: 16px;
+}
+
+.lead,
+.hint {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.loginLinkPanel {
+  display: grid;
+  gap: 10px;
+}
+
+.telegramLink {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 22px;
+  color: #f5f3ec;
+  background: #2aabee;
+  border: 1px solid #2aabee;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+.telegramLink:hover {
+  background: #229ed9;
+  border-color: #229ed9;
+}
+
+.retry {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
 }

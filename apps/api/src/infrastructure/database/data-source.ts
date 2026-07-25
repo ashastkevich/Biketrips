@@ -8,6 +8,7 @@ import { NotificationJobEntity } from "./entities/notification-job.entity.js";
 import { OrganizerEntity } from "./entities/organizer.entity.js";
 import { RouteFileEntity } from "./entities/route-file.entity.js";
 import { TelegramAccountEntity } from "./entities/telegram-account.entity.js";
+import { TelegramLoginNonceEntity } from "./entities/telegram-login-nonce.entity.js";
 import { TripParticipantEntity } from "./entities/trip-participant.entity.js";
 import { TripUpdateEntity } from "./entities/trip-update.entity.js";
 import { TripEntity } from "./entities/trip.entity.js";
@@ -23,6 +24,7 @@ import { AddCityCentersAndSeedCities1738000000000 } from "./migrations/173800000
 import { AddUserCity1738100000000 } from "./migrations/1738100000000-AddUserCity.js";
 import { TransliterateTripSlugs1738200000000 } from "./migrations/1738200000000-TransliterateTripSlugs.js";
 import { AddEmailAuthCodes1738300000000 } from "./migrations/1738300000000-AddEmailAuthCodes.js";
+import { AddTelegramLoginNonces1738400000000 } from "./migrations/1738400000000-AddTelegramLoginNonces.js";
 
 export const appDataSource = new DataSource({
   type: "postgres",
@@ -34,6 +36,7 @@ export const appDataSource = new DataSource({
     OrganizerEntity,
     RouteFileEntity,
     TelegramAccountEntity,
+    TelegramLoginNonceEntity,
     TripEntity,
     TripParticipantEntity,
     TripUpdateEntity,
@@ -51,6 +54,7 @@ export const appDataSource = new DataSource({
     AddUserCity1738100000000,
     TransliterateTripSlugs1738200000000,
     AddEmailAuthCodes1738300000000,
+    AddTelegramLoginNonces1738400000000,
   ],
   synchronize: false,
 });

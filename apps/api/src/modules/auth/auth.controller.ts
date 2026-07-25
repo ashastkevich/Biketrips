@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Inject, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, Matches } from "class-validator";
 import { userRoles } from "@biketrips/domain";
@@ -8,9 +8,20 @@ import { AuthService } from "./auth.service.js";
 import type { TokenPayload } from "./auth.service.js";
 import { JwtAuthGuard } from "./jwt-auth.guard.js";
 
-class TelegramLoginDto {
+class TelegramLoginStatusDto {
   @IsString()
-  id!: string;
+  loginId!: string;
+
+  @IsString()
+  pollToken!: string;
+}
+
+class TelegramLoginConfirmDto {
+  @IsString()
+  startParam!: string;
+
+  @IsString()
+  telegramId!: string;
 
   @IsOptional()
   @IsString()
@@ -18,25 +29,15 @@ class TelegramLoginDto {
 
   @IsOptional()
   @IsString()
-  first_name?: string;
+  firstName?: string;
 
   @IsOptional()
   @IsString()
-  last_name?: string;
+  lastName?: string;
 
   @IsOptional()
   @IsString()
-  photo_url?: string;
-
-  @IsOptional()
-  @IsString()
-  allows_write_to_pm?: string;
-
-  @IsString()
-  auth_date!: string;
-
-  @IsString()
-  hash!: string;
+  photoUrl?: string;
 }
 
 class DevLoginDto {
@@ -78,9 +79,22 @@ class EmailCodeVerifyDto {
 export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
-  @Post("telegram")
-  async telegramLogin(@Body() dto: TelegramLoginDto, @Req() request: { headers: { authorization?: string } }) {
-    return this.authService.loginWithTelegram({ ...dto }, request.headers.authorization);
+  @Post("telegram/request")
+  async requestTelegramLogin(@Req() request: { headers: { authorization?: string } }) {
+    return this.authService.requestTelegramLogin(request.headers.authorization);
+  }
+
+  @Post("telegram/status")
+  async getTelegramLoginStatus(@Body() dto: TelegramLoginStatusDto) {
+    return this.authService.getTelegramLoginStatus(dto);
+  }
+
+  @Post("telegram/confirm")
+  async confirmTelegramLogin(
+    @Body() dto: TelegramLoginConfirmDto,
+    @Headers("authorization") authorization?: string,
+  ) {
+    return this.authService.confirmTelegramLogin(dto, authorization);
   }
 
   @Post("email/request")
