@@ -2,8 +2,11 @@ import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEnvFile } from "node:process";
+import { setDefaultResultOrder } from "node:dns";
 
 import { readOptionalEnv } from "@biketrips/config";
+
+setDefaultResultOrder("ipv4first");
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const envFiles = [
