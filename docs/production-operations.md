@@ -32,6 +32,7 @@ pushed to `origin/main` so the next deploy does not revert it.
 
 - Provider: Selectel cloud server.
 - Public IP: `135.106.155.78`.
+- Telegram WireGuard gateway: `46.226.161.171`.
 - Public web URL: `https://biketrips.ru`.
 - Alternate web URL: `https://www.biketrips.ru`.
 - Public backend health URL: `https://biketrips.ru/backend/health`.
@@ -51,6 +52,12 @@ Open inbound ports are intentionally minimal:
 - `80/tcp` for HTTP redirect to HTTPS.
 - `443/tcp` for HTTPS.
 
+Telegram Bot API traffic from the production server is routed through a
+WireGuard tunnel to the foreign gateway at `46.226.161.171`. The tunnel uses
+`wg0` with production server address `10.66.66.2/32` and gateway address
+`10.66.66.1/24`. The production server keeps its normal default route through
+`eth0`; only Telegram IPv4 ranges are routed through `wg0`.
+
 HTTPS is enabled through Let's Encrypt/certbot for `biketrips.ru` and
 `www.biketrips.ru`. The certificate is stored under
 `/etc/letsencrypt/live/biketrips.ru/` and certbot's system timer handles
@@ -65,8 +72,10 @@ Production runs on one virtual machine:
 - `biketrips-stack.service`: starts the production Docker Compose stack for
   PostgreSQL and Redis before API/web services start.
 - `biketrips-bot.service`: Telegram bot worker. It handles Telegram deep-link
-  login confirmations and should stay active when `TELEGRAM_BOT_TOKEN` is
-  configured.
+  login confirmations through long polling and should stay active when
+  `TELEGRAM_BOT_TOKEN` is configured.
+- `wg-quick@wg0.service`: WireGuard tunnel used by the bot worker to reach the
+  Telegram Bot API from the Russian production server.
 - `nginx.service`: reverse proxy.
 - Docker containers:
   - `biketrips-postgres`, bound to `127.0.0.1:5432`.
@@ -82,8 +91,10 @@ Nginx routes:
 Useful production checks:
 
 ```bash
-ssh root@135.106.155.78 'systemctl is-active docker.service nginx.service biketrips-stack.service biketrips-api.service biketrips-web.service'
+ssh root@135.106.155.78 'systemctl is-active docker.service nginx.service biketrips-stack.service biketrips-api.service biketrips-web.service biketrips-bot.service wg-quick@wg0.service'
 ssh root@135.106.155.78 'curl -sS https://biketrips.ru/backend/health'
+ssh root@135.106.155.78 'curl -4 -sS -o /dev/null -w "%{http_code}\n" https://api.telegram.org'
+ssh root@135.106.155.78 'wg show wg0'
 ssh root@135.106.155.78 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
 ssh root@135.106.155.78 'cd /srv/biketrips/app && sudo -u deploy git log -1 --oneline'
 ```
@@ -150,9 +161,11 @@ Important env names:
 - `DADATA_API_KEY`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_LOGIN_SECRET`
-- `TELEGRAM_WEBHOOK_SECRET`
-- `TELEGRAM_WEBHOOK_URL=https://biketrips.ru/backend/telegram/webhook`
 - `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`
+
+Production Telegram login uses bot long polling through WireGuard because
+Telegram webhook delivery to the Russian production server is blocked by
+network policy.
 
 ## Email delivery
 
@@ -200,5 +213,5 @@ If email login fails:
 - Backups are not configured yet. Add PostgreSQL backups before collecting
   valuable production data.
 - `apps/bot` exits successfully only when `TELEGRAM_BOT_TOKEN` is missing or
-  left as a placeholder. With `TELEGRAM_WEBHOOK_URL` configured, Telegram
-  updates are handled by the API webhook and the bot worker idles successfully.
+  left as a placeholder. In production it should stay active and use long
+  polling through the WireGuard tunnel.
