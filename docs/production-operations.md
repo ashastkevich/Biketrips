@@ -72,7 +72,7 @@ Production runs on one virtual machine:
   PostgreSQL and Redis before API/web services start.
 - `biketrips-bot.service`: Telegram bot worker. It handles Telegram deep-link
   login confirmations through long polling and should stay active when
-  `TELEGRAM_BOT_TOKEN` is configured and `TELEGRAM_WEBHOOK_URL` is empty.
+  `TELEGRAM_BOT_TOKEN` is configured.
 - `wg-quick@wg0.service`: WireGuard tunnel used by the bot worker to reach the
   Telegram Bot API from the Russian production server.
 - `nginx.service`: reverse proxy.
@@ -150,13 +150,11 @@ Important env names:
 - `DADATA_API_KEY`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_LOGIN_SECRET`
-- `TELEGRAM_WEBHOOK_SECRET`
-- `TELEGRAM_WEBHOOK_URL`
 - `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`
 
-For production Telegram login, keep `TELEGRAM_WEBHOOK_URL` empty. The bot uses
-long polling through WireGuard because Telegram webhook delivery to the Russian
-production server is blocked by network policy.
+Production Telegram login uses bot long polling through WireGuard because
+Telegram webhook delivery to the Russian production server is blocked by
+network policy.
 
 ## Email delivery
 
@@ -204,7 +202,5 @@ If email login fails:
 - Backups are not configured yet. Add PostgreSQL backups before collecting
   valuable production data.
 - `apps/bot` exits successfully only when `TELEGRAM_BOT_TOKEN` is missing or
-  left as a placeholder. With `TELEGRAM_WEBHOOK_URL` configured, Telegram
-  updates are handled by the API webhook and the bot worker idles successfully.
-  In production, `TELEGRAM_WEBHOOK_URL` should remain empty so the worker stays
-  active and uses long polling through the WireGuard tunnel.
+  left as a placeholder. In production it should stay active and use long
+  polling through the WireGuard tunnel.

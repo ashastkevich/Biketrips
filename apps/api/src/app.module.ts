@@ -8,7 +8,6 @@ import { CitiesModule } from "./modules/cities/cities.module.js";
 import { NotificationsModule } from "./modules/notifications/notifications.module.js";
 import { OrganizersModule } from "./modules/organizers/organizers.module.js";
 import { ParticipantsModule } from "./modules/participants/participants.module.js";
-import { TelegramModule } from "./modules/telegram/telegram.module.js";
 import { TripsModule } from "./modules/trips/trips.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
 import { CityEntity } from "./infrastructure/database/entities/city.entity.js";
@@ -56,7 +55,6 @@ import { WaitlistEntryEntity } from "./infrastructure/database/entities/waitlist
     NotificationsModule,
     OrganizersModule,
     ParticipantsModule,
-    TelegramModule,
     TripsModule,
     UsersModule,
   ],

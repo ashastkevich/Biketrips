@@ -9,7 +9,7 @@ BikeTrips развивается как TypeScript-монорепозитори�
 - Web: Next.js, React, TypeScript, Tailwind CSS.
 - Mobile: React Native + Expo, TypeScript.
 - Backend: Node.js + NestJS.
-- Auth: Passport.js, JWT, Telegram auth strategy, refresh tokens.
+- Auth: Passport.js for JWT, email codes, Telegram deep-link login with one-time nonces, refresh tokens.
 - Database: PostgreSQL.
 - ORM: TypeORM.
 - Background jobs: Redis + BullMQ.
@@ -51,7 +51,6 @@ apps/api/src/
     trips/
     participants/
     notifications/
-    telegram/
     files/
     admin/
   infrastructure/
@@ -132,6 +131,6 @@ export class TripsService {
 
 ## Интеграции
 
-Telegram-бот работает как отдельное приложение в монорепозитории. Он не содержит бизнес-логику поездок, а вызывает backend API или application services через общий клиент.
+Telegram-бот работает как отдельное приложение в монорепозитории. Он использует Bot API long polling, подтверждает deep-link login nonce через backend API и не содержит бизнес-логику поездок.
 
 Web и mobile клиенты используют один REST API. Общие типы, enum-значения, схемы валидации и API-клиент выносятся в `packages`, чтобы не дублировать контракты между Next.js, React Native и ботом.
