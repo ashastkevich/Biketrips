@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import sharp from "sharp";
 import { Not, Repository } from "typeorm";
 import { slugifyTripTitle, type TripStatus } from "@biketrips/domain";
 
@@ -18,6 +19,7 @@ import { normalizeRouteFileName } from "./route-file-names.js";
 
 const maxRouteGpxBytes = 1_000_000;
 const maxCoverImageBytes = 5_000_000;
+const coverImageWidth = 1600;
 const routeFilesDirectory =
   process.env.ROUTE_FILES_DIR ?? path.join(process.cwd(), "storage", "route-files");
 const coverImagesDirectory =
@@ -431,13 +433,14 @@ export class TripsService {
     this.validateUploadedCoverImage(coverImage);
     await this.deleteCoverImage(tripId);
 
-    const extension = this.getCoverImageExtension(coverImage.mimetype);
-    const storageKey = `${tripId}/${Date.now()}-cover.${extension}`;
+    const version = Date.now();
+    const optimizedCoverImage = await this.optimizeCoverImage(coverImage);
+    const storageKey = `${tripId}/${version}-cover.webp`;
     const filePath = this.getCoverImagePath(storageKey);
-    const coverImageUrl = `/trips/${tripId}/cover-image`;
+    const coverImageUrl = `/trips/${tripId}/cover-image?v=${version}`;
 
     await mkdir(path.dirname(filePath), { recursive: true });
-    await writeFile(filePath, coverImage.buffer);
+    await writeFile(filePath, optimizedCoverImage);
     await this.tripsRepository.update({ id: tripId }, { coverImage: coverImageUrl });
   }
 
@@ -469,6 +472,18 @@ export class TripsService {
     }
   }
 
+  private async optimizeCoverImage(coverImage: UploadedCoverImage): Promise<Buffer> {
+    try {
+      return await sharp(coverImage.buffer)
+        .rotate()
+        .resize({ width: coverImageWidth, withoutEnlargement: true })
+        .webp({ quality: 78, effort: 5 })
+        .toBuffer();
+    } catch {
+      throw new BadRequestException("Cover image could not be processed");
+    }
+  }
+
   private sanitizeRouteFileName(fileName: string): string {
     const normalized = path.basename(fileName).replace(/[^a-zA-Z0-9._-]+/g, "-");
     return normalized || "route.gpx";
@@ -496,13 +511,7 @@ export class TripsService {
   }
 
   private isUploadedCoverImageUrl(coverImage: string): boolean {
-    return /^\/trips\/[0-9a-f-]+\/cover-image$/i.test(coverImage);
-  }
-
-  private getCoverImageExtension(contentType: string): "jpg" | "png" | "webp" {
-    if (contentType === "image/png") return "png";
-    if (contentType === "image/webp") return "webp";
-    return "jpg";
+    return /^\/trips\/[0-9a-f-]+\/cover-image(?:\?v=\d+)?$/i.test(coverImage);
   }
 
   private getCoverImageContentType(storageKey: string): string {

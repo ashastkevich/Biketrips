@@ -11,7 +11,11 @@ describe("asset helpers", () => {
   });
 
   it("uses provided cover images when present", () => {
-    expect(getTripCoverBackground("/img/Photo1.jpg")).toBe('url("/img/Photo1.jpg")');
-    expect(getTripCardCoverBackground("/img/Photo1.jpg")).toContain('url("/img/Photo1.jpg")');
+    expect(getTripCoverBackground("/img/trip-cover-forest-road.webp")).toBe(
+      'url("/img/trip-cover-forest-road.webp")',
+    );
+    expect(getTripCardCoverBackground("/img/trip-cover-forest-road.webp")).toContain(
+      'url("/img/trip-cover-forest-road.webp")',
+    );
   });
 });

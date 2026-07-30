@@ -28,17 +28,39 @@
 }
 
 .cover {
+  position: relative;
   height: 148px;
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
+  overflow: hidden;
   padding: 16px;
-  background:
-    linear-gradient(180deg, transparent, rgba(5, 18, 11, 0.52)),
-    url("/img/Photo2.jpg") center / cover;
+  background: #273525;
+}
+
+.coverImage,
+.coverShade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.coverImage {
+  object-fit: cover;
+}
+
+.coverShade {
+  background: linear-gradient(180deg, transparent, rgba(5, 18, 11, 0.52));
+}
+
+.coverFallback {
+  background: linear-gradient(135deg, #53613c, #273525);
 }
 
 .cover span {
+  position: relative;
+  z-index: 1;
   padding: 6px 10px;
   color: #fff;
   background: rgba(8, 20, 13, 0.7);

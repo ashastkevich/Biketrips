@@ -16,7 +16,7 @@ const meta = {
   args: {
     open: true,
     trip: storyTrips[0]!,
-    coverImage: "/img/Photo2.jpg",
+    coverImage: "/img/trip-cover-group-ride.webp",
     currentUserId: undefined,
     onClose: fn(),
     onJoin: fn(),
@@ -37,7 +37,7 @@ export const Unlimited: Story = {
 
 export const Waitlist: Story = {
   name: "Лист ожидания",
-  args: { trip: storyTrips[1]!, coverImage: "/img/Photo3.jpg" },
+  args: { trip: storyTrips[1]!, coverImage: "/img/trip-cover-route.webp" },
 };
 
 export const Interactive: Story = {

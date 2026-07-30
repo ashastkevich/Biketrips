@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import type { MouseEvent } from "react";
 import type { TripDetail } from "@biketrips/domain";
 
-import { getTripCoverBackground } from "../lib/assets";
 import { ClockIcon, getTripCardProps, PinIcon } from "../lib/components";
 import { getTripHref } from "../lib/trip-links";
 import { difficultyLabels, formatShortDate, tripStatusLabels } from "../lib/labels";
@@ -73,7 +73,6 @@ export function UpcomingTrips({
             ) : null}
             {trips.map((trip) => {
           const coverImage = getTripCardProps(trip).coverImage;
-          const coverBackground = getTripCoverBackground(coverImage);
 
           return (
             <Link
@@ -83,10 +82,19 @@ export function UpcomingTrips({
               onClick={(event) => handleTripClick(event, trip)}
             >
               <div
-                className={styles.tripCover}
-                style={{ backgroundImage: coverBackground }}
+                className={classes(styles.tripCover, !coverImage && styles.tripCoverFallback)}
                 aria-hidden="true"
-              />
+              >
+                {coverImage ? (
+                  <Image
+                    className={styles.tripCoverImage}
+                    src={coverImage}
+                    alt=""
+                    fill
+                    sizes="88px"
+                  />
+                ) : null}
+              </div>
               <div className={styles.tripCopy}>
                 <p>{formatShortDate(trip.startDateTime)}</p>
                 <h3>{trip.title}</h3>

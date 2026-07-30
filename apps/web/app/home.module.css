@@ -5,12 +5,26 @@
   display: grid;
   overflow: hidden;
   color: var(--white);
-  background-image:
+  background: #182317;
+}
+
+.heroImage,
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.heroImage {
+  object-fit: cover;
+  object-position: var(--hero-image-position, center);
+}
+
+.heroOverlay {
+  background:
     linear-gradient(90deg, rgba(5, 15, 11, 0.78) 0%, rgba(5, 15, 11, 0.58) 34%, rgba(5, 15, 11, 0.18) 67%, rgba(5, 15, 11, 0.08) 100%),
-    linear-gradient(180deg, rgba(5, 15, 11, 0.32) 0%, rgba(5, 15, 11, 0.04) 44%, rgba(5, 15, 11, 0.55) 100%),
-    url("/img/ridemate-hero-cycling-group.png");
-  background-position: center;
-  background-size: cover;
+    linear-gradient(180deg, rgba(5, 15, 11, 0.32) 0%, rgba(5, 15, 11, 0.04) 44%, rgba(5, 15, 11, 0.55) 100%);
 }
 
 .hero::before {
@@ -214,7 +228,7 @@
 
 @media (max-width: 980px) {
   .hero {
-    background-position: 62% center;
+    --hero-image-position: 62% center;
   }
 
   .heroContent {
@@ -229,7 +243,7 @@
 
 @media (max-width: 680px) {
   .hero {
-    background-position: 64% center;
+    --hero-image-position: 64% center;
   }
 
   .heroContent {

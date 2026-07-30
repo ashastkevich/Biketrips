@@ -5,13 +5,14 @@ import { getServerApiUrl } from "../../../../lib/server-api-url";
 const apiUrl = getServerApiUrl();
 
 export async function GET(
-  _: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const { search } = new URL(request.url);
   const response = await fetch(
-    `${apiUrl}/trips/${encodeURIComponent(id)}/cover-image`,
-    { cache: "no-store" },
+    `${apiUrl}/trips/${encodeURIComponent(id)}/cover-image${search}`,
+    { next: { revalidate: 86400 } },
   ).catch(() => null);
 
   if (!response) {

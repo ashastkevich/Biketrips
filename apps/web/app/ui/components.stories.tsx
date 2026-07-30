@@ -215,7 +215,7 @@ export const TripCard: Story = {
         difficulty="medium"
         averageSpeed={21}
         maxParticipants={12}
-        coverImage="/img/Photo2.jpg"
+        coverImage="/img/trip-cover-group-ride.webp"
       />
     </div>
   ),

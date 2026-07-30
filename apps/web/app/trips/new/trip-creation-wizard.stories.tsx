@@ -42,7 +42,7 @@ const filledTrip = {
   hasParticipantLimit: true,
   maxParticipants: "12",
   registrationMode: "automatic",
-  coverImage: "/img/Photo2.jpg",
+  coverImage: "/img/trip-cover-group-ride.webp",
   description:
     "Едем спокойный гравийный круг через лесные дороги и поля, с остановкой на кофе в середине маршрута.",
   routeDescription: "",

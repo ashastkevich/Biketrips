@@ -33,10 +33,10 @@ function classes(...values: Array<string | false | null | undefined>) {
 }
 
 const coverTemplates = [
-  { src: "/img/Photo1.jpg", label: "Велосипедисты на лесной дороге" },
-  { src: "/img/Photo2.jpg", label: "Группа в загородной поездке" },
-  { src: "/img/Photo3.jpg", label: "Велосипедный маршрут" },
-  { src: "/img/Photo4.jpg", label: "Совместная велопрогулка" },
+  { src: "/img/trip-cover-forest-road.webp", label: "Велосипедисты на лесной дороге" },
+  { src: "/img/trip-cover-group-ride.webp", label: "Группа в загородной поездке" },
+  { src: "/img/trip-cover-route.webp", label: "Велосипедный маршрут" },
+  { src: "/img/trip-cover-social-ride.webp", label: "Совместная велопрогулка" },
 ];
 const defaultCoverImage = coverTemplates[1]!.src;
 const maxRouteGpxBytes = 1_000_000;

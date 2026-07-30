@@ -359,11 +359,20 @@
 }
 
 .tripCover {
+  position: relative;
   width: 88px;
   height: 72px;
-  background-position: center;
-  background-size: cover;
+  overflow: hidden;
+  background: #273525;
   border-radius: 14px;
+}
+
+.tripCoverImage {
+  object-fit: cover;
+}
+
+.tripCoverFallback {
+  background: linear-gradient(135deg, #53613c, #273525);
 }
 
 .tripCopy {

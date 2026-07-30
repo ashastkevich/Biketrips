@@ -19,7 +19,7 @@ export const storyTrips: TripDetail[] = [
     status: "published",
     capacity: 14,
     confirmedParticipants: 8,
-    coverImage: "/img/Photo2.jpg",
+    coverImage: "/img/trip-cover-group-ride.webp",
     description:
       "Ровный вечерний маршрут через парки и спокойные набережные. Подойдет тем, кто уверенно держит 22-24 км/ч и хочет прокатиться без гонки.",
     startLocationName: "Парк Победы, главный вход",
@@ -85,7 +85,7 @@ export const storyTrips: TripDetail[] = [
     status: "published",
     capacity: 18,
     confirmedParticipants: 18,
-    coverImage: "/img/Photo3.jpg",
+    coverImage: "/img/trip-cover-route.webp",
     description:
       "Дневная поездка в разговорном темпе с остановкой на кофе. Хороший вариант для первой длинной групповой покатушки.",
     startLocationName: "Финляндский вокзал",
@@ -135,7 +135,7 @@ export const storyTrips: TripDetail[] = [
     status: "draft",
     capacity: 10,
     confirmedParticipants: 4,
-    coverImage: "/img/Photo1.jpg",
+    coverImage: "/img/trip-cover-forest-road.webp",
     description: "Утренняя тренировка с ровными сменами и коротким разбором после финиша.",
     startLocationName: "Компрессорный, парковка",
     startLat: null,

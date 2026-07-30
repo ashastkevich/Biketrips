@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import type {
   ButtonHTMLAttributes,
@@ -27,7 +28,6 @@ import {
   participantStatusLabels,
   tripStatusLabels,
 } from "../lib/labels";
-import { getTripCardCoverBackground } from "../lib/assets";
 import filterStyles from "./route-filters.module.css";
 import styles from "./components.module.css";
 import tripCardStyles from "./trip-card.module.css";
@@ -1141,12 +1141,17 @@ export function TripCard({
         }
       } : undefined}
     >
-      <div
-        className={tripCardStyles.cover}
-        style={{
-          backgroundImage: getTripCardCoverBackground(coverImage),
-        }}
-      >
+      <div className={classes(tripCardStyles.cover, !coverImage && tripCardStyles.coverFallback)}>
+        {coverImage ? (
+          <Image
+            className={tripCardStyles.coverImage}
+            src={coverImage}
+            alt=""
+            fill
+            sizes="(max-width: 760px) 100vw, 360px"
+          />
+        ) : null}
+        <div className={tripCardStyles.coverShade} aria-hidden="true" />
         <span>{distanceKm || "—"} км</span>
       </div>
       <div className={tripCardStyles.body}>

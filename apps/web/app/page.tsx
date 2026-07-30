@@ -1,5 +1,6 @@
 import { FindTripSection } from "./find-trip-section";
 import { cookies } from "next/headers";
+import Image from "next/image";
 import { HomeHeader } from "./home-header";
 import { getCities, getCurrentUser, getTrip, getTripDetails } from "./lib/api";
 import { CITY_COOKIE_NAME, fallbackCities, selectCity } from "./lib/cities";
@@ -44,6 +45,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <HomeHeader isAuthorized={isAuthorized} />
 
       <section className={styles.hero} id="hero" data-home-hero aria-labelledby="hero-title">
+        <Image
+          className={styles.heroImage}
+          src="/img/hero-cycling-group.webp"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+        />
+        <div className={styles.heroOverlay} aria-hidden="true" />
         <div className={`page ${styles.heroContent}`}>
           <h1 id="hero-title">Совместные велопоездки рядом</h1>
           <p className={styles.lead}>

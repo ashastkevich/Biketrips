@@ -109,7 +109,7 @@ export class TripsController {
   ) {
     const coverImage = await this.tripsService.getCoverImageForDownload(id);
     response.setHeader("Content-Type", coverImage.contentType);
-    response.setHeader("Cache-Control", "public, max-age=3600");
+    response.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
 
     return new StreamableFile(coverImage.content);
   }
