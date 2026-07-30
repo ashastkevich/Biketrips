@@ -3,10 +3,6 @@
   gap: 20px;
 }
 
-.card h2 {
-  margin: 0;
-}
-
 .form {
   display: grid;
   gap: 16px;
@@ -20,9 +16,9 @@
 
 .field {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 1.08rem;
   font-weight: 700;
 }
 

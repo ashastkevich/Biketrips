@@ -84,6 +84,10 @@ button {
   padding-top: 26px;
 }
 
+.app-content-shell {
+  padding-top: 0;
+}
+
 h1,
 h2,
 h3,
@@ -94,12 +98,7 @@ p {
 h1,
 h2,
 h3 {
-  font-family:
-    var(--font-unbounded),
-    var(--font-manrope),
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: var(--font-unbounded), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   letter-spacing: 0;
 }
 
@@ -172,16 +171,11 @@ tr:last-child td {
   h1 {
     font-size: 39px;
   }
-
 }
 
 .typography-theme {
   min-height: 100vh;
-  font-family:
-    var(--font-manrope),
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 }
 
 .app-theme {
@@ -223,12 +217,7 @@ tr:last-child td {
 .typography-theme h1,
 .typography-theme h2,
 .typography-theme h3 {
-  font-family:
-    var(--font-unbounded),
-    var(--font-manrope),
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: var(--font-unbounded), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   letter-spacing: -0.035em;
   line-height: 1.12;
 }

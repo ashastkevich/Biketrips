@@ -13,10 +13,7 @@ import { AppTopbar } from "../../../lib/components";
 import { readOptionalFile, readString, readTripUpdateInput } from "../../../lib/form-data";
 import { getTripHref, getTripReference } from "../../../lib/trip-links";
 import { Alert, LinkButton } from "../../../ui/components";
-import {
-  TripCreationWizard,
-  type TripDraft,
-} from "../../new/trip-creation-wizard";
+import { TripCreationWizard, type TripDraft } from "../../new/trip-creation-wizard";
 import { SavedTripConfirmation } from "./saved-trip-confirmation";
 
 function getLocalStartValues(startDateTime: string, timeZone: string) {
@@ -55,7 +52,7 @@ function getChangedFields(
   trip: TripDetail,
   input: UpdateTripInput,
   formData: FormData,
-  originalLocalStart: string,
+  originalLocalStart: string
 ): string[] {
   const changes: string[] = [];
   const differs = (left: unknown, right: unknown) => left !== right;
@@ -108,9 +105,7 @@ function getChangedFields(
   if (readString(formData, "removeRouteGpx") === "true" && trip.routeGpxFileName) {
     changes.push("GPX-маршрут");
   }
-  if (
-    differs(optional(trip.equipmentRequirements), optional(input.equipmentRequirements))
-  ) {
+  if (differs(optional(trip.equipmentRequirements), optional(input.equipmentRequirements))) {
     changes.push("Требования к снаряжению");
   }
   if (differs(optional(trip.rules), optional(input.rules))) changes.push("Правила группы");
@@ -132,19 +127,23 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
 
   if (!trip) {
     return (
-      <main className="shell">
+      <>
         <AppTopbar showCreateAction={false} />
-        <Alert title="Не удалось загрузить поездку" tone="danger">
-          {tripResult.error ?? "API поездок временно недоступен. Попробуйте открыть редактор ещё раз."}
-        </Alert>
-        <LinkButton href="/profile" tone="secondary">Вернуться в профиль</LinkButton>
-      </main>
+
+        <main className="shell app-content-shell">
+          <Alert title="Не удалось загрузить поездку" tone="danger">
+            {tripResult.error ??
+              "API поездок временно недоступен. Попробуйте открыть редактор ещё раз."}
+          </Alert>
+          <LinkButton href="/profile" tone="secondary">
+            Вернуться в профиль
+          </LinkButton>
+        </main>
+      </>
     );
   }
   if (!user) {
-    redirect(
-      `/auth/telegram?returnTo=${encodeURIComponent(`/trips/${tripReference}/edit`)}`,
-    );
+    redirect(`/auth/telegram?returnTo=${encodeURIComponent(`/trips/${tripReference}/edit`)}`);
   }
   if (trip.organizer.userId !== user.id && user.role !== "admin") redirect("/profile");
 
@@ -154,10 +153,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
     trip.status !== "finished";
   const cities = citiesResult.data.length > 0 ? citiesResult.data : fallbackCities;
   const city = cities.find((item) => item.id === trip.cityId);
-  const start = getLocalStartValues(
-    trip.startDateTime,
-    city?.timezone ?? "Europe/Moscow",
-  );
+  const start = getLocalStartValues(trip.startDateTime, city?.timezone ?? "Europe/Moscow");
   const error = Array.isArray(query.error) ? query.error[0] : query.error;
   const saved = Array.isArray(query.saved) ? query.saved[0] : query.saved;
   const savedTripSlug = Array.isArray(query.trip) ? query.trip[0] : query.trip;
@@ -170,9 +166,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
   const returnTo = requestedReturnTo === "/" ? "/" : "/profile";
   const requestedScope = Array.isArray(query.scope) ? query.scope[0] : query.scope;
   const returnScope =
-    requestedScope === "feed" ||
-    requestedScope === "created" ||
-    requestedScope === "participating"
+    requestedScope === "feed" || requestedScope === "created" || requestedScope === "participating"
       ? requestedScope
       : returnTo === "/"
         ? "feed"
@@ -222,12 +216,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
       const routeFile = readOptionalFile(formData, "routeGpxFile");
       const coverImageFile = readOptionalFile(formData, "coverImageFile");
       const removeRouteFile = readString(formData, "removeRouteGpx") === "true";
-      const changes = getChangedFields(
-        originalTrip,
-        input,
-        formData,
-        originalLocalStart,
-      );
+      const changes = getChangedFields(originalTrip, input, formData, originalLocalStart);
       const updatedTrip =
         routeFile || coverImageFile || removeRouteFile
           ? await updateTripWithRouteFile(tripId, input, {
@@ -258,40 +247,45 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
   }
 
   return (
-    <main className="shell">
+    <>
       <AppTopbar showCreateAction={false} />
-      {saved === "1" && savedTripSlug ? (
-        <SavedTripConfirmation
-          changes={savedChanges}
-          returnPath={returnTo}
-          returnScope={returnScope}
-          tripSlug={savedTripSlug}
-        />
-      ) : null}
-      {!canEdit ? (
-        <Alert title="Редактирование недоступно" tone="warning">
-          Прошедшую, завершённую или отменённую поездку изменить нельзя.
-        </Alert>
-      ) : (
-        <>
-          <Alert title="Участники увидят изменения" tone="warning">
-            После сохранения участники опубликованной поездки получат уведомление.
-          </Alert>
-          {error ? (
-            <Alert title="Не удалось сохранить поездку" tone="danger">{error}</Alert>
-          ) : null}
-          <TripCreationWizard
-            action={updateTripAction}
-            canPublish
-            cancelHref={cancelHref}
-            cities={cities}
-            initialValues={initialValues}
-            isRegistered
-            mode="edit"
-            persistDraft={false}
+
+      <main className="shell app-content-shell">
+        {saved === "1" && savedTripSlug ? (
+          <SavedTripConfirmation
+            changes={savedChanges}
+            returnPath={returnTo}
+            returnScope={returnScope}
+            tripSlug={savedTripSlug}
           />
-        </>
-      )}
-    </main>
+        ) : null}
+        {!canEdit ? (
+          <Alert title="Редактирование недоступно" tone="warning">
+            Прошедшую, завершённую или отменённую поездку изменить нельзя.
+          </Alert>
+        ) : (
+          <>
+            <Alert title="Участники увидят изменения" tone="warning">
+              После сохранения участники опубликованной поездки получат уведомление.
+            </Alert>
+            {error ? (
+              <Alert title="Не удалось сохранить поездку" tone="danger">
+                {error}
+              </Alert>
+            ) : null}
+            <TripCreationWizard
+              action={updateTripAction}
+              canPublish
+              cancelHref={cancelHref}
+              cities={cities}
+              initialValues={initialValues}
+              isRegistered
+              mode="edit"
+              persistDraft={false}
+            />
+          </>
+        )}
+      </main>
+    </>
   );
 }

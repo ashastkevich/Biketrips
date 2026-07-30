@@ -23,9 +23,10 @@ async function createTripAction(formData: FormData) {
     const input = readTripInput(formData);
     const routeFile = readOptionalFile(formData, "routeGpxFile");
     const coverImageFile = readOptionalFile(formData, "coverImageFile");
-    const trip = routeFile || coverImageFile
-      ? await createTripWithRouteFile(input, routeFile, coverImageFile)
-      : await createTrip(input);
+    const trip =
+      routeFile || coverImageFile
+        ? await createTripWithRouteFile(input, routeFile, coverImageFile)
+        : await createTrip(input);
     await updateTripStatus(trip.id, "publish");
     destination = "/#rides";
   } catch (error) {
@@ -52,34 +53,41 @@ export default async function NewTripPage({ searchParams }: NewTripPageProps) {
   const cities = citiesResult.data.length > 0 ? citiesResult.data : fallbackCities;
   const selectedCity = selectCity(
     cities,
-    requestedCity ?? cookieStore.get(CITY_COOKIE_NAME)?.value,
+    requestedCity ?? cookieStore.get(CITY_COOKIE_NAME)?.value
   );
   const canPublish = authState === "allowed";
 
   return (
-    <main className="shell">
+    <>
       <AppTopbar showCreateAction={false} />
-      {!canPublish ? (
-        <Alert
-          title={authState === "phone-required" ? "Добавьте номер телефона" : "Публикация после входа"}
-          tone="warning"
-        >
-          {authState === "phone-required"
-            ? "Создавать поездки могут зарегистрированные пользователи с заполненным номером телефона."
-            : "Форму можно заполнить без входа. Для публикации потребуется регистрация и номер телефона в профиле."}
-        </Alert>
-      ) : null}
-      {error ? (
-        <Alert title="Не удалось создать поездку" tone="danger">{error}</Alert>
-      ) : null}
 
-      <TripCreationWizard
-        action={createTripAction}
-        canPublish={canPublish}
-        cities={cities}
-        initialValues={{ cityId: selectedCity.id }}
-        isRegistered={authState !== "missing"}
-      />
-    </main>
+      <main className="shell app-content-shell">
+        {!canPublish ? (
+          <Alert
+            title={
+              authState === "phone-required" ? "Добавьте номер телефона" : "Публикация после входа"
+            }
+            tone="warning"
+          >
+            {authState === "phone-required"
+              ? "Создавать поездки могут зарегистрированные пользователи с заполненным номером телефона."
+              : "Форму можно заполнить без входа. Для публикации потребуется регистрация и номер телефона в профиле."}
+          </Alert>
+        ) : null}
+        {error ? (
+          <Alert title="Не удалось создать поездку" tone="danger">
+            {error}
+          </Alert>
+        ) : null}
+
+        <TripCreationWizard
+          action={createTripAction}
+          canPublish={canPublish}
+          cities={cities}
+          initialValues={{ cityId: selectedCity.id }}
+          isRegistered={authState !== "missing"}
+        />
+      </main>
+    </>
   );
 }

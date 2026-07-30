@@ -62,6 +62,19 @@
   transform: translateY(-1px);
 }
 
+.option:disabled {
+  cursor: not-allowed;
+  opacity: 0.54;
+  box-shadow: none;
+  transform: none;
+}
+
+.option:disabled:hover {
+  border-color: var(--dark-line);
+  box-shadow: none;
+  transform: none;
+}
+
 .option:active {
   transform: translateY(0);
 }
@@ -85,14 +98,9 @@
   background: #229ed9;
 }
 
-.vk .icon {
+.email .icon {
   color: #fff;
-  background: #0077ff;
-}
-
-.yandex .icon {
-  color: #fff;
-  background: #fc3f1d;
+  background: var(--green-dark);
 }
 
 .badge {
@@ -106,12 +114,34 @@
   text-transform: uppercase;
 }
 
-.legal {
-  margin: 18px 12px 0;
+.consent {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  margin: 18px 2px 0;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
-  text-align: center;
+}
+
+.consent input {
+  width: 18px;
+  min-height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--green);
+}
+
+.consent a {
+  color: var(--green-dark);
+  font-weight: 780;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.consent a:hover {
+  color: var(--green);
 }
 
 @media (max-width: 520px) {

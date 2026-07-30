@@ -17,9 +17,9 @@
 
 .appHeader {
   position: sticky;
-  top: 0;
-  margin: -8px 0 18px;
-  padding: 8px 0 0;
+  top: -26px;
+  margin: 0 0 18px;
+  padding: 34px 0 0;
 }
 
 .inner {
@@ -103,12 +103,7 @@
   align-items: center;
   gap: 11px;
   color: var(--text);
-  font-family:
-    var(--font-unbounded),
-    var(--font-manrope),
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: var(--font-unbounded), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   font-size: 21px;
   font-weight: 650;
   letter-spacing: 0;
@@ -173,7 +168,7 @@
   }
 
   .appHeader {
-    margin-top: -2px;
+    padding-top: 34px;
   }
 
   .inner {

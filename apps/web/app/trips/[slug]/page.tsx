@@ -4,13 +4,7 @@ import { AppTopbar, DataNotice, getTripCardProps } from "../../lib/components";
 import { getCurrentUser, getTrip, joinTrip, updateTripStatus } from "../../lib/api";
 import { readParticipantInput } from "../../lib/form-data";
 import { getTripEditHref } from "../../lib/trip-links";
-import {
-  Alert,
-  Button,
-  CapacityIndicator,
-  LinkButton,
-  TextField,
-} from "../../ui/components";
+import { Alert, Button, CapacityIndicator, LinkButton, TextField } from "../../ui/components";
 import { TripDetailsCard } from "../../ui/trip-details-card";
 import tripDetailsStyles from "../../ui/trip-details.module.css";
 
@@ -74,105 +68,117 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
   }
 
   return (
-    <main className="shell detail-shell">
+    <>
       <AppTopbar />
 
-      <DataNotice source={result.source} error={result.error} />
-      {hasFlag(query.joined) ? (
-        <Alert title="Заявка отправлена" tone="success">
-          {waitlist ? "Вы в листе ожидания. Сообщим, если освободится место." : "Эта поездка добавлена в ваш список."}
-        </Alert>
-      ) : null}
-      {query.joinError ? (
-        <Alert title="Не удалось записаться" tone="danger">
-          {Array.isArray(query.joinError) ? query.joinError[0] : query.joinError}
-        </Alert>
-      ) : null}
-      {hasFlag(query.cancelled) ? (
-        <Alert title="Поездка отменена" tone="success">
-          Участники увидят обновлённый статус поездки.
-        </Alert>
-      ) : null}
-      {query.cancelError ? (
-        <Alert title="Не удалось отменить поездку" tone="danger">
-          {Array.isArray(query.cancelError) ? query.cancelError[0] : query.cancelError}
-        </Alert>
-      ) : null}
+      <main className="shell app-content-shell detail-shell">
+        <DataNotice source={result.source} error={result.error} />
+        {hasFlag(query.joined) ? (
+          <Alert title="Заявка отправлена" tone="success">
+            {waitlist
+              ? "Вы в листе ожидания. Сообщим, если освободится место."
+              : "Эта поездка добавлена в ваш список."}
+          </Alert>
+        ) : null}
+        {query.joinError ? (
+          <Alert title="Не удалось записаться" tone="danger">
+            {Array.isArray(query.joinError) ? query.joinError[0] : query.joinError}
+          </Alert>
+        ) : null}
+        {hasFlag(query.cancelled) ? (
+          <Alert title="Поездка отменена" tone="success">
+            Участники увидят обновлённый статус поездки.
+          </Alert>
+        ) : null}
+        {query.cancelError ? (
+          <Alert title="Не удалось отменить поездку" tone="danger">
+            {Array.isArray(query.cancelError) ? query.cancelError[0] : query.cancelError}
+          </Alert>
+        ) : null}
 
-      <TripDetailsCard
-        trip={trip}
-        coverImage={coverImage}
-        titleId="trip-page-title"
-        headingLevel="h1"
-        className={tripDetailsStyles.pageCard}
-        aside={
-          <aside
-            className={tripDetailsStyles.join}
-            aria-label={isOrganizer ? "Участники поездки" : "Запись на поездку"}
-          >
-            {isOrganizer ? (
-              <>
-                <p className={tripDetailsStyles.joinKicker}>Участники</p>
-                <p className={tripDetailsStyles.participantCount}>
-                  Записались: <strong>{trip.confirmedParticipants}</strong>
-                  {hasParticipantLimit ? ` из ${trip.capacity}` : " участников"}
-                </p>
-                {hasParticipantLimit ? (
-                  <CapacityIndicator capacity={trip.capacity!} confirmed={trip.confirmedParticipants} />
-                ) : null}
-                <LinkButton
-                  className={tripDetailsStyles.joinButton}
-                  href={getTripEditHref(trip, { returnTo: "/", scope: "feed" })}
-                  tone="secondary"
-                >
-                  Редактировать поездку
-                </LinkButton>
-                {canCancelTrip ? (
-                  <form action={cancelTripAction}>
-                    <Button className={tripDetailsStyles.joinButton} tone="danger" type="submit">
-                      Отменить поездку
-                    </Button>
-                  </form>
-                ) : null}
-              </>
-            ) : (
-              <>
-                <p className={tripDetailsStyles.joinKicker}>
-                  {waitlist ? "Места закончились" : "Можно присоединиться"}
-                </p>
-                {hasParticipantLimit ? (
-                  <CapacityIndicator capacity={trip.capacity!} confirmed={trip.confirmedParticipants} />
-                ) : (
+        <TripDetailsCard
+          trip={trip}
+          coverImage={coverImage}
+          titleId="trip-page-title"
+          headingLevel="h1"
+          className={tripDetailsStyles.pageCard}
+          aside={
+            <aside
+              className={tripDetailsStyles.join}
+              aria-label={isOrganizer ? "Участники поездки" : "Запись на поездку"}
+            >
+              {isOrganizer ? (
+                <>
+                  <p className={tripDetailsStyles.joinKicker}>Участники</p>
                   <p className={tripDetailsStyles.participantCount}>
-                    Записались: <strong>{trip.confirmedParticipants}</strong> участников
+                    Записались: <strong>{trip.confirmedParticipants}</strong>
+                    {hasParticipantLimit ? ` из ${trip.capacity}` : " участников"}
                   </p>
-                )}
-                <form
-                  action={joinAction}
-                  className={`${tripDetailsStyles.joinForm} ${tripDetailsStyles.pageForm}`}
-                >
-                  <input name="userId" type="hidden" value={`web-${trip.id}`} />
-                  <label>
-                    <span>Как вас зовут</span>
-                    <TextField name="name" required minLength={2} placeholder="Алексей" />
-                  </label>
-                  <label>
-                    <span>Telegram</span>
-                    <TextField name="telegramUsername" required placeholder="@username" />
-                  </label>
-                  <Button className={tripDetailsStyles.joinButton} type="submit">
-                    {waitlist ? "Встать в лист ожидания" : "Записаться"}
-                  </Button>
-                  <small>Контакт увидит только организатор.</small>
-                </form>
-                <p className={tripDetailsStyles.joinNote}>
-                  {trip.registrationMode === "automatic" ? "Запись подтвердится сразу" : "Организатор подтвердит заявку"}
-                </p>
-              </>
-            )}
-          </aside>
-        }
-      />
-    </main>
+                  {hasParticipantLimit ? (
+                    <CapacityIndicator
+                      capacity={trip.capacity!}
+                      confirmed={trip.confirmedParticipants}
+                    />
+                  ) : null}
+                  <LinkButton
+                    className={tripDetailsStyles.joinButton}
+                    href={getTripEditHref(trip, { returnTo: "/", scope: "feed" })}
+                    tone="secondary"
+                  >
+                    Редактировать поездку
+                  </LinkButton>
+                  {canCancelTrip ? (
+                    <form action={cancelTripAction}>
+                      <Button className={tripDetailsStyles.joinButton} tone="danger" type="submit">
+                        Отменить поездку
+                      </Button>
+                    </form>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <p className={tripDetailsStyles.joinKicker}>
+                    {waitlist ? "Места закончились" : "Можно присоединиться"}
+                  </p>
+                  {hasParticipantLimit ? (
+                    <CapacityIndicator
+                      capacity={trip.capacity!}
+                      confirmed={trip.confirmedParticipants}
+                    />
+                  ) : (
+                    <p className={tripDetailsStyles.participantCount}>
+                      Записались: <strong>{trip.confirmedParticipants}</strong> участников
+                    </p>
+                  )}
+                  <form
+                    action={joinAction}
+                    className={`${tripDetailsStyles.joinForm} ${tripDetailsStyles.pageForm}`}
+                  >
+                    <input name="userId" type="hidden" value={`web-${trip.id}`} />
+                    <label>
+                      <span>Как вас зовут</span>
+                      <TextField name="name" required minLength={2} placeholder="Алексей" />
+                    </label>
+                    <label>
+                      <span>Telegram</span>
+                      <TextField name="telegramUsername" required placeholder="@username" />
+                    </label>
+                    <Button className={tripDetailsStyles.joinButton} type="submit">
+                      {waitlist ? "Встать в лист ожидания" : "Записаться"}
+                    </Button>
+                    <small>Контакт увидит только организатор.</small>
+                  </form>
+                  <p className={tripDetailsStyles.joinNote}>
+                    {trip.registrationMode === "automatic"
+                      ? "Запись подтвердится сразу"
+                      : "Организатор подтвердит заявку"}
+                  </p>
+                </>
+              )}
+            </aside>
+          }
+        />
+      </main>
+    </>
   );
 }
