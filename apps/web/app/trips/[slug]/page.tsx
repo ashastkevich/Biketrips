@@ -69,7 +69,7 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
 
   return (
     <>
-      <AppTopbar />
+      <AppTopbar isAuthorized={currentUser !== null} />
 
       <main className="shell app-content-shell detail-shell">
         <DataNotice source={result.source} error={result.error} />

@@ -54,10 +54,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           sizes="100vw"
         />
         <div className={styles.heroOverlay} aria-hidden="true" />
-        <div className={`page ${styles.heroContent}`}>
-          <h1 id="hero-title">Совместные велопоездки рядом</h1>
+        <div className={`${styles.heroShell} ${styles.heroContent}`}>
+          <h1 id="hero-title">Совместные велопоездки</h1>
           <p className={styles.lead}>
-            Найдите компанию, маршрут и подходящий темп без бесконечного поиска по чатам.
+            Создавайте поездки или присоединяйтесь к чужим, когда хочется ехать в компании.
           </p>
 
           <div className={styles.heroActions}>

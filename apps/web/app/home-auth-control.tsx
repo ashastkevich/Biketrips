@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { AuthOptions, type AuthProvider } from "./ui/auth-options";
-import authOptionStyles from "./ui/auth-options.module.css";
-import componentStyles from "./ui/components.module.css";
+import type { AuthProvider } from "./ui/auth-options";
+import { AuthOptionsDialog } from "./ui/auth-options-dialog";
 import styles from "./home-auth-control.module.css";
 
 function classes(...values: Array<string | false | null | undefined>) {
@@ -100,23 +99,6 @@ export function HomeAuthControl({
 }) {
   const [showAuth, setShowAuth] = useState(false);
 
-  useEffect(() => {
-    if (!showAuth) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setShowAuth(false);
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [showAuth]);
-
   function startAuthorization(provider: AuthProvider) {
     window.location.assign(`/auth/${provider}?returnTo=/`);
   }
@@ -135,22 +117,7 @@ export function HomeAuthControl({
       >
         <span>Войти</span>
       </button>
-      {showAuth ? (
-        <div
-          className={`${componentStyles.dialogBackdrop} ${authOptionStyles.backdrop}`}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="auth-options-title"
-          onMouseDown={() => setShowAuth(false)}
-        >
-          <div onMouseDown={(event) => event.stopPropagation()}>
-            <AuthOptions
-              onClose={() => setShowAuth(false)}
-              onSelect={startAuthorization}
-            />
-          </div>
-        </div>
-      ) : null}
+      {showAuth ? <AuthOptionsDialog onClose={() => setShowAuth(false)} onSelect={startAuthorization} /> : null}
     </>
   );
 }

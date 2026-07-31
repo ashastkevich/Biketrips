@@ -40,6 +40,12 @@
   color: rgba(255, 255, 255, 0.86);
 }
 
+.heroShell {
+  width: min(1380px, calc(100% - 40px));
+  margin-right: auto;
+  margin-left: max(20px, calc((100vw - 1180px) / 2));
+}
+
 .heroContent {
   position: relative;
   z-index: 1;

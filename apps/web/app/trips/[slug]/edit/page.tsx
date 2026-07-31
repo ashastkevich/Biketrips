@@ -128,7 +128,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
   if (!trip) {
     return (
       <>
-        <AppTopbar showCreateAction={false} />
+        <AppTopbar isAuthorized={user !== null} showCreateAction={false} />
 
         <main className="shell app-content-shell">
           <Alert title="Не удалось загрузить поездку" tone="danger">
@@ -248,7 +248,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
 
   return (
     <>
-      <AppTopbar showCreateAction={false} />
+      <AppTopbar isAuthorized showCreateAction={false} />
 
       <main className="shell app-content-shell">
         {saved === "1" && savedTripSlug ? (

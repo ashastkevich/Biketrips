@@ -50,6 +50,8 @@ export default async function NewTripPage({ searchParams }: NewTripPageProps) {
   ]);
   const error = Array.isArray(query.error) ? query.error[0] : query.error;
   const requestedCity = Array.isArray(query.city) ? query.city[0] : query.city;
+  const requestedStep = Array.isArray(query.step) ? query.step[0] : query.step;
+  const initialStep = requestedStep === "2" ? 2 : requestedStep === "3" ? 3 : 1;
   const cities = citiesResult.data.length > 0 ? citiesResult.data : fallbackCities;
   const selectedCity = selectCity(
     cities,
@@ -59,7 +61,7 @@ export default async function NewTripPage({ searchParams }: NewTripPageProps) {
 
   return (
     <>
-      <AppTopbar showCreateAction={false} />
+      <AppTopbar isAuthorized={authState !== "missing"} showCreateAction={false} />
 
       <main className="shell app-content-shell">
         {!canPublish ? (
@@ -84,6 +86,7 @@ export default async function NewTripPage({ searchParams }: NewTripPageProps) {
           action={createTripAction}
           canPublish={canPublish}
           cities={cities}
+          initialStep={initialStep}
           initialValues={{ cityId: selectedCity.id }}
           isRegistered={authState !== "missing"}
         />

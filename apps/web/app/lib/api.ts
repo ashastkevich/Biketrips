@@ -25,10 +25,15 @@ async function getAuthToken(): Promise<string | undefined> {
   return cookieStore.get(authCookieName)?.value ?? organizerToken;
 }
 
-async function createClient(): Promise<BikeTripsApiClient> {
+async function getSessionAuthToken(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get(authCookieName)?.value;
+}
+
+async function createClient(options: { requireUserSession?: boolean } = {}): Promise<BikeTripsApiClient> {
   return new BikeTripsApiClient({
     baseUrl: apiUrl,
-    authToken: await getAuthToken(),
+    authToken: options.requireUserSession ? await getSessionAuthToken() : await getAuthToken(),
     fetcher: (input, init) => fetch(input, { ...init, cache: "no-store" }),
   });
 }
@@ -51,7 +56,7 @@ export interface CurrentUser extends AuthenticatedUser {
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const token = await getAuthToken();
+  const token = await getSessionAuthToken();
 
   if (!token) return null;
 
@@ -164,7 +169,7 @@ export async function getTripDetails(filters: TripFilters = {}): Promise<DataRes
 }
 
 export async function createTrip(input: CreateTripInput): Promise<TripDetail> {
-  const client = await createClient();
+  const client = await createClient({ requireUserSession: true });
   return client.createTrip(input);
 }
 
@@ -173,12 +178,12 @@ export async function createTripWithRouteFile(
   routeFile: File | undefined,
   coverImageFile?: File,
 ): Promise<TripDetail> {
-  const client = await createClient();
+  const client = await createClient({ requireUserSession: true });
   return client.createTripWithRouteFile(input, routeFile, coverImageFile);
 }
 
 export async function updateTrip(tripId: string, input: UpdateTripInput): Promise<TripDetail> {
-  const client = await createClient();
+  const client = await createClient({ requireUserSession: true });
   return client.updateTrip(tripId, input);
 }
 
@@ -187,7 +192,7 @@ export async function updateTripWithRouteFile(
   input: UpdateTripInput,
   options: { routeFile?: File; coverImageFile?: File; removeRouteFile?: boolean },
 ): Promise<TripDetail> {
-  const client = await createClient();
+  const client = await createClient({ requireUserSession: true });
   return client.updateTripWithRouteFile(tripId, input, options);
 }
 
@@ -195,7 +200,7 @@ export async function joinTrip(
   tripId: string,
   input: CreateParticipantInput
 ): Promise<TripParticipant> {
-  const client = await createClient();
+  const client = await createClient({ requireUserSession: true });
   return client.joinTrip(tripId, input);
 }
 
@@ -203,7 +208,7 @@ export async function updateTripStatus(
   tripId: string,
   action: "publish" | "cancel" | "finish"
 ): Promise<TripDetail> {
-  const client = await createClient();
+  const client = await createClient({ requireUserSession: true });
 
   if (action === "publish") return client.publishTrip(tripId);
   if (action === "cancel") return client.cancelTrip(tripId);
@@ -216,12 +221,12 @@ export async function updateParticipantStatus(
   participantId: string,
   status: ParticipantStatus
 ): Promise<TripParticipant> {
-  const client = await createClient();
+  const client = await createClient({ requireUserSession: true });
   return client.updateParticipantStatus(tripId, participantId, status);
 }
 
 export async function getOrganizerAuthState(): Promise<"allowed" | "phone-required" | "missing"> {
-  const token = await getAuthToken();
+  const token = await getSessionAuthToken();
 
   if (!token) return "missing";
 

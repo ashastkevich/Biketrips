@@ -54,7 +54,7 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <AppTopbar />
+      <AppTopbar isAuthorized={isAuthenticated} />
 
       <main className={`shell app-content-shell ${styles.page}`}>
         <header className={styles.hero}>

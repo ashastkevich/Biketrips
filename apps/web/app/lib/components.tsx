@@ -11,7 +11,6 @@ import {
   tripStatusLabels,
 } from "./labels";
 import { CreateTripLauncher } from "./create-trip-launcher";
-import { ProfileMenu } from "../home-auth-control";
 import {
   Alert,
   LinkButton,
@@ -19,8 +18,9 @@ import {
 } from "../ui/components";
 import type { TripCardProps } from "../ui/components";
 import { getTripHref } from "./trip-links";
-import styles from "./components.module.css";
+import { HomeAuthControl } from "../home-auth-control";
 import shellStyles from "./app-shell.module.css";
+import styles from "./components.module.css";
 
 function classes(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
@@ -152,9 +152,11 @@ export function Brand({
 }
 
 export function AppTopbar({
+  isAuthorized = false,
   showNavigation = true,
   showCreateAction = true,
 }: {
+  isAuthorized?: boolean;
   showNavigation?: boolean;
   showCreateAction?: boolean;
 }) {
@@ -175,9 +177,9 @@ export function AppTopbar({
                 tone="secondary"
               />
             ) : null}
-            <ProfileMenu tone="dark" />
+            <HomeAuthControl isAuthorized={isAuthorized} tone="dark" />
           </nav>
-        ) : <ProfileMenu tone="dark" />}
+        ) : <HomeAuthControl isAuthorized={isAuthorized} tone="dark" />}
       </div>
     </header>
   );

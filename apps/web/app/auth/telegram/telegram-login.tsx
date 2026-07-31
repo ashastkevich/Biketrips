@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { consumePostAuthReturnTo } from "../post-auth-return";
 import { Button } from "../../ui/components";
 import componentStyles from "../../ui/components.module.css";
 import styles from "./telegram.module.css";
@@ -11,10 +12,6 @@ interface TelegramLoginRequest {
   pollToken: string;
   botUrl: string;
   expiresAt: string;
-}
-
-function safeReturnTo(value: string): string {
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
 export function TelegramLogin({ returnTo }: { returnTo: string }) {
@@ -74,7 +71,7 @@ export function TelegramLogin({ returnTo }: { returnTo: string }) {
 
       if (result?.status === "confirmed") {
         setStatus("confirmed");
-        window.location.assign(safeReturnTo(returnTo));
+        window.location.assign(consumePostAuthReturnTo(returnTo));
         return;
       }
 

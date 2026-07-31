@@ -3,13 +3,10 @@
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
+import { consumePostAuthReturnTo } from "../post-auth-return";
 import { Button } from "../../ui/components";
 import componentStyles from "../../ui/components.module.css";
 import styles from "./email.module.css";
-
-function safeReturnTo(value: string): string {
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/";
-}
 
 function normalizeCode(value: string): string {
   return value.replace(/\D/g, "").slice(0, 6);
@@ -73,7 +70,7 @@ export function EmailLogin({ returnTo }: { returnTo: string }) {
       return;
     }
 
-    window.location.assign(safeReturnTo(returnTo));
+    window.location.assign(consumePostAuthReturnTo(returnTo));
   }
 
   if (step === "code") {

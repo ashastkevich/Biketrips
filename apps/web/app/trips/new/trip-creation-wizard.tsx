@@ -3,6 +3,7 @@
 import type { City, DifficultyLevel, UnpavedSurfaceDetail } from "@biketrips/domain";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { savePostAuthReturnTo } from "../../auth/post-auth-return";
 import { unpavedSurfaceDetailLabels } from "../../lib/labels";
 import {
   Button,
@@ -19,8 +20,8 @@ import {
   TripCard,
   type StepperSaveStatus,
 } from "../../ui/components";
-import { AuthOptions, type AuthProvider } from "../../ui/auth-options";
-import authOptionStyles from "../../ui/auth-options.module.css";
+import type { AuthProvider } from "../../ui/auth-options";
+import { AuthOptionsDialog } from "../../ui/auth-options-dialog";
 import componentStyles from "../../ui/components.module.css";
 import { getMapTilerApiKey } from "../../maps/map-config";
 import { GpxRouteMapLoader } from "../../maps/gpx-route-map-loader";
@@ -342,7 +343,8 @@ export function TripCreationWizard({
   }
 
   function startAuthorization(provider: AuthProvider) {
-    const returnTo = mode === "edit" ? cancelHref : "/trips/new";
+    const returnTo = mode === "edit" ? cancelHref : "/trips/new?step=3";
+    if (mode === "create") savePostAuthReturnTo(returnTo);
     window.location.assign(`/auth/${provider}?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
@@ -843,19 +845,7 @@ export function TripCreationWizard({
           coverImage={previewCover}
         />
       </aside>
-      {showAuth ? (
-        <div
-          className={`${componentStyles.dialogBackdrop} ${authOptionStyles.backdrop}`}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="auth-options-title"
-          onMouseDown={() => setShowAuth(false)}
-        >
-          <div onMouseDown={(event) => event.stopPropagation()}>
-            <AuthOptions onClose={() => setShowAuth(false)} onSelect={startAuthorization} />
-          </div>
-        </div>
-      ) : null}
+      {showAuth ? <AuthOptionsDialog onClose={() => setShowAuth(false)} onSelect={startAuthorization} /> : null}
     </form>
   );
 }
