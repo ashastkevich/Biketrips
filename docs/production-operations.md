@@ -124,9 +124,15 @@ The server deploy script:
 1. Fetches and hard-resets `/srv/biketrips/app` to `origin/main`.
 2. Starts Postgres and Redis through production Docker Compose.
 3. Runs `npm ci`.
-4. Builds workspaces.
-5. Runs API migrations.
-6. Restarts API, web, and bot systemd services.
+4. Loads `/etc/biketrips/biketrips.env` into the build environment.
+5. Builds workspaces.
+6. Runs API migrations.
+7. Restarts API, web, and bot systemd services.
+
+The env file must be loaded before `npm run build` because Next.js inlines
+`NEXT_PUBLIC_*` variables into the browser bundle at build time. Runtime
+`EnvironmentFile` settings alone are not enough for public client-side values
+such as `NEXT_PUBLIC_MAPTILER_API_KEY`.
 
 The production VM is configured for reboot recovery:
 
