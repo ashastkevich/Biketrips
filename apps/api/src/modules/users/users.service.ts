@@ -53,6 +53,19 @@ export class UsersService {
     user.name = input.name;
     const nextEmail = input.email?.trim().toLowerCase() || null;
     if (user.email !== nextEmail) {
+      if (nextEmail) {
+        const existingUser = await this.usersRepository
+          .createQueryBuilder("user")
+          .where("lower(user.email) = :email", { email: nextEmail })
+          .andWhere("user.id <> :id", { id: user.id })
+          .getOne();
+
+        if (existingUser) {
+          throw new BadRequestException(
+            "Эта почта уже привязана к другому аккаунту. Войдите через неё или запросите объединение аккаунтов",
+          );
+        }
+      }
       user.emailVerifiedAt = null;
     }
     user.email = nextEmail;

@@ -6,6 +6,13 @@ import { isSecureRequest } from "../../session-cookie";
 const apiUrl = getServerApiUrl();
 const authCookieName = "biketrips_session";
 
+function getSessionToken(request: Request): string | null {
+  const cookie = request.headers.get("cookie");
+  const token = cookie?.match(new RegExp(`(?:^|;\\s*)${authCookieName}=([^;]+)`))?.[1];
+
+  return token ? decodeURIComponent(token) : null;
+}
+
 export async function POST(request: Request) {
   const payload: unknown = await request.json().catch(() => null);
 
@@ -13,9 +20,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Укажите email и код" }, { status: 400 });
   }
 
+  const sessionToken = getSessionToken(request);
   const apiResponse = await fetch(`${apiUrl}/auth/email/verify`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
+    },
     body: JSON.stringify(payload),
     cache: "no-store",
   }).catch(() => null);

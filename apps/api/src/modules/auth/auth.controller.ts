@@ -103,8 +103,11 @@ export class AuthController {
   }
 
   @Post("email/verify")
-  async verifyEmailCode(@Body() dto: EmailCodeVerifyDto) {
-    return this.authService.verifyEmailCode(dto);
+  async verifyEmailCode(
+    @Body() dto: EmailCodeVerifyDto,
+    @Headers("authorization") authorization?: string,
+  ) {
+    return this.authService.verifyEmailCode(dto, authorization);
   }
 
   @Post("dev-login")

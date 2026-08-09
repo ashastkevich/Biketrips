@@ -1,6 +1,13 @@
 import { createHmac, createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 
-import { BadRequestException, HttpException, HttpStatus, Injectable, ServiceUnavailableException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import type { UserRole } from "@biketrips/domain";
 import jwt from "jsonwebtoken";
@@ -151,10 +158,13 @@ export class AuthService {
     return delivery === "local" ? { ok: true, devCode: code } : { ok: true };
   }
 
-  async verifyEmailCode(input: {
-    email: string;
-    code: string;
-  }): Promise<{ accessToken: string; tokenType: "Bearer" }> {
+  async verifyEmailCode(
+    input: {
+      email: string;
+      code: string;
+    },
+    authorizationHeader?: string,
+  ): Promise<{ accessToken: string; tokenType: "Bearer" }> {
     if (!this.emailCodesRepository || !this.usersRepository) {
       throw new ServiceUnavailableException("Email authorization storage is not configured");
     }
@@ -195,17 +205,12 @@ export class AuthService {
     authCode.usedAt = new Date();
     await this.emailCodesRepository.save(authCode);
 
-    const user = await this.findOrCreateEmailUser(email);
+    const currentUser = await this.findCurrentUser(authorizationHeader);
+    const user = currentUser
+      ? await this.linkEmailToCurrentUser(currentUser, email)
+      : await this.findOrCreateEmailUser(email);
 
-    return this.issueToken({
-      sub: user.id,
-      name: user.name,
-      role: user.role,
-      phone: user.phoneNumber ?? undefined,
-      phoneVerified: user.phoneVerifiedAt !== null,
-      email: user.email ?? undefined,
-      emailVerified: user.emailVerifiedAt !== null,
-    });
+    return this.issueUserToken(user);
   }
 
   async requestTelegramLogin(authorizationHeader?: string): Promise<{
@@ -282,24 +287,13 @@ export class AuthService {
       throw new BadRequestException("Telegram login user not found");
     }
 
-    const account = await this.telegramAccountsRepository.findOne({ where: { userId: user.id } });
     nonce.status = "consumed";
     nonce.consumedAt = new Date();
     await this.telegramLoginNoncesRepository.save(nonce);
 
     return {
       status: "confirmed",
-      ...this.issueToken({
-        sub: user.id,
-        name: user.name,
-        role: user.role,
-        phone: user.phoneNumber ?? undefined,
-        phoneVerified: user.phoneVerifiedAt !== null,
-        email: user.email ?? undefined,
-        emailVerified: user.emailVerifiedAt !== null,
-        telegram: account?.username ?? undefined,
-        telegramVerified: true,
-      }),
+      ...(await this.issueUserToken(user)),
     };
   }
 
@@ -430,15 +424,47 @@ export class AuthService {
     }
   }
 
+  private async issueUserToken(user: UserEntity): Promise<{ accessToken: string; tokenType: "Bearer" }> {
+    const account = !this.telegramAccountsRepository
+      ? null
+      : await this.telegramAccountsRepository.findOne({ where: { userId: user.id } });
+
+    return this.issueToken({
+      sub: user.id,
+      name: user.name,
+      role: user.role,
+      phone: user.phoneNumber ?? undefined,
+      phoneVerified: user.phoneVerifiedAt !== null,
+      email: user.email ?? undefined,
+      emailVerified: user.emailVerifiedAt !== null,
+      telegram: account?.username ?? undefined,
+      telegramVerified: Boolean(account),
+    });
+  }
+
+  private async linkEmailToCurrentUser(user: UserEntity, email: string): Promise<UserEntity> {
+    if (!this.usersRepository) {
+      throw new ServiceUnavailableException("User storage is not configured");
+    }
+
+    const existingUser = await this.findUserByEmail(email);
+    if (existingUser && existingUser.id !== user.id) {
+      throw new ConflictException(
+        "Эта почта уже привязана к другому аккаунту. Войдите через неё или запросите объединение аккаунтов",
+      );
+    }
+
+    user.email = email;
+    user.emailVerifiedAt = new Date();
+    return this.usersRepository.save(user);
+  }
+
   private async findOrCreateEmailUser(email: string): Promise<UserEntity> {
     if (!this.usersRepository) {
       throw new ServiceUnavailableException("User storage is not configured");
     }
 
-    const existingUser = await this.usersRepository
-      .createQueryBuilder("user")
-      .where("lower(user.email) = :email", { email })
-      .getOne();
+    const existingUser = await this.findUserByEmail(email);
 
     if (existingUser) {
       existingUser.email = email;
@@ -455,6 +481,17 @@ export class AuthService {
         role: "user",
       }),
     );
+  }
+
+  private async findUserByEmail(email: string): Promise<UserEntity | null> {
+    if (!this.usersRepository) {
+      throw new ServiceUnavailableException("User storage is not configured");
+    }
+
+    return this.usersRepository
+      .createQueryBuilder("user")
+      .where("lower(user.email) = :email", { email })
+      .getOne();
   }
 
   private async deliverEmailCode(email: string, code: string): Promise<"email" | "local"> {

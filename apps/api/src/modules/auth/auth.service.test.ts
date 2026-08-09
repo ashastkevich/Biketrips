@@ -1,4 +1,4 @@
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, ConflictException } from "@nestjs/common";
 import { afterEach, describe, expect, it } from "vitest";
 import jwt from "jsonwebtoken";
 
@@ -199,6 +199,63 @@ describe("AuthService email login", () => {
       service.verifyEmailCode({ email: "rider@example.com", code }),
     ).rejects.toThrow(BadRequestException);
   });
+
+  it("links a verified email to the current authenticated user", async () => {
+    process.env.NODE_ENV = "development";
+    process.env.JWT_SECRET = "test-secret";
+    const { service, users } = createEmailAuthService();
+    users.push(createTestUser({ id: "user-existing", name: "Existing rider" }));
+    const currentToken = jwt.sign(
+      { sub: "user-existing", role: "user", phoneVerified: false },
+      "test-secret",
+    );
+
+    const requestResult = await service.requestEmailCode({ email: "rider@example.com" });
+    const verifyResult = await service.verifyEmailCode(
+      { email: "rider@example.com", code: requestResult.devCode ?? "" },
+      `Bearer ${currentToken}`,
+    );
+    const payload = jwt.verify(verifyResult.accessToken, "test-secret");
+
+    expect(payload).toMatchObject({
+      sub: "user-existing",
+      email: "rider@example.com",
+      emailVerified: true,
+    });
+    expect(users).toHaveLength(1);
+    expect(users[0]).toMatchObject({
+      id: "user-existing",
+      email: "rider@example.com",
+    });
+    expect(users[0]?.emailVerifiedAt).toBeInstanceOf(Date);
+  });
+
+  it("rejects linking an email that belongs to another user", async () => {
+    process.env.NODE_ENV = "development";
+    process.env.JWT_SECRET = "test-secret";
+    const { service, users } = createEmailAuthService();
+    users.push(createTestUser({ id: "user-current", name: "Current rider" }));
+    users.push(createTestUser({
+      id: "user-email-owner",
+      name: "Email owner",
+      email: "rider@example.com",
+      emailVerifiedAt: new Date(),
+    }));
+    const currentToken = jwt.sign(
+      { sub: "user-current", role: "user", phoneVerified: false },
+      "test-secret",
+    );
+
+    const requestResult = await service.requestEmailCode({ email: "rider@example.com" });
+
+    await expect(
+      service.verifyEmailCode(
+        { email: "rider@example.com", code: requestResult.devCode ?? "" },
+        `Bearer ${currentToken}`,
+      ),
+    ).rejects.toThrow(ConflictException);
+    expect(users.find((user) => user.id === "user-current")?.email).toBeNull();
+  });
 });
 
 function createEmailAuthService() {
@@ -219,6 +276,7 @@ function createEmailAuthService() {
     role: "user" | "admin";
     phoneNumber: string | null;
     phoneVerifiedAt: Date | null;
+    avatarUrl: string | null;
   }> = [];
 
   const emailCodesRepository = {
@@ -262,6 +320,7 @@ function createEmailAuthService() {
       role: input.role ?? "user",
       phoneNumber: input.phoneNumber ?? null,
       phoneVerifiedAt: input.phoneVerifiedAt ?? null,
+      avatarUrl: input.avatarUrl ?? null,
     }),
     save: async (user: (typeof users)[number]) => {
       const existingIndex = users.findIndex((item) => item.id === user.id);
@@ -272,6 +331,8 @@ function createEmailAuthService() {
       }
       return user;
     },
+    findOne: async ({ where }: { where: { id: string } }) =>
+      users.find((user) => user.id === where.id) ?? null,
   };
 
   return {
