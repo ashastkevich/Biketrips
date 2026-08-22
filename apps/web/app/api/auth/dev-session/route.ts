@@ -15,8 +15,10 @@ const devUsers = {
     sub: "00000000-0000-4000-8000-000000000002",
     name: "Тестовый создатель",
     role: "user",
-    phone: "+7 (999) 000-00-02",
-    phoneVerified: true,
+    phone: "",
+    phoneVerified: false,
+    telegram: "test_creator",
+    telegramVerified: true,
   },
   admin: {
     sub: "00000000-0000-4000-8000-000000000003",

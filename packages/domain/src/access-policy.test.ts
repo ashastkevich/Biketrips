@@ -12,18 +12,25 @@ describe("access policy", () => {
     expect(canJoinTrips({ id: "user-1", role: "user", phoneVerified: false })).toBe(true);
   });
 
-  it("requires a filled phone to create trips", () => {
+  it("requires a linked Telegram account to create trips", () => {
     expect(canCreateTrips({ id: "user-1", role: "user", phoneVerified: false })).toBe(false);
     expect(canCreateTrips({
       id: "user-1",
       role: "user",
       phone: "+7 (999) 000-00-00",
       phoneVerified: false,
+    })).toBe(false);
+    expect(canCreateTrips({
+      id: "user-1",
+      role: "user",
+      phoneVerified: false,
+      telegram: "alex_rides",
+      telegramVerified: true,
     })).toBe(true);
   });
 
-  it("keeps verified-phone sessions compatible", () => {
-    expect(canCreateTrips({ id: "user-1", role: "user", phoneVerified: true })).toBe(true);
+  it("does not allow verified-phone sessions without Telegram", () => {
+    expect(canCreateTrips({ id: "user-1", role: "user", phoneVerified: true })).toBe(false);
   });
 
   it("allows administrators to create trips", () => {

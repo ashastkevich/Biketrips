@@ -225,7 +225,7 @@ export async function updateParticipantStatus(
   return client.updateParticipantStatus(tripId, participantId, status);
 }
 
-export async function getOrganizerAuthState(): Promise<"allowed" | "phone-required" | "missing"> {
+export async function getOrganizerAuthState(): Promise<"allowed" | "telegram-required" | "missing"> {
   const token = await getSessionAuthToken();
 
   if (!token) return "missing";
@@ -238,11 +238,9 @@ export async function getOrganizerAuthState(): Promise<"allowed" | "phone-requir
 
     if (typeof payload === "string" || !payload.sub) return "missing";
 
-    return payload.role === "admin" ||
-      payload.phoneVerified === true ||
-      (typeof payload.phone === "string" && payload.phone.trim().length > 0)
+    return payload.role === "admin" || payload.telegramVerified === true
       ? "allowed"
-      : "phone-required";
+      : "telegram-required";
   } catch {
     return "missing";
   }

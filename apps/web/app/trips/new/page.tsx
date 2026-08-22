@@ -67,13 +67,13 @@ export default async function NewTripPage({ searchParams }: NewTripPageProps) {
         {!canPublish ? (
           <Alert
             title={
-              authState === "phone-required" ? "Добавьте номер телефона" : "Публикация после входа"
+              authState === "telegram-required" ? "Привяжите Telegram" : "Публикация после входа"
             }
             tone="warning"
           >
-            {authState === "phone-required"
-              ? "Создавать поездки могут зарегистрированные пользователи с заполненным номером телефона."
-              : "Форму можно заполнить без входа. Для публикации потребуется регистрация и номер телефона в профиле."}
+            {authState === "telegram-required"
+              ? "Создавать поездки могут зарегистрированные пользователи с привязанным Telegram."
+              : "Форму можно заполнить без входа. Для публикации потребуется регистрация и привязка Telegram."}
           </Alert>
         ) : null}
         {error ? (

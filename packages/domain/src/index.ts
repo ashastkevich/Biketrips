@@ -20,6 +20,8 @@ export interface AuthenticatedUser {
   phoneVerified: boolean;
   email?: string;
   emailVerified?: boolean;
+  telegram?: string;
+  telegramVerified?: boolean;
 }
 
 export function canJoinTrips(user: AuthenticatedUser | null): boolean {
@@ -27,9 +29,7 @@ export function canJoinTrips(user: AuthenticatedUser | null): boolean {
 }
 
 export function canCreateTrips(user: AuthenticatedUser | null): boolean {
-  return user?.role === "admin" ||
-    user?.phoneVerified === true ||
-    Boolean(user?.phone?.trim());
+  return user?.role === "admin" || user?.telegramVerified === true;
 }
 
 export const bikeTypes = ["city", "road", "gravel", "mtb", "hybrid", "any"] as const;

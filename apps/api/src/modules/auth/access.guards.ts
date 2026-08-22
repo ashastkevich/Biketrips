@@ -11,7 +11,7 @@ function getUser(context: ExecutionContext): AuthenticatedUser | null {
 export class TripCreatorGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     if (!canCreateTrips(getUser(context))) {
-      throw new ForbiddenException("A phone number is required to create trips");
+      throw new ForbiddenException("A linked Telegram account is required to create trips");
     }
 
     return true;
