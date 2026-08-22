@@ -17,6 +17,7 @@ import {
   ParticipantRow,
 } from "../ui/components";
 import type { TripCardProps } from "../ui/components";
+import { DEFAULT_TRIP_TIME_ZONE } from "./trip-time";
 import { getTripHref } from "./trip-links";
 import { HomeAuthControl } from "../home-auth-control";
 import shellStyles from "./app-shell.module.css";
@@ -210,11 +211,13 @@ export function getTripCardProps(
 ): TripCardProps {
   const startDate = new Date(trip.startDateTime);
   const date = startDate.toLocaleDateString("ru-RU", {
+    timeZone: DEFAULT_TRIP_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
   const time = startDate.toLocaleTimeString("ru-RU", {
+    timeZone: DEFAULT_TRIP_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   });

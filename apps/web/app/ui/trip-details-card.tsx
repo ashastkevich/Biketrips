@@ -7,6 +7,7 @@ import {
   formatSurfaceComposition,
   unpavedSurfaceDetailLabels,
 } from "../lib/labels";
+import { DEFAULT_TRIP_TIME_ZONE } from "../lib/trip-time";
 import { RouteMapToggle } from "./route-map-toggle";
 import styles from "./trip-details.module.css";
 
@@ -54,11 +55,13 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
   ) {
     const Heading = headingLevel;
     const date = new Intl.DateTimeFormat("ru-RU", {
+      timeZone: DEFAULT_TRIP_TIME_ZONE,
       weekday: "long",
       day: "numeric",
       month: "long",
     }).format(new Date(trip.startDateTime));
     const time = new Intl.DateTimeFormat("ru-RU", {
+      timeZone: DEFAULT_TRIP_TIME_ZONE,
       hour: "2-digit",
       minute: "2-digit",
     }).format(new Date(trip.startDateTime));

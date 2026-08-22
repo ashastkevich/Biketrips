@@ -25,6 +25,7 @@ import { AuthOptionsDialog } from "../../ui/auth-options-dialog";
 import componentStyles from "../../ui/components.module.css";
 import { getMapTilerApiKey } from "../../maps/map-config";
 import { GpxRouteMapLoader } from "../../maps/gpx-route-map-loader";
+import { DEFAULT_TRIP_TIME_ZONE, toTripStartAt } from "../../lib/trip-time";
 import { StartLocationPicker } from "./start-location-picker";
 import { NEW_TRIP_DRAFT_KEY } from "./draft-storage";
 import styles from "./trip-creation-wizard.module.css";
@@ -349,10 +350,14 @@ export function TripCreationWizard({
   }
 
   const title = draft.title || (isTitleEdited ? "" : suggestedTitle);
-  const startAt = draft.date && draft.time ? `${draft.date}T${draft.time}` : "";
+  const selectedCity = cities.find((city) => city.id === draft.cityId) ?? cities[0];
+  const startAt =
+    draft.date && draft.time
+      ? toTripStartAt(draft.date, draft.time, selectedCity?.timezone ?? DEFAULT_TRIP_TIME_ZONE)
+      : "";
+  const localStartAt = draft.date && draft.time ? `${draft.date}T${draft.time}` : "";
   const selectedCover = customCoverUrl || draft.coverImage || defaultCoverImage;
   const previewCover = customCoverUrl || getDisplayCoverImage(draft.coverImage || defaultCoverImage);
-  const selectedCity = cities.find((city) => city.id === draft.cityId) ?? cities[0];
   const mapTilerApiKey = getMapTilerApiKey();
 
   return (
@@ -375,6 +380,7 @@ export function TripCreationWizard({
       <input name="cityId" type="hidden" value={draft.cityId} />
       <input name="title" type="hidden" value={title} />
       <input name="startAt" type="hidden" value={startAt} />
+      <input name="localStartAt" type="hidden" value={localStartAt} />
       <input name="startLocationName" type="hidden" value={draft.startLocationName} />
       <input name="startLat" type="hidden" value={draft.startLat} />
       <input name="startLng" type="hidden" value={draft.startLng} />

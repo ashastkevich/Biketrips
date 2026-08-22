@@ -11,29 +11,11 @@ import {
 } from "../../../lib/api";
 import { AppTopbar } from "../../../lib/components";
 import { readOptionalFile, readString, readTripUpdateInput } from "../../../lib/form-data";
+import { DEFAULT_TRIP_TIME_ZONE, getLocalStartValues } from "../../../lib/trip-time";
 import { getTripHref, getTripReference } from "../../../lib/trip-links";
 import { Alert, LinkButton } from "../../../ui/components";
 import { TripCreationWizard, type TripDraft } from "../../new/trip-creation-wizard";
 import { SavedTripConfirmation } from "./saved-trip-confirmation";
-
-function getLocalStartValues(startDateTime: string, timeZone: string) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date(startDateTime));
-  const value = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value ?? "";
-
-  return {
-    date: `${value("year")}-${value("month")}-${value("day")}`,
-    time: `${value("hour")}:${value("minute")}`,
-  };
-}
 
 interface EditTripPageProps {
   params: Promise<{ slug: string }>;
@@ -60,7 +42,9 @@ function getChangedFields(
 
   if (differs(trip.title, input.title)) changes.push("Название");
   if (differs(trip.cityId, input.cityId)) changes.push("Город");
-  if (differs(originalLocalStart, input.startAt)) changes.push("Дата или время старта");
+  if (differs(originalLocalStart, readString(formData, "localStartAt"))) {
+    changes.push("Дата или время старта");
+  }
   if (
     differs(trip.startLocationName, input.startLocationName) ||
     differs(trip.startLat, input.startLat ?? null) ||
@@ -153,7 +137,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
     trip.status !== "finished";
   const cities = citiesResult.data.length > 0 ? citiesResult.data : fallbackCities;
   const city = cities.find((item) => item.id === trip.cityId);
-  const start = getLocalStartValues(trip.startDateTime, city?.timezone ?? "Europe/Moscow");
+  const start = getLocalStartValues(trip.startDateTime, city?.timezone ?? DEFAULT_TRIP_TIME_ZONE);
   const error = Array.isArray(query.error) ? query.error[0] : query.error;
   const saved = Array.isArray(query.saved) ? query.saved[0] : query.saved;
   const savedTripSlug = Array.isArray(query.trip) ? query.trip[0] : query.trip;

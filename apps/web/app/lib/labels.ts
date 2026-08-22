@@ -8,6 +8,8 @@ import type {
   UnpavedSurfaceDetail,
 } from "@biketrips/domain";
 
+import { DEFAULT_TRIP_TIME_ZONE } from "./trip-time";
+
 export const difficultyLabels: Record<DifficultyLevel, string> = {
   beginner: "Для новичков",
   easy: "Легкий",
@@ -73,6 +75,7 @@ export const registrationModeLabels: Record<RegistrationMode, string> = {
 
 export function formatDateTime(value: string): string {
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: DEFAULT_TRIP_TIME_ZONE,
     day: "numeric",
     month: "long",
     hour: "2-digit",
@@ -82,6 +85,7 @@ export function formatDateTime(value: string): string {
 
 export function formatShortDate(value: string): string {
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: DEFAULT_TRIP_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
