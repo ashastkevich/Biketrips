@@ -38,13 +38,11 @@ commit and push the fix to `origin/main`.
 
 Branch workflow rule:
 
-- Make all new code changes and feature work on the local branch `codex/dev`.
+- Make all new code changes and feature work directly on the local branch `main`.
 - When implementation is ready, tell the user it is ready for local testing on
-  `codex/dev`; do not merge or push yet.
-- If the user says the change can be pushed to `main`, move the changes from
-  local `codex/dev` into local `main`.
-- If the user then asks to push to the server or production, push local `main`
-  to remote `origin/main`; GitHub Actions deploys production from there.
+  `main`; do not push yet.
+- If the user asks to push to the server or production, push local `main` to
+  remote `origin/main`; GitHub Actions deploys production from there.
 
 ## Coding Style & Naming Conventions
 
