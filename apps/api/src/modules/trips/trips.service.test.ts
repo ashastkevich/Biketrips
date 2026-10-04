@@ -50,6 +50,41 @@ describe("TripsService", () => {
     expect(context.queryBuilder.andWhere).toHaveBeenCalledWith("trip.bikeType = :bikeType", {
       bikeType: "gravel",
     });
+    expect(context.queryBuilder.andWhere).toHaveBeenCalledWith("trip.startAt >= :dateFrom", {
+      dateFrom: new Date("2099-08-01T00:00:00.000Z"),
+    });
+  });
+
+  it("lists only upcoming trips by default", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-04T12:00:00.000Z"));
+    try {
+      const context = createTripsService();
+
+      await context.service.list({});
+
+      expect(context.queryBuilder.andWhere).toHaveBeenCalledWith("trip.startAt >= :dateFrom", {
+        dateFrom: new Date("2026-10-04T12:00:00.000Z"),
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not list past trips when dateFrom is in the past", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-04T12:00:00.000Z"));
+    try {
+      const context = createTripsService();
+
+      await context.service.list({ dateFrom: "2026-01-01T00:00:00.000Z" });
+
+      expect(context.queryBuilder.andWhere).toHaveBeenCalledWith("trip.startAt >= :dateFrom", {
+        dateFrom: new Date("2026-10-04T12:00:00.000Z"),
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("creates a draft trip with a unique slug and organizer profile", async () => {

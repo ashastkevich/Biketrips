@@ -15,7 +15,6 @@ import type {
 import type {
   DifficultyLevel,
   ParticipantStatus,
-  TripFilters as TripFilterValues,
   TripParticipant,
   TripStatus,
   TripSummary,
@@ -1232,60 +1231,6 @@ export function ParticipantRow({
     </div>
   );
 }
-
-export function TripFilters({
-  value,
-  onChange,
-}: {
-  value: TripFilterSelection;
-  onChange: (value: TripFilterSelection) => void;
-}) {
-  const difficultyOptions = Object.entries(difficultyLabels) as Array<[DifficultyLevel, string]>;
-  const toggleDifficulty = (option: DifficultyLevel) => {
-    const selected = value.difficulty ?? [];
-    const difficulty = selected.includes(option)
-      ? selected.filter((item) => item !== option)
-      : [...selected, option];
-
-    onChange({ ...value, difficulty: difficulty.length ? difficulty : undefined });
-  };
-  return (
-    <div className={styles.tripFilters}>
-      <FormField label="Город">
-        <TextField
-          value={value.city ?? ""}
-          placeholder="Москва"
-          onChange={(event) => onChange({ ...value, city: event.target.value || undefined })}
-        />
-      </FormField>
-      <FormField label="Дата">
-        <TextField
-          type="date"
-          value={value.dateFrom ?? ""}
-          onChange={(event) => onChange({ ...value, dateFrom: event.target.value || undefined })}
-        />
-      </FormField>
-      <fieldset className={`${styles.field} ${styles.tripFiltersChoice}`}>
-        <legend className={styles.fieldLabel}>Сложность маршрута</legend>
-        <div className={styles.tripFiltersOptions}>
-          {difficultyOptions.map(([option, label]) => (
-            <Chip
-              key={option}
-              selected={value.difficulty?.includes(option)}
-              onClick={() => toggleDifficulty(option)}
-            >
-              {label}
-            </Chip>
-          ))}
-        </div>
-      </fieldset>
-    </div>
-  );
-}
-
-export type TripFilterSelection = Omit<TripFilterValues, "difficulty" | "bikeType"> & {
-  difficulty?: DifficultyLevel[];
-};
 
 export function StickyActionBar({
   summary,

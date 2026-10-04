@@ -1000,37 +1000,6 @@ button.stepperControl:focus-visible {
 .participantRowActions {
 }
 
-.tripFilters {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.tripFiltersChoice {
-  grid-column: 1 / -1;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.tripFiltersChoice .fieldLabel {
-  margin-bottom: 7px;
-}
-
-.tripFiltersOptions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.tripFiltersOptions .chip {
-  min-height: 27px;
-  padding: 0 9px;
-  border-radius: 8px;
-  font-size: 12px;
-}
-
 .stickyActionBar {
   position: sticky;
   z-index: 20;
@@ -1087,10 +1056,6 @@ button.stepperControl:focus-visible {
 }
 
 @media (max-width: 760px) {
-  .tripFilters {
-    grid-template-columns: 1fr;
-  }
-
   .participantRow {
     grid-template-columns: auto minmax(0, 1fr) auto;
   }

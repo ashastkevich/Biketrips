@@ -106,9 +106,11 @@ export class TripsService {
       query.andWhere("trip.bikeType = :bikeType", { bikeType: filters.bikeType });
     }
 
-    if (filters.dateFrom) {
-      query.andWhere("trip.startAt >= :dateFrom", { dateFrom: filters.dateFrom });
-    }
+    // The public feed only shows upcoming trips, even when dateFrom points to the past.
+    const now = new Date();
+    const requestedFrom = filters.dateFrom ? new Date(filters.dateFrom) : null;
+    const dateFrom = requestedFrom && requestedFrom > now ? requestedFrom : now;
+    query.andWhere("trip.startAt >= :dateFrom", { dateFrom });
 
     if (filters.dateTo) {
       query.andWhere("trip.startAt <= :dateTo", { dateTo: filters.dateTo });
