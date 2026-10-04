@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, rm, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
@@ -46,6 +46,24 @@ export interface CoverImageDownload {
   content: Buffer;
 }
 
+export interface TripActor {
+  id: string;
+  name?: string;
+  role: "user" | "admin";
+  phone?: string;
+  phoneVerified?: boolean;
+}
+
+const moderatedTextFields = [
+  "title",
+  "description",
+  "startLocationName",
+  "routeDescription",
+  "equipmentRequirements",
+  "rules",
+  "coverImage",
+] as const;
+
 @Injectable()
 export class TripsService {
   constructor(
@@ -74,9 +92,7 @@ export class TripsService {
       .leftJoinAndSelect("trip.participants", "participants")
       .orderBy("trip.startAt", "ASC");
 
-    if (filters.includeDrafts !== "true") {
-      query.andWhere("trip.status = :status", { status: "published" });
-    }
+    query.andWhere("trip.status = :status", { status: "published" });
 
     if (filters.city) {
       query.andWhere("city.slug = :city", { city: filters.city });
@@ -99,6 +115,34 @@ export class TripsService {
     }
 
     return query.getMany();
+  }
+
+  async listMine(actorId: string): Promise<TripEntity[]> {
+    return this.tripsRepository.find({
+      where: { organizer: { userId: actorId } },
+      relations: {
+        city: true,
+        organizer: { user: true },
+        participants: { user: true },
+        waitlistEntries: { user: true },
+        updates: true,
+        routeFiles: true,
+      },
+      order: { startAt: "ASC" },
+    });
+  }
+
+  async listModerationQueue(): Promise<TripEntity[]> {
+    return this.tripsRepository
+      .createQueryBuilder("trip")
+      .leftJoinAndSelect("trip.city", "city")
+      .leftJoinAndSelect("trip.organizer", "organizer")
+      .leftJoinAndSelect("organizer.user", "organizerUser")
+      .leftJoinAndSelect("trip.participants", "participants")
+      .leftJoinAndSelect("trip.routeFiles", "routeFiles")
+      .where("trip.moderationStatus = :status", { status: "pending_review" })
+      .orderBy("trip.submittedForReviewAt", "ASC", "NULLS LAST")
+      .getMany();
   }
 
   async getBySlugOrId(slugOrId: string): Promise<TripEntity> {
@@ -129,6 +173,24 @@ export class TripsService {
     return trip;
   }
 
+  async getVisibleBySlugOrId(slugOrId: string, actor: TripActor | null): Promise<{
+    trip: TripEntity;
+    includePendingRevision: boolean;
+  }> {
+    const trip = await this.getBySlugOrId(slugOrId);
+    const ownsTrip = actor?.id === trip.organizer.userId;
+    const isAdmin = actor?.role === "admin";
+
+    if (trip.status !== "published" && !ownsTrip && !isAdmin) {
+      throw new NotFoundException("Trip not found");
+    }
+
+    return {
+      trip,
+      includePendingRevision: Boolean((ownsTrip || isAdmin) && trip.pendingRevision),
+    };
+  }
+
   async create(
     dto: CreateTripDto,
     actor: {
@@ -145,10 +207,14 @@ export class TripsService {
       throw new BadRequestException("Unknown city");
     }
     const organizer = await this.getOrCreateOrganizer(actor);
+    const bypassesModeration = actor.role === "admin";
     const trip = this.tripsRepository.create({
       ...this.mapWritableFields(dto),
       organizerId: organizer.id,
-      status: "draft",
+      status: bypassesModeration ? "published" : "draft",
+      moderationStatus: bypassesModeration ? "approved" : "draft",
+      moderatedAt: bypassesModeration ? new Date() : null,
+      moderatedByUserId: bypassesModeration ? actor.id : null,
       publicSlug: await this.createUniqueSlug(dto.title),
     });
 
@@ -223,16 +289,19 @@ export class TripsService {
   async update(
     id: string,
     dto: UpdateTripDto,
-    actor: { id: string; role: "user" | "admin" },
+    actor: TripActor,
   ): Promise<TripEntity> {
     const trip = await this.getBySlugOrId(id);
-    if (trip.organizer.userId !== actor.id && actor.role !== "admin") {
+    if (trip.organizer.userId !== actor.id) {
       throw new ForbiddenException("Only the trip organizer can edit it");
     }
     if (
       trip.startAt.getTime() <= Date.now() ||
       trip.status === "cancelled" ||
-      trip.status === "finished"
+      trip.status === "finished" ||
+      trip.status === "rejected" ||
+      trip.moderationStatus === "pending_review" ||
+      trip.moderationStatus === "rejected"
     ) {
       throw new BadRequestException("Only an upcoming active trip can be edited");
     }
@@ -240,13 +309,33 @@ export class TripsService {
       dto.asphaltPercent ?? trip.asphaltPercent,
       dto.unpavedPercent ?? trip.unpavedPercent
     );
-    if (dto.title !== undefined && dto.title !== trip.title) {
-      trip.publicSlug = await this.createUniqueSlug(dto.title, trip.id);
+    const writableFields = this.mapUpdateFields(dto);
+    const requiresRevision = trip.status === "published" && actor.role !== "admin";
+
+    if (requiresRevision) {
+      const moderatedUpdate = this.onlyChangedFields(
+        trip,
+        this.pickModeratedFields(writableFields),
+        trip.pendingRevision,
+      );
+      const immediateUpdate = this.omitModeratedFields(writableFields);
+      Object.assign(trip, immediateUpdate);
+
+      if (Object.keys(moderatedUpdate).length > 0) {
+        trip.pendingRevision = { ...(trip.pendingRevision ?? {}), ...moderatedUpdate };
+        trip.moderationStatus = "pending_review";
+        trip.moderationComment = null;
+        trip.submittedForReviewAt = new Date();
+      }
+    } else {
+      if (dto.title !== undefined && dto.title !== trip.title) {
+        trip.publicSlug = await this.createUniqueSlug(dto.title, trip.id);
+      }
+      Object.assign(trip, writableFields);
     }
-    Object.assign(trip, this.mapUpdateFields(dto));
     const savedTrip = await this.tripsRepository.save(trip);
 
-    if (savedTrip.status === "published") {
+    if (savedTrip.status === "published" && Object.keys(this.omitModeratedFields(writableFields)).length > 0) {
       await this.tripUpdatesRepository.save(
         this.tripUpdatesRepository.create({
           tripId: savedTrip.id,
@@ -255,6 +344,10 @@ export class TripsService {
         }),
       );
       await this.notificationsService.enqueueTripUpdatedNotification(savedTrip);
+    }
+
+    if (savedTrip.moderationStatus === "pending_review" && savedTrip.pendingRevision) {
+      await this.notificationsService.enqueueModerationSubmitted(savedTrip);
     }
 
     return this.getBySlugOrId(savedTrip.id);
@@ -266,10 +359,12 @@ export class TripsService {
     routeFile: UploadedRouteFile | undefined,
     coverImage: UploadedCoverImage | undefined,
     removeRouteFile: boolean,
-    actor: { id: string; role: "user" | "admin" },
+    actor: TripActor,
   ): Promise<TripEntity> {
     if (routeFile) this.validateUploadedRouteFile(routeFile);
     if (coverImage) this.validateUploadedCoverImage(coverImage);
+    const currentTrip = await this.getBySlugOrId(id);
+    const stageCover = currentTrip.status === "published" && actor.role !== "admin";
     const savedTrip = await this.update(id, dto, actor);
 
     if (routeFile) {
@@ -278,8 +373,16 @@ export class TripsService {
       await this.deleteRouteFiles(savedTrip.id);
     }
     if (coverImage) {
-      await this.replaceCoverImage(savedTrip.id, coverImage);
-    } else if (dto.coverImage !== undefined && !this.isUploadedCoverImageUrl(dto.coverImage)) {
+      if (stageCover) {
+        await this.stageCoverImage(savedTrip.id, coverImage);
+      } else {
+        await this.replaceCoverImage(savedTrip.id, coverImage);
+      }
+    } else if (
+      !stageCover &&
+      dto.coverImage !== undefined &&
+      !this.isUploadedCoverImageUrl(dto.coverImage)
+    ) {
       await this.deleteCoverImage(savedTrip.id);
     }
 
@@ -292,6 +395,9 @@ export class TripsService {
     actor: { id: string; role: "user" | "admin" },
   ): Promise<TripEntity> {
     const trip = await this.getBySlugOrId(id);
+    if (status === "published" && actor.role !== "admin") {
+      throw new ForbiddenException("Only an administrator can publish a trip");
+    }
     if (trip.organizer.userId !== actor.id && actor.role !== "admin") {
       throw new ForbiddenException("Only the trip organizer can change its status");
     }
@@ -323,6 +429,123 @@ export class TripsService {
     return savedTrip;
   }
 
+  async submitForReview(id: string, actor: TripActor): Promise<TripEntity> {
+    const trip = await this.getBySlugOrId(id);
+    if (trip.organizer.userId !== actor.id) {
+      throw new ForbiddenException("Only the trip organizer can submit it for review");
+    }
+    if (actor.role === "admin") {
+      if (trip.status !== "published") {
+        trip.status = "published";
+        trip.moderationStatus = "approved";
+        trip.moderatedAt = new Date();
+        trip.moderatedByUserId = actor.id;
+        await this.tripsRepository.save(trip);
+      }
+      return this.getBySlugOrId(id);
+    }
+    if (trip.status !== "draft" && trip.status !== "changes_requested") {
+      throw new BadRequestException("Only a draft or returned trip can be submitted");
+    }
+
+    trip.status = "pending_review";
+    trip.moderationStatus = "pending_review";
+    trip.moderationComment = null;
+    trip.submittedForReviewAt = new Date();
+    const savedTrip = await this.tripsRepository.save(trip);
+    await this.notificationsService.enqueueModerationSubmitted(savedTrip);
+    return this.getBySlugOrId(id);
+  }
+
+  async withdrawReview(id: string, actor: TripActor): Promise<TripEntity> {
+    const trip = await this.getBySlugOrId(id);
+    if (trip.organizer.userId !== actor.id) {
+      throw new ForbiddenException("Only the trip organizer can withdraw it");
+    }
+    if (trip.moderationStatus !== "pending_review") {
+      throw new BadRequestException("This trip is not awaiting review");
+    }
+
+    if (trip.status === "published") {
+      await this.deletePendingCoverImage(trip);
+      trip.pendingRevision = null;
+      trip.pendingCoverStorageKey = null;
+      trip.moderationStatus = "approved";
+    } else {
+      trip.status = "draft";
+      trip.moderationStatus = "draft";
+    }
+    trip.moderationComment = null;
+    trip.submittedForReviewAt = null;
+    return this.tripsRepository.save(trip);
+  }
+
+  async moderate(
+    id: string,
+    decision: "approve" | "request_changes" | "reject",
+    comment: string | undefined,
+    admin: TripActor,
+  ): Promise<TripEntity> {
+    if (admin.role !== "admin") {
+      throw new ForbiddenException("Administrator access is required");
+    }
+    const normalizedComment = comment?.trim();
+    if (decision !== "approve" && !normalizedComment) {
+      throw new BadRequestException("Moderation comment is required");
+    }
+
+    const trip = await this.getBySlugOrId(id);
+    if (trip.moderationStatus !== "pending_review") {
+      throw new BadRequestException("Trip is not awaiting review");
+    }
+
+    const isPublishedRevision = trip.status === "published";
+    trip.moderatedAt = new Date();
+    trip.moderatedByUserId = admin.id;
+    trip.moderationComment = normalizedComment ?? null;
+
+    if (decision === "approve") {
+      if (isPublishedRevision && trip.pendingRevision) {
+        const proposedTitle = trip.pendingRevision.title;
+        if (typeof proposedTitle === "string" && proposedTitle !== trip.title) {
+          trip.publicSlug = await this.createUniqueSlug(proposedTitle, trip.id);
+        }
+        if (
+          "coverImage" in trip.pendingRevision &&
+          !trip.pendingCoverStorageKey &&
+          trip.coverImage &&
+          this.isUploadedCoverImageUrl(trip.coverImage)
+        ) {
+          await this.deleteCoverImage(trip.id);
+        }
+        Object.assign(trip, trip.pendingRevision);
+        await this.promotePendingCoverImage(trip);
+        trip.pendingRevision = null;
+        trip.pendingCoverStorageKey = null;
+      } else {
+        trip.status = "published";
+      }
+      trip.moderationStatus = "approved";
+      trip.moderationComment = null;
+    } else if (decision === "request_changes") {
+      trip.moderationStatus = "changes_requested";
+      if (!isPublishedRevision) trip.status = "changes_requested";
+    } else {
+      await this.deletePendingCoverImage(trip);
+      trip.pendingRevision = null;
+      trip.pendingCoverStorageKey = null;
+      trip.moderationStatus = "rejected";
+      if (!isPublishedRevision) trip.status = "rejected";
+    }
+
+    const savedTrip = await this.tripsRepository.save(trip);
+    if (decision === "approve" && !isPublishedRevision) {
+      await this.notificationsService.enqueueTripStatusNotification(savedTrip, "published");
+    }
+    await this.notificationsService.enqueueModerationDecision(savedTrip, decision);
+    return this.getBySlugOrId(id);
+  }
+
   private mapWritableFields(dto: CreateTripDto): Partial<TripEntity> {
     return {
       title: dto.title,
@@ -351,9 +574,13 @@ export class TripsService {
     };
   }
 
-  async getRouteFileForDownload(id: string): Promise<RouteFileDownload> {
+  async getRouteFileForDownload(id: string, actor: TripActor | null = null): Promise<RouteFileDownload> {
     const trip = await this.getBySlugOrId(id);
-    if (trip.status !== "published") {
+    if (
+      trip.status !== "published" &&
+      trip.organizer.userId !== actor?.id &&
+      actor?.role !== "admin"
+    ) {
       throw new NotFoundException("Route file not found");
     }
 
@@ -374,8 +601,15 @@ export class TripsService {
     }
   }
 
-  async getCoverImageForDownload(id: string): Promise<CoverImageDownload> {
+  async getCoverImageForDownload(id: string, actor: TripActor | null = null): Promise<CoverImageDownload> {
     const trip = await this.getBySlugOrId(id);
+    if (
+      trip.status !== "published" &&
+      trip.organizer.userId !== actor?.id &&
+      actor?.role !== "admin"
+    ) {
+      throw new NotFoundException("Cover image not found");
+    }
     if (!trip.coverImage || !this.isUploadedCoverImageUrl(trip.coverImage)) {
       throw new NotFoundException("Cover image not found");
     }
@@ -385,6 +619,25 @@ export class TripsService {
       return {
         contentType: this.getCoverImageContentType(storageKey),
         content: await readFile(this.getCoverImagePath(storageKey)),
+      };
+    } catch {
+      throw new NotFoundException("Cover image not found");
+    }
+  }
+
+  async getPendingCoverImageForDownload(id: string, actor: TripActor): Promise<CoverImageDownload> {
+    const trip = await this.getBySlugOrId(id);
+    if (trip.organizer.userId !== actor.id && actor.role !== "admin") {
+      throw new NotFoundException("Cover image not found");
+    }
+    if (!trip.pendingCoverStorageKey) {
+      throw new NotFoundException("Cover image not found");
+    }
+
+    try {
+      return {
+        contentType: this.getCoverImageContentType(trip.pendingCoverStorageKey),
+        content: await readFile(this.getCoverImagePath(trip.pendingCoverStorageKey)),
       };
     } catch {
       throw new NotFoundException("Cover image not found");
@@ -442,6 +695,55 @@ export class TripsService {
     await mkdir(path.dirname(filePath), { recursive: true });
     await writeFile(filePath, optimizedCoverImage);
     await this.tripsRepository.update({ id: tripId }, { coverImage: coverImageUrl });
+  }
+
+  private async stageCoverImage(tripId: string, coverImage: UploadedCoverImage): Promise<void> {
+    this.validateUploadedCoverImage(coverImage);
+    const trip = await this.getBySlugOrId(tripId);
+    await this.deletePendingCoverImage(trip);
+
+    const version = Date.now();
+    const optimizedCoverImage = await this.optimizeCoverImage(coverImage);
+    const storageKey = `${tripId}/${version}-pending-cover.webp`;
+    const filePath = this.getCoverImagePath(storageKey);
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await writeFile(filePath, optimizedCoverImage);
+
+    trip.pendingCoverStorageKey = storageKey;
+    trip.pendingRevision = {
+      ...(trip.pendingRevision ?? {}),
+      coverImage: `/trips/${tripId}/pending-cover-image?v=${version}`,
+    };
+    trip.moderationStatus = "pending_review";
+    trip.moderationComment = null;
+    trip.submittedForReviewAt = new Date();
+    await this.tripsRepository.save(trip);
+    await this.notificationsService.enqueueModerationSubmitted(trip);
+  }
+
+  private async promotePendingCoverImage(trip: TripEntity): Promise<void> {
+    if (!trip.pendingCoverStorageKey) return;
+
+    const directory = path.join(coverImagesDirectory, trip.id);
+    const fileNames = await readdir(directory).catch(() => []);
+    await Promise.all(
+      fileNames
+        .filter((fileName) => !trip.pendingCoverStorageKey?.endsWith(`/${fileName}`))
+        .map((fileName) => unlink(path.join(directory, fileName)).catch(() => undefined)),
+    );
+
+    const version = Date.now();
+    const promotedKey = `${trip.id}/${version}-cover.webp`;
+    await rename(
+      this.getCoverImagePath(trip.pendingCoverStorageKey),
+      this.getCoverImagePath(promotedKey),
+    );
+    trip.coverImage = `/trips/${trip.id}/cover-image?v=${version}`;
+  }
+
+  private async deletePendingCoverImage(trip: TripEntity): Promise<void> {
+    if (!trip.pendingCoverStorageKey) return;
+    await unlink(this.getCoverImagePath(trip.pendingCoverStorageKey)).catch(() => undefined);
   }
 
   private async deleteCoverImage(tripId: string): Promise<void> {
@@ -523,7 +825,7 @@ export class TripsService {
 
   private async getStoredCoverImageKey(tripId: string): Promise<string> {
     const directory = path.join(coverImagesDirectory, tripId);
-    const [fileName] = await readdir(directory);
+    const fileName = (await readdir(directory)).find((entry) => !entry.includes("-pending-cover"));
     if (!fileName) {
       throw new NotFoundException("Cover image not found");
     }
@@ -566,6 +868,45 @@ export class TripsService {
     if (dto.cityId !== undefined) update.cityId = dto.cityId;
 
     return update;
+  }
+
+  private pickModeratedFields(update: Partial<TripEntity>): Partial<TripEntity> {
+    const moderated: Partial<TripEntity> = {};
+    for (const field of moderatedTextFields) {
+      if (field in update) {
+        Object.assign(moderated, { [field]: update[field] });
+      }
+    }
+    return moderated;
+  }
+
+  private omitModeratedFields(update: Partial<TripEntity>): Partial<TripEntity> {
+    const immediate = { ...update };
+    for (const field of moderatedTextFields) {
+      delete immediate[field];
+    }
+    return immediate;
+  }
+
+  private onlyChangedFields(
+    trip: TripEntity,
+    update: Partial<TripEntity>,
+    pendingRevision: Record<string, unknown> | null,
+  ): Partial<TripEntity> {
+    const changed: Partial<TripEntity> = {};
+    for (const [field, value] of Object.entries(update)) {
+      const currentValue = pendingRevision && field in pendingRevision
+        ? pendingRevision[field]
+        : trip[field as keyof TripEntity];
+      const normalizedCurrent = currentValue instanceof Date
+        ? currentValue.toISOString()
+        : currentValue;
+      const normalizedNext = value instanceof Date ? value.toISOString() : value;
+      if (JSON.stringify(normalizedCurrent) !== JSON.stringify(normalizedNext)) {
+        Object.assign(changed, { [field]: value });
+      }
+    }
+    return changed;
   }
 
   private async createUniqueSlug(title: string, excludedTripId?: string): Promise<string> {

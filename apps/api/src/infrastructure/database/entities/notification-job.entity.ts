@@ -9,7 +9,15 @@ export class NotificationJobEntity {
   channel!: "telegram" | "email";
 
   @Column({ type: "text" })
-  type!: "trip_published" | "trip_updated" | "trip_cancelled" | "participant_promoted";
+  type!:
+    | "trip_published"
+    | "trip_updated"
+    | "trip_cancelled"
+    | "participant_promoted"
+    | "moderation_submitted"
+    | "trip_approved"
+    | "trip_changes_requested"
+    | "trip_rejected";
 
   @Column({ name: "recipient_user_id", type: "uuid", nullable: true })
   recipientUserId!: string | null;

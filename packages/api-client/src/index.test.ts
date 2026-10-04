@@ -17,11 +17,10 @@ describe("BikeTripsApiClient", () => {
       bikeType: "gravel",
       dateFrom: "2099-08-01",
       dateTo: "2099-08-31",
-      includeDrafts: true,
     });
 
     expect(fetcher).toHaveBeenCalledWith(
-      "https://api.example.test/trips?city=moscow&difficulty=medium&bikeType=gravel&dateFrom=2099-08-01&dateTo=2099-08-31&includeDrafts=true",
+      "https://api.example.test/trips?city=moscow&difficulty=medium&bikeType=gravel&dateFrom=2099-08-01&dateTo=2099-08-31",
       expect.objectContaining({
         method: "GET",
         headers: expect.any(Headers),

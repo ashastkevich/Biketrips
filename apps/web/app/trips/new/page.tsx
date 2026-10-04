@@ -6,7 +6,7 @@ import {
   createTripWithRouteFile,
   getCities,
   getOrganizerAuthState,
-  updateTripStatus,
+  submitTripForReview,
 } from "../../lib/api";
 import { CITY_COOKIE_NAME, fallbackCities, selectCity } from "../../lib/cities";
 import { AppTopbar } from "../../lib/components";
@@ -27,8 +27,10 @@ async function createTripAction(formData: FormData) {
       routeFile || coverImageFile
         ? await createTripWithRouteFile(input, routeFile, coverImageFile)
         : await createTrip(input);
-    await updateTripStatus(trip.id, "publish");
-    destination = "/#rides";
+    const submittedTrip = await submitTripForReview(trip.id);
+    destination = submittedTrip.status === "published"
+      ? `/trips/${encodeURIComponent(submittedTrip.slug)}`
+      : "/profile?submitted=1";
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось создать поездку";
     destination = `/trips/new?error=${encodeURIComponent(message)}`;
@@ -67,13 +69,13 @@ export default async function NewTripPage({ searchParams }: NewTripPageProps) {
         {!canPublish ? (
           <Alert
             title={
-              authState === "telegram-required" ? "Привяжите Telegram" : "Публикация после входа"
+              authState === "telegram-required" ? "Привяжите Telegram" : "Отправка после входа"
             }
             tone="warning"
           >
             {authState === "telegram-required"
-              ? "Создавать поездки могут зарегистрированные пользователи с привязанным Telegram."
-              : "Форму можно заполнить без входа. Для публикации потребуется регистрация и привязка Telegram."}
+              ? "Отправлять поездки на модерацию могут пользователи с привязанным Telegram."
+              : "Форму можно заполнить без входа. Для отправки потребуется регистрация и привязка Telegram."}
           </Alert>
         ) : null}
         {error ? (

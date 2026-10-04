@@ -168,6 +168,15 @@ export async function getTripDetails(filters: TripFilters = {}): Promise<DataRes
   };
 }
 
+export async function getMyTrips(): Promise<DataResult<TripDetail[]>> {
+  try {
+    const client = await createClient({ requireUserSession: true });
+    return { data: await client.listMyTrips(), source: "api" };
+  } catch (error) {
+    return { data: [], source: "unavailable", error: getErrorMessage(error) };
+  }
+}
+
 export async function createTrip(input: CreateTripInput): Promise<TripDetail> {
   const client = await createClient({ requireUserSession: true });
   return client.createTrip(input);
@@ -214,6 +223,36 @@ export async function updateTripStatus(
   if (action === "cancel") return client.cancelTrip(tripId);
 
   return client.finishTrip(tripId);
+}
+
+export async function submitTripForReview(tripId: string): Promise<TripDetail> {
+  const client = await createClient({ requireUserSession: true });
+  return client.submitTripForReview(tripId);
+}
+
+export async function withdrawTripReview(tripId: string): Promise<TripDetail> {
+  const client = await createClient({ requireUserSession: true });
+  return client.withdrawTripReview(tripId);
+}
+
+export async function getTripsForModeration(): Promise<DataResult<TripDetail[]>> {
+  try {
+    const client = await createClient({ requireUserSession: true });
+    return { data: await client.listTripsForModeration(), source: "api" };
+  } catch (error) {
+    return { data: [], source: "unavailable", error: getErrorMessage(error) };
+  }
+}
+
+export async function moderateTrip(
+  tripId: string,
+  decision: "approve" | "request_changes" | "reject",
+  comment = "",
+): Promise<TripDetail> {
+  const client = await createClient({ requireUserSession: true });
+  if (decision === "approve") return client.approveTrip(tripId);
+  if (decision === "request_changes") return client.requestTripChanges(tripId, comment);
+  return client.rejectTrip(tripId, comment);
 }
 
 export async function updateParticipantStatus(

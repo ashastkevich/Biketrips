@@ -4,7 +4,15 @@ import { hasAvailablePlaces, slugifyTripTitle, tripStatuses } from "./index.js";
 
 describe("domain constants", () => {
   it("keeps the MVP trip status set", () => {
-    expect(tripStatuses).toEqual(["draft", "published", "cancelled", "finished"]);
+    expect(tripStatuses).toEqual([
+      "draft",
+      "pending_review",
+      "changes_requested",
+      "rejected",
+      "published",
+      "cancelled",
+      "finished",
+    ]);
   });
 });
 

@@ -9,8 +9,11 @@ function countParticipants(
   return participants?.filter((participant) => participant.status === status).length ?? 0;
 }
 
-export function serializeTripSummary(trip: TripEntity) {
-  return {
+export function serializeTripSummary(
+  trip: TripEntity,
+  options: { includePendingRevision?: boolean } = {},
+) {
+  const summary = {
     id: trip.id,
     slug: trip.publicSlug,
     title: trip.title,
@@ -26,17 +29,32 @@ export function serializeTripSummary(trip: TripEntity) {
     unpavedSurfaceDetails: trip.unpavedSurfaceDetails,
     dropPolicy: trip.dropPolicy,
     status: trip.status,
+    moderationStatus: trip.moderationStatus,
+    moderationComment: trip.moderationComment,
+    hasPendingRevision: trip.pendingRevision !== null,
     capacity: trip.maxParticipants,
     confirmedParticipants: countParticipants(trip.participants, "confirmed"),
     coverImage: trip.coverImage,
   };
+
+  if (options.includePendingRevision && trip.pendingRevision) {
+    const pending = trip.pendingRevision;
+    if (typeof pending.title === "string") summary.title = pending.title;
+    if (typeof pending.coverImage === "string" || pending.coverImage === null) {
+      summary.coverImage = pending.coverImage;
+    }
+  }
+
+  return summary;
 }
 
-export function serializeTripDetail(trip: TripEntity) {
+export function serializeTripDetail(
+  trip: TripEntity,
+  options: { includePendingRevision?: boolean } = {},
+) {
   const routeGpxFile = trip.routeFiles?.[0] ?? null;
-
-  return {
-    ...serializeTripSummary(trip),
+  const detail = {
+    ...serializeTripSummary(trip, options),
     description: trip.description,
     startLocationName: trip.startLocationName,
     startLat: trip.startLat === null ? null : Number(trip.startLat),
@@ -80,4 +98,26 @@ export function serializeTripDetail(trip: TripEntity) {
         createdAt: update.createdAt.toISOString(),
       })) ?? [],
   };
+
+  if (options.includePendingRevision && trip.pendingRevision) {
+    const pending = trip.pendingRevision;
+    if (typeof pending.description === "string") detail.description = pending.description;
+    if (typeof pending.startLocationName === "string") {
+      detail.startLocationName = pending.startLocationName;
+    }
+    if (typeof pending.routeDescription === "string" || pending.routeDescription === null) {
+      detail.routeDescription = pending.routeDescription;
+    }
+    if (
+      typeof pending.equipmentRequirements === "string" ||
+      pending.equipmentRequirements === null
+    ) {
+      detail.equipmentRequirements = pending.equipmentRequirements;
+    }
+    if (typeof pending.rules === "string" || pending.rules === null) {
+      detail.rules = pending.rules;
+    }
+  }
+
+  return detail;
 }

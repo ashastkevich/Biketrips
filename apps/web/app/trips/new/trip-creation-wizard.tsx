@@ -110,7 +110,8 @@ function getPersistableDraft(draft: TripDraft): TripDraft {
 }
 
 function getDisplayCoverImage(coverImage: string): string {
-  return coverImage.startsWith("/trips/") && coverImage.includes("/cover-image")
+  return coverImage.startsWith("/trips/") &&
+    (coverImage.includes("/cover-image") || coverImage.includes("/pending-cover-image"))
     ? `/api${coverImage}`
     : coverImage;
 }
@@ -828,7 +829,7 @@ export function TripCreationWizard({
               </Button>
             ) : (
               <Button className={styles.actionButton} key="submit-trip" type="submit">
-                {mode === "edit" ? "Сохранить изменения" : "Опубликовать поездку"}
+                {mode === "edit" ? "Сохранить изменения" : "Отправить на модерацию"}
               </Button>
             )}
           </div>

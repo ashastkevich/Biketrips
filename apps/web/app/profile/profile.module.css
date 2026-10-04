@@ -2,6 +2,54 @@
   padding-bottom: 96px;
 }
 
+.pageNotice {
+  margin-top: 24px;
+  padding: 14px 16px;
+  color: #365919;
+  background: #edf5e4;
+  border: 1px solid #cfe0bd;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+.moderationNotices {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.moderationNotice {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px;
+  background: #fff8e8;
+  border: 1px solid #ead7a5;
+  border-radius: 14px;
+}
+
+.moderationNotice p,
+.moderationNotice blockquote {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.moderationNotice blockquote {
+  padding-left: 12px;
+  border-left: 3px solid #b9902d;
+  font-style: normal;
+}
+
+.moderationNotice button {
+  padding: 8px 12px;
+  color: #713d20;
+  background: #fff;
+  border: 1px solid #d8b28c;
+  border-radius: 10px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
 .hero {
   display: flex;
   align-items: center;
@@ -49,6 +97,13 @@
   margin: 10px 0 18px;
   color: var(--muted);
   font-size: 16px;
+}
+
+.adminLink {
+  display: inline-block;
+  margin-top: 12px;
+  color: var(--green-dark);
+  font-weight: 800;
 }
 
 .statRow {

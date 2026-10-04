@@ -8,6 +8,7 @@ import { UserEntity } from "../../infrastructure/database/entities/user.entity.j
 import { CityEntity } from "../../infrastructure/database/entities/city.entity.js";
 import { RouteFileEntity } from "../../infrastructure/database/entities/route-file.entity.js";
 import { NotificationsModule } from "../notifications/notifications.module.js";
+import { AuthModule } from "../auth/auth.module.js";
 import { ParticipantsModule } from "../participants/participants.module.js";
 import { TripsController } from "./trips.controller.js";
 import { TripsService } from "./trips.service.js";
@@ -22,6 +23,7 @@ import { TripsService } from "./trips.service.js";
       CityEntity,
       RouteFileEntity,
     ]),
+    AuthModule,
     NotificationsModule,
     ParticipantsModule,
   ],

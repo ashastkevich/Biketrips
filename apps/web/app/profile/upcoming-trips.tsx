@@ -73,6 +73,13 @@ export function UpcomingTrips({
             ) : null}
             {trips.map((trip) => {
           const coverImage = getTripCardProps(trip).coverImage;
+          const displayedStatus = trip.status === "published" && trip.moderationStatus !== "approved"
+            ? trip.moderationStatus === "pending_review"
+              ? "Изменения на модерации"
+              : trip.moderationStatus === "changes_requested"
+                ? "Исправьте изменения"
+                : "Изменения отклонены"
+            : tripStatusLabels[trip.status];
 
           return (
             <Link
@@ -114,7 +121,7 @@ export function UpcomingTrips({
                       : `${trip.confirmedParticipants}/${trip.capacity}`}
                   </span>
                   <Badge className={styles.tripBadge} tone={trip.status === "published" ? "success" : trip.status === "cancelled" ? "danger" : "neutral"}>
-                    {tripStatusLabels[trip.status]}
+                    {displayedStatus}
                   </Badge>
                 </>
               ) : (

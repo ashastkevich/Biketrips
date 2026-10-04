@@ -10,6 +10,7 @@ import { AuthController } from "./auth.controller.js";
 import { AuthService } from "./auth.service.js";
 import { JwtStrategy } from "./jwt.strategy.js";
 import { AdminGuard, TripCreatorGuard } from "./access.guards.js";
+import { JwtAuthGuard, OptionalJwtAuthGuard } from "./jwt-auth.guard.js";
 
 @Module({
   imports: [
@@ -22,7 +23,14 @@ import { AdminGuard, TripCreatorGuard } from "./access.guards.js";
     ]),
   ],
   controllers: [AuthController],
-  providers: [AdminGuard, AuthService, JwtStrategy, TripCreatorGuard],
-  exports: [AdminGuard, AuthService, TripCreatorGuard],
+  providers: [
+    AdminGuard,
+    AuthService,
+    JwtAuthGuard,
+    JwtStrategy,
+    OptionalJwtAuthGuard,
+    TripCreatorGuard,
+  ],
+  exports: [AdminGuard, AuthService, JwtAuthGuard, OptionalJwtAuthGuard, TripCreatorGuard],
 })
 export class AuthModule {}

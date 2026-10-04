@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerApiUrl } from "../../../../lib/server-api-url";
 
 const apiUrl = getServerApiUrl();
+const authCookieName = "biketrips_session";
 
 export async function GET(
   request: Request,
@@ -10,28 +11,30 @@ export async function GET(
 ) {
   const { id } = await params;
   const token = request.headers.get("cookie")
-    ?.match(/(?:^|;\s*)biketrips_session=([^;]+)/)?.[1];
+    ?.match(new RegExp(`(?:^|;\\s*)${authCookieName}=([^;]+)`))?.[1];
+  if (!token) return NextResponse.json({ message: "Требуется вход" }, { status: 401 });
+
   const { search } = new URL(request.url);
   const response = await fetch(
-    `${apiUrl}/trips/${encodeURIComponent(id)}/cover-image${search}`,
-    token
-      ? { headers: { authorization: `Bearer ${token}` }, cache: "no-store" }
-      : { next: { revalidate: 86400 } },
+    `${apiUrl}/trips/${encodeURIComponent(id)}/pending-cover-image${search}`,
+    {
+      headers: { authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
   ).catch(() => null);
 
   if (!response) {
     return NextResponse.json({ message: "Сервис поездок недоступен" }, { status: 503 });
   }
-
   if (!response.ok) {
     return NextResponse.json({ message: "Обложка не найдена" }, { status: response.status });
   }
 
-  const headers = new Headers();
-  const contentType = response.headers.get("content-type");
-  const cacheControl = response.headers.get("cache-control");
-  if (contentType) headers.set("content-type", contentType);
-  if (cacheControl) headers.set("cache-control", cacheControl);
-
-  return new Response(response.body, { headers, status: response.status });
+  return new Response(response.body, {
+    status: response.status,
+    headers: {
+      "content-type": response.headers.get("content-type") ?? "image/webp",
+      "cache-control": "private, no-store",
+    },
+  });
 }

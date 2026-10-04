@@ -45,7 +45,14 @@ export class BikeTripsApiClient {
   }
 
   async getTrip(slugOrId: string): Promise<TripDetail> {
-    return this.get<TripDetail>(`/trips/${encodeURIComponent(slugOrId)}`);
+    return this.get<TripDetail>(
+      `/trips/${encodeURIComponent(slugOrId)}`,
+      Boolean(this.authToken),
+    );
+  }
+
+  async listMyTrips(): Promise<TripDetail[]> {
+    return this.get<TripDetail[]>("/trips/mine", true);
   }
 
   async createTrip(input: CreateTripInput): Promise<TripDetail> {
@@ -89,6 +96,38 @@ export class BikeTripsApiClient {
 
   async publishTrip(id: string): Promise<TripDetail> {
     return this.post<TripDetail>(`/trips/${encodeURIComponent(id)}/publish`, {}, true);
+  }
+
+  async submitTripForReview(id: string): Promise<TripDetail> {
+    return this.post<TripDetail>(`/trips/${encodeURIComponent(id)}/submit-review`, {}, true);
+  }
+
+  async withdrawTripReview(id: string): Promise<TripDetail> {
+    return this.post<TripDetail>(`/trips/${encodeURIComponent(id)}/withdraw-review`, {}, true);
+  }
+
+  async listTripsForModeration(): Promise<TripDetail[]> {
+    return this.get<TripDetail[]>("/admin/trips/moderation", true);
+  }
+
+  async approveTrip(id: string): Promise<TripDetail> {
+    return this.post<TripDetail>(`/admin/trips/${encodeURIComponent(id)}/approve`, {}, true);
+  }
+
+  async requestTripChanges(id: string, comment: string): Promise<TripDetail> {
+    return this.post<TripDetail>(
+      `/admin/trips/${encodeURIComponent(id)}/request-changes`,
+      { comment },
+      true,
+    );
+  }
+
+  async rejectTrip(id: string, comment: string): Promise<TripDetail> {
+    return this.post<TripDetail>(
+      `/admin/trips/${encodeURIComponent(id)}/reject`,
+      { comment },
+      true,
+    );
   }
 
   async cancelTrip(id: string): Promise<TripDetail> {
@@ -253,7 +292,6 @@ export class BikeTripsApiClient {
     if (filters.bikeType) query.set("bikeType", filters.bikeType);
     if (filters.dateFrom) query.set("dateFrom", filters.dateFrom);
     if (filters.dateTo) query.set("dateTo", filters.dateTo);
-    if (filters.includeDrafts) query.set("includeDrafts", "true");
 
     const serializedQuery = query.toString();
 

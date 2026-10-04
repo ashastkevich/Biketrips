@@ -1069,6 +1069,9 @@ export function BottomSheet({
 export function TripStatusBadge({ status }: { status: TripStatus }) {
   const tones: Record<TripStatus, BadgeTone> = {
     draft: "neutral",
+    pending_review: "warning",
+    changes_requested: "warning",
+    rejected: "danger",
     published: "success",
     cancelled: "danger",
     finished: "info",

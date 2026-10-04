@@ -19,8 +19,8 @@ import {
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
-import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
-import { TripCreatorGuard } from "../auth/access.guards.js";
+import { JwtAuthGuard, OptionalJwtAuthGuard } from "../auth/jwt-auth.guard.js";
+import { AdminGuard, TripCreatorGuard } from "../auth/access.guards.js";
 import { ParticipantsService } from "../participants/participants.service.js";
 import { CreateParticipantDto, UpdateParticipantStatusDto } from "../participants/dto/participant.dto.js";
 import { CreateTripDto, TripFiltersDto, UpdateTripDto } from "./dto/trip.dto.js";
@@ -84,15 +84,25 @@ export class TripsController {
   @Get()
   async list(@Query() filters: TripFiltersDto) {
     const trips = await this.tripsService.list(filters);
-    return trips.map(serializeTripSummary);
+    return trips.map((trip) => serializeTripSummary(trip));
+  }
+
+  @Get("mine")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async listMine(@Req() request: { user: { id: string } }) {
+    const trips = await this.tripsService.listMine(request.user.id);
+    return trips.map((trip) => serializeTripDetail(trip, { includePendingRevision: true }));
   }
 
   @Get(":id/route-file")
+  @UseGuards(OptionalJwtAuthGuard)
   async downloadRouteFile(
     @Param("id") id: string,
     @Res({ passthrough: true }) response: HeaderResponse,
+    @Req() request?: { user?: { id: string; role: "user" | "admin" } },
   ) {
-    const routeFile = await this.tripsService.getRouteFileForDownload(id);
+    const routeFile = await this.tripsService.getRouteFileForDownload(id, request?.user ?? null);
     response.setHeader("Content-Type", routeFile.contentType);
     response.setHeader(
       "Content-Disposition",
@@ -103,20 +113,43 @@ export class TripsController {
   }
 
   @Get(":id/cover-image")
+  @UseGuards(OptionalJwtAuthGuard)
   async downloadCoverImage(
     @Param("id") id: string,
     @Res({ passthrough: true }) response: HeaderResponse,
+    @Req() request?: { user?: { id: string; role: "user" | "admin" } },
   ) {
-    const coverImage = await this.tripsService.getCoverImageForDownload(id);
+    const coverImage = await this.tripsService.getCoverImageForDownload(id, request?.user ?? null);
     response.setHeader("Content-Type", coverImage.contentType);
     response.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
 
     return new StreamableFile(coverImage.content);
   }
 
+  @Get(":id/pending-cover-image")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async downloadPendingCoverImage(
+    @Param("id") id: string,
+    @Res({ passthrough: true }) response: HeaderResponse,
+    @Req() request: { user: { id: string; role: "user" | "admin" } },
+  ) {
+    const coverImage = await this.tripsService.getPendingCoverImageForDownload(id, request.user);
+    response.setHeader("Content-Type", coverImage.contentType);
+    response.setHeader("Cache-Control", "private, no-store");
+    return new StreamableFile(coverImage.content);
+  }
+
   @Get(":slugOrId")
-  async get(@Param("slugOrId") slugOrId: string) {
-    return serializeTripDetail(await this.tripsService.getBySlugOrId(slugOrId));
+  @UseGuards(OptionalJwtAuthGuard)
+  async get(
+    @Param("slugOrId") slugOrId: string,
+    @Req() request: { user: { id: string; role: "user" | "admin" } | null },
+  ) {
+    const result = await this.tripsService.getVisibleBySlugOrId(slugOrId, request.user);
+    return serializeTripDetail(result.trip, {
+      includePendingRevision: result.includePendingRevision,
+    });
   }
 
   @Post("with-route-file")
@@ -198,13 +231,37 @@ export class TripsController {
   }
 
   @Post(":id/publish")
-  @UseGuards(JwtAuthGuard, TripCreatorGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
   async publish(
     @Param("id") id: string,
     @Req() request: { user: { id: string; role: "user" | "admin" } },
   ) {
     return serializeTripDetail(await this.tripsService.transition(id, "published", request.user));
+  }
+
+  @Post(":id/submit-review")
+  @UseGuards(JwtAuthGuard, TripCreatorGuard)
+  @ApiBearerAuth()
+  async submitForReview(
+    @Param("id") id: string,
+    @Req() request: { user: { id: string; role: "user" | "admin" } },
+  ) {
+    return serializeTripDetail(await this.tripsService.submitForReview(id, request.user), {
+      includePendingRevision: true,
+    });
+  }
+
+  @Post(":id/withdraw-review")
+  @UseGuards(JwtAuthGuard, TripCreatorGuard)
+  @ApiBearerAuth()
+  async withdrawReview(
+    @Param("id") id: string,
+    @Req() request: { user: { id: string; role: "user" | "admin" } },
+  ) {
+    return serializeTripDetail(await this.tripsService.withdrawReview(id, request.user), {
+      includePendingRevision: true,
+    });
   }
 
   @Post(":id/cancel")

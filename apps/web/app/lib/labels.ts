@@ -56,6 +56,9 @@ export const dropPolicyLabels: Record<DropPolicy, string> = {
 
 export const tripStatusLabels: Record<TripStatus, string> = {
   draft: "Черновик",
+  pending_review: "На модерации",
+  changes_requested: "Требуются исправления",
+  rejected: "Отклонена",
   published: "Опубликована",
   cancelled: "Отменена",
   finished: "Завершена",

@@ -1,14 +1,28 @@
 import { AppTopbar } from "../lib/components";
 import { UpcomingTrips } from "./upcoming-trips";
-import { getCities, getCurrentUser, getTripDetails } from "../lib/api";
+import { redirect } from "next/navigation";
+
+import { getCities, getCurrentUser, getMyTrips, withdrawTripReview } from "../lib/api";
 import { fallbackCities } from "../lib/cities";
 import { ProfileAccount } from "./profile-account";
 import styles from "./profile.module.css";
 
-export default async function ProfilePage() {
+async function withdrawReviewAction(formData: FormData) {
+  "use server";
+  const tripId = formData.get("tripId");
+  if (typeof tripId === "string" && tripId) await withdrawTripReview(tripId);
+  redirect("/profile?withdrawn=1");
+}
+
+interface ProfilePageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function ProfilePage({ searchParams }: ProfilePageProps) {
+  const query = await searchParams;
   const [user, tripsResult, citiesResult] = await Promise.all([
     getCurrentUser(),
-    getTripDetails({ includeDrafts: true }),
+    getMyTrips(),
     getCities(),
   ]);
   const cities = citiesResult.data.length > 0 ? citiesResult.data : fallbackCities;
@@ -57,6 +71,12 @@ export default async function ProfilePage() {
       <AppTopbar isAuthorized={isAuthenticated} />
 
       <main className={`shell app-content-shell ${styles.page}`}>
+        {query.submitted === "1" ? (
+          <div className={styles.pageNotice}>Поездка отправлена администратору на модерацию.</div>
+        ) : null}
+        {query.withdrawn === "1" ? (
+          <div className={styles.pageNotice}>Заявка отозвана и снова сохранена как черновик.</div>
+        ) : null}
         <header className={styles.hero}>
           <div className={styles.avatar} aria-hidden="true">
             {initials || "Г"}
@@ -65,6 +85,9 @@ export default async function ProfilePage() {
             <div className={styles.nameRow}>
               <h1>{name}</h1>
             </div>
+            {user?.role === "admin" ? (
+              <a className={styles.adminLink} href="/admin/moderation">Открыть модерацию поездок</a>
+            ) : null}
           </div>
         </header>
 
@@ -111,6 +134,35 @@ export default async function ProfilePage() {
                   <h2 id="created-trips-title">Созданные поездки</h2>
                 </div>
               </div>
+              {createdTrips.some((trip) => trip.moderationStatus !== "approved") ? (
+                <div className={styles.moderationNotices}>
+                  {createdTrips
+                    .filter((trip) => trip.moderationStatus !== "approved")
+                    .map((trip) => (
+                      <article className={styles.moderationNotice} key={trip.id}>
+                        <div>
+                          <strong>{trip.title}</strong>
+                          <p>
+                            {trip.moderationStatus === "pending_review"
+                              ? "Поездка ожидает проверки администратора."
+                              : trip.moderationStatus === "changes_requested"
+                                ? "Администратор вернул поездку на исправление."
+                                : trip.moderationStatus === "rejected"
+                                  ? "Администратор окончательно отклонил поездку."
+                                  : "Поездка сохранена как черновик."}
+                          </p>
+                          {trip.moderationComment ? <blockquote>{trip.moderationComment}</blockquote> : null}
+                        </div>
+                        {trip.moderationStatus === "pending_review" ? (
+                          <form action={withdrawReviewAction}>
+                            <input name="tripId" type="hidden" value={trip.id} />
+                            <button type="submit">Отозвать заявку</button>
+                          </form>
+                        ) : null}
+                      </article>
+                    ))}
+                </div>
+              ) : null}
               <section className={styles.tripSubsection} aria-labelledby="created-upcoming-title">
                 <h3 id="created-upcoming-title">Предстоящие</h3>
                 <UpcomingTrips

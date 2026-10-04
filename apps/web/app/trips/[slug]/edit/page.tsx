@@ -6,6 +6,7 @@ import {
   getCities,
   getCurrentUser,
   getTrip,
+  submitTripForReview,
   updateTrip,
   updateTripWithRouteFile,
 } from "../../../lib/api";
@@ -134,7 +135,10 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
   const canEdit =
     new Date(trip.startDateTime).getTime() > Date.now() &&
     trip.status !== "cancelled" &&
-    trip.status !== "finished";
+    trip.status !== "finished" &&
+    trip.status !== "rejected" &&
+    trip.moderationStatus !== "pending_review" &&
+    trip.moderationStatus !== "rejected";
   const cities = citiesResult.data.length > 0 ? citiesResult.data : fallbackCities;
   const city = cities.find((item) => item.id === trip.cityId);
   const start = getLocalStartValues(trip.startDateTime, city?.timezone ?? DEFAULT_TRIP_TIME_ZONE);
@@ -209,7 +213,10 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
               removeRouteFile,
             })
           : await updateTrip(tripId, input);
-      const updatedTripReference = getTripReference(updatedTrip) ?? tripReference;
+      const finalTrip = updatedTrip.status === "changes_requested"
+        ? await submitTripForReview(updatedTrip.id)
+        : updatedTrip;
+      const updatedTripReference = getTripReference(finalTrip) ?? tripReference;
       const resultQuery = new URLSearchParams({
         trip: updatedTripReference,
         returnTo,
@@ -245,12 +252,17 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
         ) : null}
         {!canEdit ? (
           <Alert title="Редактирование недоступно" tone="warning">
-            Прошедшую, завершённую или отменённую поездку изменить нельзя.
+            {trip.moderationStatus === "pending_review"
+              ? "Сначала отзовите заявку на модерацию в профиле."
+              : trip.moderationStatus === "rejected" || trip.status === "rejected"
+                ? "Отклонённую поездку или редакцию больше нельзя изменить."
+                : "Прошедшую, завершённую или отменённую поездку изменить нельзя."}
           </Alert>
         ) : (
           <>
-            <Alert title="Участники увидят изменения" tone="warning">
-              После сохранения участники опубликованной поездки получат уведомление.
+            <Alert title="Свободный текст проверит администратор" tone="warning">
+              Изменения обложки и текстовых полей появятся после модерации. До этого публичной
+              останется последняя одобренная версия поездки.
             </Alert>
             {error ? (
               <Alert title="Не удалось сохранить поездку" tone="danger">

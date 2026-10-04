@@ -25,6 +25,8 @@ const apiUrl = readOptionalEnv(
   readOptionalEnv("NEXT_PUBLIC_API_URL", "http://localhost:4000"),
 ).replace(/\/$/, "");
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
+const publicWebUrl = readOptionalEnv("PUBLIC_WEB_URL", "https://biketrips.ru").replace(/\/$/, "");
+const defaultUnisenderApiUrl = "https://goapi.unisender.ru/ru/transactional/api/v1/email/send.json";
 
 interface TelegramUpdate {
   update_id: number;
@@ -46,6 +48,18 @@ interface TelegramResponse<T> {
   ok: boolean;
   result?: T;
   description?: string;
+}
+
+interface NotificationJob {
+  id: string;
+  channel: "telegram" | "email";
+  type:
+    | "moderation_submitted"
+    | "trip_approved"
+    | "trip_changes_requested"
+    | "trip_rejected";
+  destination: string | null;
+  payload: Record<string, unknown>;
 }
 
 function delay(ms: number): Promise<void> {
@@ -134,6 +148,105 @@ async function handleUpdate(update: TelegramUpdate): Promise<void> {
   await confirmTelegramLogin(update, startParam);
 }
 
+function notificationText(job: NotificationJob): { subject: string; text: string } {
+  const title = typeof job.payload.title === "string" ? job.payload.title : "Поездка";
+  const slug = typeof job.payload.publicSlug === "string" ? job.payload.publicSlug : "";
+  const comment = typeof job.payload.comment === "string" ? job.payload.comment : "";
+  const tripUrl = slug ? `${publicWebUrl}/trips/${encodeURIComponent(slug)}` : publicWebUrl;
+
+  if (job.type === "moderation_submitted") {
+    return {
+      subject: "Новая поездка на модерации",
+      text: `Новая поездка «${title}» ожидает проверки.\n${publicWebUrl}/admin/moderation`,
+    };
+  }
+  if (job.type === "trip_approved") {
+    return {
+      subject: "Поездка одобрена",
+      text: `Поездка «${title}» одобрена и опубликована.\n${tripUrl}`,
+    };
+  }
+  if (job.type === "trip_changes_requested") {
+    return {
+      subject: "Поездку нужно исправить",
+      text: `Поездка «${title}» возвращена на исправление.\nКомментарий: ${comment}\n${publicWebUrl}/profile`,
+    };
+  }
+  return {
+    subject: "Поездка отклонена",
+    text: `Поездка «${title}» отклонена.\nКомментарий: ${comment}\n${publicWebUrl}/profile`,
+  };
+}
+
+async function claimNotification(): Promise<NotificationJob | null> {
+  const response = await fetch(`${apiUrl}/internal/notifications/claim`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${botToken}` },
+  });
+  if (!response.ok) throw new Error(`Notification claim failed: ${response.status}`);
+  return response.json() as Promise<NotificationJob | null>;
+}
+
+async function completeNotification(id: string, successful: boolean): Promise<void> {
+  await fetch(`${apiUrl}/internal/notifications/${encodeURIComponent(id)}/complete`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${botToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ successful }),
+  });
+}
+
+async function sendEmail(email: string, subject: string, text: string): Promise<void> {
+  const apiKey = process.env.UNISENDER_API_KEY?.trim();
+  const fromMatch = (process.env.EMAIL_FROM ?? "BikeTrips <no-reply@biketrips.ru>")
+    .match(/^\s*(.*?)\s*<([^<>]+)>\s*$/);
+  if (!apiKey || apiKey === "replace-with-unisender-api-key") {
+    throw new Error("UNISENDER_API_KEY is not configured");
+  }
+  const response = await fetch(process.env.UNISENDER_API_URL ?? defaultUnisenderApiUrl, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-API-KEY": apiKey,
+    },
+    body: JSON.stringify({
+      message: {
+        recipients: [{ email }],
+        body: { plaintext: text, html: `<p>${text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n/g, "<br>")}</p>` },
+        subject,
+        from_email: fromMatch?.[2] ?? "no-reply@biketrips.ru",
+        from_name: fromMatch?.[1] || "BikeTrips",
+      },
+    }),
+  });
+  if (!response.ok) throw new Error(`Email delivery failed: ${response.status}`);
+}
+
+async function processNotificationJobs(): Promise<void> {
+  for (let processed = 0; processed < 10; processed += 1) {
+    const job = await claimNotification();
+    if (!job) return;
+    let successful = false;
+    try {
+      if (!job.destination) throw new Error("Notification recipient is unavailable");
+      const message = notificationText(job);
+      if (job.channel === "telegram") {
+        await sendMessage(Number(job.destination), message.text);
+      } else {
+        await sendEmail(job.destination, message.subject, message.text);
+      }
+      successful = true;
+    } catch (error) {
+      console.error("[BikeTrips] Notification delivery failed", error);
+    } finally {
+      await completeNotification(job.id, successful);
+    }
+  }
+}
+
 async function main(): Promise<void> {
   console.log("BikeTrips bot worker is starting.");
   console.log(`API endpoint: ${apiUrl}`);
@@ -152,6 +265,7 @@ async function main(): Promise<void> {
         offset = update.update_id + 1;
         await handleUpdate(update);
       }
+      await processNotificationJobs();
     } catch (error) {
       console.error("[BikeTrips] Telegram bot polling failed", error);
       await delay(5000);

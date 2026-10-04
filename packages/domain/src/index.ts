@@ -1,5 +1,22 @@
-export const tripStatuses = ["draft", "published", "cancelled", "finished"] as const;
+export const tripStatuses = [
+  "draft",
+  "pending_review",
+  "changes_requested",
+  "rejected",
+  "published",
+  "cancelled",
+  "finished",
+] as const;
 export type TripStatus = (typeof tripStatuses)[number];
+
+export const tripModerationStatuses = [
+  "draft",
+  "pending_review",
+  "changes_requested",
+  "approved",
+  "rejected",
+] as const;
+export type TripModerationStatus = (typeof tripModerationStatuses)[number];
 
 export const participantStatuses = ["pending", "confirmed", "waitlisted", "cancelled"] as const;
 export type ParticipantStatus = (typeof participantStatuses)[number];
@@ -131,6 +148,9 @@ export interface TripSummary {
   unpavedSurfaceDetails: UnpavedSurfaceDetail[];
   dropPolicy: DropPolicy;
   status: TripStatus;
+  moderationStatus: TripModerationStatus;
+  moderationComment: string | null;
+  hasPendingRevision: boolean;
   capacity: number | null;
   confirmedParticipants: number;
   coverImage: string | null;
@@ -220,7 +240,6 @@ export interface TripFilters {
   bikeType?: BikeType;
   dateFrom?: string;
   dateTo?: string;
-  includeDrafts?: boolean;
 }
 
 export interface CreateParticipantInput {

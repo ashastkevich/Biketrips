@@ -14,6 +14,7 @@ import type {
   DifficultyLevel,
   DropPolicy,
   RegistrationMode,
+  TripModerationStatus,
   UnpavedSurfaceDetail,
   TripStatus,
 } from "@biketrips/domain";
@@ -95,6 +96,27 @@ export class TripEntity {
 
   @Column({ type: "text", default: "draft" })
   status!: TripStatus;
+
+  @Column({ name: "moderation_status", type: "text", default: "draft" })
+  moderationStatus!: TripModerationStatus;
+
+  @Column({ name: "moderation_comment", type: "text", nullable: true })
+  moderationComment!: string | null;
+
+  @Column({ name: "pending_revision", type: "jsonb", nullable: true })
+  pendingRevision!: Record<string, unknown> | null;
+
+  @Column({ name: "pending_cover_storage_key", type: "text", nullable: true })
+  pendingCoverStorageKey!: string | null;
+
+  @Column({ name: "submitted_for_review_at", type: "timestamptz", nullable: true })
+  submittedForReviewAt!: Date | null;
+
+  @Column({ name: "moderated_at", type: "timestamptz", nullable: true })
+  moderatedAt!: Date | null;
+
+  @Column({ name: "moderated_by_user_id", type: "uuid", nullable: true })
+  moderatedByUserId!: string | null;
 
   @Index({ unique: true })
   @Column({ name: "public_slug", type: "text" })

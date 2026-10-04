@@ -37,6 +37,9 @@ describe("trip serializers", () => {
       unpavedSurfaceDetails: ["hardpack"],
       dropPolicy: "no_drop",
       status: "published",
+      moderationStatus: "approved",
+      moderationComment: null,
+      hasPendingRevision: false,
       capacity: 10,
       confirmedParticipants: 1,
       coverImage: "/cover.webp",
@@ -165,6 +168,13 @@ function createTrip(input: Partial<TripEntity> = {}): TripEntity {
     createdAt: new Date("2099-08-01T08:00:00.000Z"),
     updatedAt: new Date("2099-08-01T08:00:00.000Z"),
     ...input,
+    moderationStatus: input.moderationStatus ?? "approved",
+    moderationComment: input.moderationComment ?? null,
+    pendingRevision: input.pendingRevision ?? null,
+    pendingCoverStorageKey: input.pendingCoverStorageKey ?? null,
+    submittedForReviewAt: input.submittedForReviewAt ?? null,
+    moderatedAt: input.moderatedAt ?? null,
+    moderatedByUserId: input.moderatedByUserId ?? null,
   };
 }
 

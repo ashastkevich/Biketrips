@@ -266,6 +266,13 @@ function createTrip(): TripEntity {
     registrationMode: "automatic",
     coverImage: null,
     status: "published",
+    moderationStatus: "approved",
+    moderationComment: null,
+    pendingRevision: null,
+    pendingCoverStorageKey: null,
+    submittedForReviewAt: null,
+    moderatedAt: new Date("2099-08-01T08:00:00.000Z"),
+    moderatedByUserId: null,
     publicSlug: "forest-route",
     organizer: {
       id: "organizer-1",

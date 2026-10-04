@@ -112,7 +112,7 @@ describe("TripsService", () => {
     expect(context.trips).toHaveLength(0);
   });
 
-  it("allows the organizer to update an upcoming active trip and emits update notification", async () => {
+  it("stages moderated fields from an upcoming published trip", async () => {
     const context = createTripsService({
       trips: [createTrip({ status: "published" })],
       organizers: [createOrganizer()],
@@ -130,10 +130,12 @@ describe("TripsService", () => {
     );
 
     expect(trip).toMatchObject({
-      title: "Новое название",
-      publicSlug: "novoe-nazvanie",
+      title: "Лесной маршрут",
+      publicSlug: "lesnoy-marshrut",
       asphaltPercent: 80,
       unpavedPercent: 20,
+      moderationStatus: "pending_review",
+      pendingRevision: { title: "Новое название" },
     });
     expect(context.tripUpdates).toMatchObject([
       {
@@ -142,6 +144,7 @@ describe("TripsService", () => {
       },
     ]);
     expect(context.notifications.enqueueTripUpdatedNotification).toHaveBeenCalledWith(trip);
+    expect(context.notifications.enqueueModerationSubmitted).toHaveBeenCalledWith(trip);
   });
 
   it("rejects updates from users who do not own the trip", async () => {
@@ -224,21 +227,18 @@ describe("TripsService", () => {
     expect(context.notifications.enqueueTripUpdatedNotification).not.toHaveBeenCalled();
   });
 
-  it("allows administrators to update trips owned by another organizer", async () => {
+  it("does not allow administrators to edit trips owned by another organizer", async () => {
     const context = createTripsService({
       trips: [createTrip()],
       organizers: [createOrganizer()],
       users: [createUser()],
     });
 
-    const trip = await context.service.update(
+    await expect(context.service.update(
       tripId,
       { title: "Админская правка" },
       { id: "admin-user", role: "admin" }
-    );
-
-    expect(trip.title).toBe("Админская правка");
-    expect(trip.publicSlug).toBe("adminskaya-pravka");
+    )).rejects.toThrow(ForbiddenException);
   });
 
   it("publishes a trip and records a status update", async () => {
@@ -249,8 +249,8 @@ describe("TripsService", () => {
     });
 
     const trip = await context.service.transition(tripId, "published", {
-      id: actorId,
-      role: "user",
+      id: "admin-user",
+      role: "admin",
     });
 
     expect(trip.status).toBe("published");
@@ -264,6 +264,103 @@ describe("TripsService", () => {
       trip,
       "published"
     );
+  });
+
+  it("hides an unpublished trip from everyone except its organizer and administrators", async () => {
+    const context = createTripsService({
+      trips: [createTrip({ status: "draft", moderationStatus: "draft" })],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+
+    await expect(
+      context.service.getVisibleBySlugOrId(tripId, { id: "another-user", role: "user" }),
+    ).rejects.toThrow(NotFoundException);
+    await expect(
+      context.service.getVisibleBySlugOrId(tripId, { id: actorId, role: "user" }),
+    ).resolves.toMatchObject({ trip: { id: tripId } });
+    await expect(
+      context.service.getVisibleBySlugOrId(tripId, { id: "admin-user", role: "admin" }),
+    ).resolves.toMatchObject({ trip: { id: tripId } });
+  });
+
+  it("submits and withdraws a new trip review", async () => {
+    const context = createTripsService({
+      trips: [createTrip({ status: "draft", moderationStatus: "draft" })],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+
+    const submitted = await context.service.submitForReview(tripId, {
+      id: actorId,
+      role: "user",
+    });
+    expect(submitted).toMatchObject({
+      status: "pending_review",
+      moderationStatus: "pending_review",
+    });
+    expect(context.notifications.enqueueModerationSubmitted).toHaveBeenCalledWith(submitted);
+
+    const withdrawn = await context.service.withdrawReview(tripId, {
+      id: actorId,
+      role: "user",
+    });
+    expect(withdrawn).toMatchObject({ status: "draft", moderationStatus: "draft" });
+  });
+
+  it("requires a comment when returning or rejecting a trip", async () => {
+    const context = createTripsService({
+      trips: [createTrip({ status: "pending_review", moderationStatus: "pending_review" })],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+
+    await expect(
+      context.service.moderate(
+        tripId,
+        "request_changes",
+        " ",
+        { id: "admin-user", role: "admin" },
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it("publishes an approved trip and permanently closes a rejected trip", async () => {
+    const approvedContext = createTripsService({
+      trips: [createTrip({ status: "pending_review", moderationStatus: "pending_review" })],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+    const approved = await approvedContext.service.moderate(
+      tripId,
+      "approve",
+      undefined,
+      { id: "admin-user", role: "admin" },
+    );
+    expect(approved).toMatchObject({ status: "published", moderationStatus: "approved" });
+
+    const rejectedContext = createTripsService({
+      trips: [createTrip({ status: "pending_review", moderationStatus: "pending_review" })],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+    const rejected = await rejectedContext.service.moderate(
+      tripId,
+      "reject",
+      "Недостаточно информации",
+      { id: "admin-user", role: "admin" },
+    );
+    expect(rejected).toMatchObject({
+      status: "rejected",
+      moderationStatus: "rejected",
+      moderationComment: "Недостаточно информации",
+    });
+    await expect(
+      rejectedContext.service.update(tripId, { title: "Исправление" }, {
+        id: actorId,
+        role: "user",
+      }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it("cancels an upcoming active trip and records a status update", async () => {
@@ -512,6 +609,8 @@ function createTripsService(
   const notifications = {
     enqueueTripUpdatedNotification: vi.fn().mockResolvedValue(undefined),
     enqueueTripStatusNotification: vi.fn().mockResolvedValue(undefined),
+    enqueueModerationSubmitted: vi.fn().mockResolvedValue(undefined),
+    enqueueModerationDecision: vi.fn().mockResolvedValue(undefined),
   };
   const tripsRepository = {
     createQueryBuilder: vi.fn(() => queryBuilder),
@@ -699,6 +798,13 @@ function createTrip(input: Partial<TestTrip> = {}): TestTrip {
     createdAt: new Date("2026-08-16T08:00:00.000Z"),
     updatedAt: new Date("2026-08-16T08:00:00.000Z"),
     ...input,
+    moderationStatus: input.moderationStatus ?? "approved",
+    moderationComment: input.moderationComment ?? null,
+    pendingRevision: input.pendingRevision ?? null,
+    pendingCoverStorageKey: input.pendingCoverStorageKey ?? null,
+    submittedForReviewAt: input.submittedForReviewAt ?? null,
+    moderatedAt: input.moderatedAt ?? null,
+    moderatedByUserId: input.moderatedByUserId ?? null,
   };
 }
 
