@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, Param, Post, UnauthorizedException } from "@nestjs/common";
+import { Body, Controller, Headers, Inject, Param, Post, UnauthorizedException } from "@nestjs/common";
 import { IsBoolean } from "class-validator";
 
 import { NotificationsService } from "./notifications.service.js";
@@ -10,7 +10,7 @@ class CompleteNotificationDto {
 
 @Controller("internal/notifications")
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(@Inject(NotificationsService) private readonly notificationsService: NotificationsService) {}
 
   @Post("claim")
   async claim(@Headers("authorization") authorization?: string) {

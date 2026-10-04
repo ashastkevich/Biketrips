@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { IsString, MinLength } from "class-validator";
@@ -20,7 +20,7 @@ class ModerationCommentDto {
 export class AdminController {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
-    private readonly tripsService: TripsService,
+    @Inject(TripsService) private readonly tripsService: TripsService,
   ) {}
 
   @Get("health")
