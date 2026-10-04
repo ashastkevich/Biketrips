@@ -32,7 +32,8 @@ pushed to `origin/main` so the next deploy does not revert it.
 
 - Provider: Selectel cloud server.
 - Public IP: `135.106.155.78`.
-- Telegram WireGuard gateway: `46.226.161.171`.
+- Telegram WireGuard gateway: `89.22.235.94` (Aeza, Helsinki; replaced the
+  failed `46.226.161.171` gateway in October 2026).
 - Public web URL: `https://biketrips.ru`.
 - Alternate web URL: `https://www.biketrips.ru`.
 - Public backend health URL: `https://biketrips.ru/backend/health`.
@@ -53,10 +54,34 @@ Open inbound ports are intentionally minimal:
 - `443/tcp` for HTTPS.
 
 Telegram Bot API traffic from the production server is routed through a
-WireGuard tunnel to the foreign gateway at `46.226.161.171`. The tunnel uses
+WireGuard tunnel to the foreign gateway at `89.22.235.94`. The tunnel uses
 `wg0` with production server address `10.66.66.2/32` and gateway address
 `10.66.66.1/24`. The production server keeps its normal default route through
 `eth0`; only Telegram IPv4 ranges are routed through `wg0`.
+
+### Telegram gateway setup
+
+The gateway is a plain Ubuntu 24.04 VPS outside Russia with root SSH access by
+key. Its WireGuard config lives in `/etc/wireguard/wg0.conf`:
+
+- `Address = 10.66.66.1/24`, `ListenPort = 51820` (UDP).
+- One peer: the production server public key with `AllowedIPs = 10.66.66.2/32`.
+- `PostUp` rules MASQUERADE `10.66.66.0/24` out of the public interface and
+  allow forwarding from `wg0` only to Telegram ranges (`149.154.160.0/20`,
+  `91.108.4.0/22`, `91.108.8.0/22`, `91.108.12.0/22`, `91.108.16.0/22`,
+  `91.108.20.0/22`, `91.108.56.0/22`); other forwarded traffic is dropped.
+- `net.ipv4.ip_forward = 1` in `/etc/sysctl.d/99-wireguard.conf`.
+- `wg-quick@wg0.service` is enabled.
+
+To replace the gateway, set up a new host the same way, then on production
+change only the `[Peer]` `PublicKey` and `Endpoint` in
+`/etc/wireguard/wg0.conf`, restart `wg-quick@wg0`, and check `wg show wg0` for
+a recent handshake.
+
+Before buying a gateway, check reachability from production: some foreign IPs
+answer ping but have TCP/UDP from the Selectel server dropped on the Russian
+side (this happened with `185.103.103.237`). Test with
+`timeout 5 bash -c "</dev/tcp/<ip>/22"` from production.
 
 HTTPS is enabled through Let's Encrypt/certbot for `biketrips.ru` and
 `www.biketrips.ru`. The certificate is stored under
