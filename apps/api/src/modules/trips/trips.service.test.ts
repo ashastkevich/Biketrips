@@ -87,6 +87,24 @@ describe("TripsService", () => {
     }
   });
 
+  it("finishes published trips whose estimated end has passed", async () => {
+    const context = createTripsService();
+    context.queryBuilder.execute.mockResolvedValueOnce({ affected: 2 });
+    const now = new Date("2026-10-04T12:00:00.000Z");
+
+    const finished = await context.service.finishElapsedTrips(now);
+
+    expect(finished).toBe(2);
+    expect(context.queryBuilder.set).toHaveBeenCalledWith({ status: "finished" });
+    expect(context.queryBuilder.where).toHaveBeenCalledWith("status = :status", {
+      status: "published",
+    });
+    expect(context.queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringMatching(/^start_at \+ .* < :now$/),
+      { now }
+    );
+  });
+
   it("creates a draft trip with a unique slug and organizer profile", async () => {
     const context = createTripsService({
       existingSlugs: ["lesnoy-marshrut"],
@@ -752,6 +770,10 @@ function createQueryBuilder() {
     orderBy: vi.fn(() => queryBuilder),
     andWhere: vi.fn(() => queryBuilder),
     getMany: vi.fn(() => Promise.resolve([])),
+    update: vi.fn(() => queryBuilder),
+    set: vi.fn(() => queryBuilder),
+    where: vi.fn(() => queryBuilder),
+    execute: vi.fn(() => Promise.resolve({ affected: 0 })),
   };
 
   return queryBuilder;

@@ -10,6 +10,7 @@ import { RouteFileEntity } from "../../infrastructure/database/entities/route-fi
 import { NotificationsModule } from "../notifications/notifications.module.js";
 import { AuthModule } from "../auth/auth.module.js";
 import { ParticipantsModule } from "../participants/participants.module.js";
+import { TripsAutoFinishScheduler } from "./trips-auto-finish.scheduler.js";
 import { TripsController } from "./trips.controller.js";
 import { TripsService } from "./trips.service.js";
 
@@ -28,7 +29,7 @@ import { TripsService } from "./trips.service.js";
     ParticipantsModule,
   ],
   controllers: [TripsController],
-  providers: [TripsService],
+  providers: [TripsService, TripsAutoFinishScheduler],
   exports: [TripsService],
 })
 export class TripsModule {}

@@ -20,6 +20,13 @@ import { normalizeRouteFileName } from "./route-file-names.js";
 const maxRouteGpxBytes = 1_000_000;
 const maxCoverImageBytes = 5_000_000;
 const coverImageWidth = 1600;
+// Trips have no end time, so it is estimated from distance and average pace
+// (20 km/h when unknown, as in the web filters) plus a buffer for stops.
+const defaultPaceKmh = 20;
+const finishBufferHours = 2;
+const estimatedTripEndSql =
+  `start_at + ((distance_km::float8 / ((COALESCE(pace_min, ${defaultPaceKmh}) + ` +
+  `COALESCE(pace_max, ${defaultPaceKmh})) / 2.0)) + ${finishBufferHours}) * interval '1 hour'`;
 const routeFilesDirectory =
   process.env.ROUTE_FILES_DIR ?? path.join(process.cwd(), "storage", "route-files");
 const coverImagesDirectory =
@@ -117,6 +124,17 @@ export class TripsService {
     }
 
     return query.getMany();
+  }
+
+  async finishElapsedTrips(now = new Date()): Promise<number> {
+    const result = await this.tripsRepository
+      .createQueryBuilder()
+      .update(TripEntity)
+      .set({ status: "finished" })
+      .where("status = :status", { status: "published" })
+      .andWhere(`${estimatedTripEndSql} < :now`, { now })
+      .execute();
+    return result.affected ?? 0;
   }
 
   async listMine(actorId: string): Promise<TripEntity[]> {
