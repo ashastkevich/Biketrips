@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import type { City, DifficultyLevel, UnpavedSurfaceDetail } from "@biketrips/domain";
 
 import { storyTrips } from "./story-fixtures";
-import { AppTopbar, getTripCardProps, PageHeader } from "../lib/components";
+import { AppTopbarView, getTripCardProps, PageHeader } from "../lib/components";
 import { ProfileMenu } from "../home-auth-control";
 import { CityFilter } from "../city-selector";
 import filterStyles from "./route-filters.module.css";
@@ -152,7 +152,7 @@ export const Navigation: Story = {
 export const SiteShell: Story = {
   render: () => (
     <div className={storyStyles.column}>
-      <AppTopbar />
+      <AppTopbarView />
       <PageHeader
         eyebrow="Поездки рядом"
         title="Совместные велопоездки"

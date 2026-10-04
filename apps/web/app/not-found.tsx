@@ -1,4 +1,4 @@
-import { AppTopbar } from "./lib/components";
+import { AppTopbar } from "./lib/app-topbar";
 import { Card, LinkButton } from "./ui/components";
 import styles from "./not-found.module.css";
 

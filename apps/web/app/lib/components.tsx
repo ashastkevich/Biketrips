@@ -152,7 +152,7 @@ export function Brand({
   );
 }
 
-export function AppTopbar({
+export function AppTopbarView({
   isAuthorized = false,
   showNavigation = true,
   showCreateAction = true,

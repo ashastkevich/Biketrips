@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { noIndexMetadata } from "../lib/site";
-import { AppTopbar } from "../lib/components";
+import { AppTopbar } from "../lib/app-topbar";
 import { UpcomingTrips } from "./upcoming-trips";
 import { redirect } from "next/navigation";
 
@@ -75,7 +75,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
   return (
     <>
-      <AppTopbar isAuthorized={isAuthenticated} />
+      <AppTopbar />
 
       <main className={`shell app-content-shell ${styles.page}`}>
         {query.submitted === "1" ? (

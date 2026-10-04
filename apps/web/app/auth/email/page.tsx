@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { noIndexMetadata } from "../../lib/site";
-import { AppTopbar, PageHeader } from "../../lib/components";
+import { AppTopbar } from "../../lib/app-topbar";
+import { PageHeader } from "../../lib/components";
 import { Card } from "../../ui/components";
 import { EmailLogin } from "./email-login";
 import styles from "./email.module.css";

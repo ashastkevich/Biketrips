@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { AppTopbar } from "../../lib/components";
+import { AppTopbar } from "../../lib/app-topbar";
 import { legalDocuments, legalLinks } from "../legal-documents";
 import styles from "./legal.module.css";
 
@@ -11,10 +11,6 @@ interface LegalPageProps {
 
 function getLegalDocument(slug: string) {
   return legalDocuments.find((document) => document.slug === slug);
-}
-
-export function generateStaticParams() {
-  return legalDocuments.map((document) => ({ slug: document.slug }));
 }
 
 export async function generateMetadata({ params }: LegalPageProps): Promise<Metadata> {

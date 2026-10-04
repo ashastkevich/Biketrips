@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import type { TripDetail } from "@biketrips/domain";
 import { notFound, redirect } from "next/navigation";
 
-import { AppTopbar, DataNotice, getTripCardProps } from "../../lib/components";
+import { AppTopbar } from "../../lib/app-topbar";
+import { DataNotice, getTripCardProps } from "../../lib/components";
 import { getCurrentUser, getTrip, joinTrip, updateTripStatus } from "../../lib/api";
 import { readParticipantInput } from "../../lib/form-data";
 import { difficultyLabels } from "../../lib/labels";
@@ -128,7 +129,7 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
 
   return (
     <>
-      <AppTopbar isAuthorized={currentUser !== null} />
+      <AppTopbar />
 
       <main className="shell app-content-shell detail-shell">
         <DataNotice source={result.source} error={result.error} />

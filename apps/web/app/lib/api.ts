@@ -56,11 +56,9 @@ export interface CurrentUser extends AuthenticatedUser {
   city: string;
 }
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const token = await getSessionAuthToken();
+type SessionPayload = jwt.JwtPayload & { sub: string; role: AuthenticatedUser["role"] };
 
-  if (!token) return null;
-
+function verifySessionToken(token: string): SessionPayload | null {
   try {
     const payload = jwt.verify(
       token,
@@ -74,6 +72,29 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     ) {
       return null;
     }
+
+    return payload as SessionPayload;
+  } catch {
+    return null;
+  }
+}
+
+// Cheap local check (no API call) for UI that only needs to know whether someone is signed in.
+export async function hasActiveSession(): Promise<boolean> {
+  const token = await getSessionAuthToken();
+  return token !== undefined && verifySessionToken(token) !== null;
+}
+
+export async function getCurrentUser(): Promise<CurrentUser | null> {
+  const token = await getSessionAuthToken();
+
+  if (!token) return null;
+
+  const payload = verifySessionToken(token);
+
+  if (!payload) return null;
+
+  try {
 
     const sessionUser: CurrentUser = {
       id: payload.sub,

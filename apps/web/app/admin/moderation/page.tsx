@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { noIndexMetadata } from "../../lib/site";
 import { notFound, redirect } from "next/navigation";
 
-import { AppTopbar } from "../../lib/components";
+import { AppTopbar } from "../../lib/app-topbar";
 import { getCurrentUser, getTripsForModeration, moderateTrip } from "../../lib/api";
 import { formatDateTime } from "../../lib/labels";
 import { Alert, Button } from "../../ui/components";
@@ -50,7 +50,7 @@ export default async function ModerationPage({ searchParams }: ModerationPagePro
 
   return (
     <>
-      <AppTopbar isAuthorized showCreateAction={false} />
+      <AppTopbar showCreateAction={false} />
       <main className={`shell app-content-shell ${styles.page}`}>
         <header className={styles.header}>
           <div>

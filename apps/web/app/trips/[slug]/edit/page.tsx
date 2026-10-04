@@ -12,7 +12,7 @@ import {
   updateTrip,
   updateTripWithRouteFile,
 } from "../../../lib/api";
-import { AppTopbar } from "../../../lib/components";
+import { AppTopbar } from "../../../lib/app-topbar";
 import { readOptionalFile, readString, readTripUpdateInput } from "../../../lib/form-data";
 import { DEFAULT_TRIP_TIME_ZONE, getLocalStartValues } from "../../../lib/trip-time";
 import { getTripHref, getTripReference } from "../../../lib/trip-links";
@@ -120,7 +120,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
   if (!trip) {
     return (
       <>
-        <AppTopbar isAuthorized={user !== null} showCreateAction={false} />
+        <AppTopbar showCreateAction={false} />
 
         <main className="shell app-content-shell">
           <Alert title="Не удалось загрузить поездку" tone="danger">
@@ -246,7 +246,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
 
   return (
     <>
-      <AppTopbar isAuthorized showCreateAction={false} />
+      <AppTopbar showCreateAction={false} />
 
       <main className="shell app-content-shell">
         {saved === "1" && savedTripSlug ? (

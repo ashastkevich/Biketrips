@@ -11,7 +11,7 @@ import {
   submitTripForReview,
 } from "../../lib/api";
 import { CITY_COOKIE_NAME, fallbackCities, selectCity } from "../../lib/cities";
-import { AppTopbar } from "../../lib/components";
+import { AppTopbar } from "../../lib/app-topbar";
 import { readOptionalFile, readTripInput } from "../../lib/form-data";
 import { Alert } from "../../ui/components";
 import { TripCreationWizard } from "./trip-creation-wizard";
@@ -70,7 +70,7 @@ export default async function NewTripPage({ searchParams }: NewTripPageProps) {
 
   return (
     <>
-      <AppTopbar isAuthorized={authState !== "missing"} showCreateAction={false} />
+      <AppTopbar showCreateAction={false} />
 
       <main className="shell app-content-shell">
         {!canPublish ? (
