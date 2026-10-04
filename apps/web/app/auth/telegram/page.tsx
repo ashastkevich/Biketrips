@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
+import { noIndexMetadata } from "../../lib/site";
 import { AppTopbar, PageHeader } from "../../lib/components";
 import { Card } from "../../ui/components";
 import { TelegramLogin } from "./telegram-login";
 import styles from "./telegram.module.css";
+
+export const metadata: Metadata = {
+  title: "Вход через Telegram",
+  ...noIndexMetadata,
+};
 
 interface TelegramAuthPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

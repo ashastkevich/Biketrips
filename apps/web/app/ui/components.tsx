@@ -1127,16 +1127,32 @@ export function TripCard({
   href,
   onOpen,
 }: TripCardProps) {
-  const titleContent = href && !onOpen ? <Link href={href}>{title}</Link> : title;
+  // A real link keeps trip pages crawlable; with onOpen, plain clicks open the modal instead.
+  const titleContent = href ? (
+    <Link
+      href={href}
+      onClick={onOpen ? (event) => {
+        event.stopPropagation();
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+          return;
+        }
+        event.preventDefault();
+        onOpen();
+      } : undefined}
+    >
+      {title}
+    </Link>
+  ) : title;
+  const cardIsButton = Boolean(onOpen) && !href;
 
   return (
     <article
       className={classes(tripCardStyles.card, onOpen && tripCardStyles.interactive)}
-      role={onOpen ? "button" : undefined}
-      tabIndex={onOpen ? 0 : undefined}
-      aria-label={onOpen ? `Открыть поездку «${title}»` : undefined}
+      role={cardIsButton ? "button" : undefined}
+      tabIndex={cardIsButton ? 0 : undefined}
+      aria-label={cardIsButton ? `Открыть поездку «${title}»` : undefined}
       onClick={onOpen}
-      onKeyDown={onOpen ? (event) => {
+      onKeyDown={cardIsButton && onOpen ? (event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           onOpen();

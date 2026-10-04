@@ -22,9 +22,14 @@
   box-shadow: 0 22px 54px rgba(18, 32, 24, 0.14);
 }
 
-.interactive:focus-visible {
+.interactive:focus-visible,
+.interactive:has(h2 a:focus-visible) {
   outline: 3px solid rgba(79, 104, 20, 0.34);
   outline-offset: 4px;
+}
+
+.interactive h2 a:focus-visible {
+  outline: none;
 }
 
 .cover {

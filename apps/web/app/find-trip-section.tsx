@@ -78,7 +78,7 @@ export function FindTripSection({
     <section className={styles.pattern} aria-labelledby="rides-title">
       <header className={styles.header}>
         <div>
-          <h1 id="rides-title">Найдите подходящую поездку</h1>
+          <h2 id="rides-title">Найдите подходящую поездку</h2>
           <p>Настройте маршрут, сложность и покрытие — карточки обновятся сразу.</p>
         </div>
         <strong>{filteredTrips.length} из {trips.length}</strong>

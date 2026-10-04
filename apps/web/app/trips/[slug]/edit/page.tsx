@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { noIndexMetadata } from "../../../lib/site";
 import { redirect } from "next/navigation";
 import type { TripDetail, UpdateTripInput } from "@biketrips/domain";
 
@@ -17,6 +19,11 @@ import { getTripHref, getTripReference } from "../../../lib/trip-links";
 import { Alert, LinkButton } from "../../../ui/components";
 import { TripCreationWizard, type TripDraft } from "../../new/trip-creation-wizard";
 import { SavedTripConfirmation } from "./saved-trip-confirmation";
+
+export const metadata: Metadata = {
+  title: "Редактирование поездки",
+  ...noIndexMetadata,
+};
 
 interface EditTripPageProps {
   params: Promise<{ slug: string }>;

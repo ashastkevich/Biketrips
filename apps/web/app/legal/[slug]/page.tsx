@@ -23,13 +23,14 @@ export async function generateMetadata({ params }: LegalPageProps): Promise<Meta
 
   if (!document) {
     return {
-      title: "Документ не найден - BikeTrips",
+      title: "Документ не найден",
     };
   }
 
   return {
-    title: `${document.title} - BikeTrips`,
+    title: document.title,
     description: document.description,
+    alternates: { canonical: `/legal/${document.slug}` },
   };
 }
 

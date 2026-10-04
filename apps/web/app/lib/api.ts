@@ -1,6 +1,7 @@
 import { BikeTripsApiClient } from "@biketrips/api-client";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import type {
   AuthenticatedUser,
   City,
@@ -133,6 +134,19 @@ export async function getTrips(filters: TripFilters = {}): Promise<DataResult<Tr
   }
 }
 
+// Anonymous read for crawlers (sitemap): never forwards the visitor's session.
+export async function getPublicTrips(): Promise<DataResult<TripSummary[]>> {
+  try {
+    const client = new BikeTripsApiClient({
+      baseUrl: apiUrl,
+      fetcher: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+    });
+    return { data: await client.listTrips(), source: "api" };
+  } catch (error) {
+    return { data: [], source: "unavailable", error: getErrorMessage(error) };
+  }
+}
+
 export async function getCities(): Promise<DataResult<City[]>> {
   try {
     const client = await createClient();
@@ -143,7 +157,8 @@ export async function getCities(): Promise<DataResult<City[]>> {
   }
 }
 
-export async function getTrip(slugOrId: string): Promise<DataResult<TripDetail | null>> {
+// Cached per request so generateMetadata and the page share one API call.
+export const getTrip = cache(async (slugOrId: string): Promise<DataResult<TripDetail | null>> => {
   try {
     const client = await createClient();
     const trip = await client.getTrip(slugOrId);
@@ -151,7 +166,7 @@ export async function getTrip(slugOrId: string): Promise<DataResult<TripDetail |
   } catch (error) {
     return { data: null, source: "unavailable", error: getErrorMessage(error) };
   }
-}
+});
 
 export async function getTripDetails(filters: TripFilters = {}): Promise<DataResult<TripDetail[]>> {
   const summaries = await getTrips(filters);

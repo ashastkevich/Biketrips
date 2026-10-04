@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { noIndexMetadata } from "../../lib/site";
 import { notFound, redirect } from "next/navigation";
 
 import { AppTopbar } from "../../lib/components";
@@ -5,6 +7,11 @@ import { getCurrentUser, getTripsForModeration, moderateTrip } from "../../lib/a
 import { formatDateTime } from "../../lib/labels";
 import { Alert, Button } from "../../ui/components";
 import styles from "./moderation.module.css";
+
+export const metadata: Metadata = {
+  title: "Модерация поездок",
+  ...noIndexMetadata,
+};
 
 async function moderationAction(formData: FormData) {
   "use server";

@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { noIndexMetadata } from "../lib/site";
 import { AppTopbar } from "../lib/components";
 import { UpcomingTrips } from "./upcoming-trips";
 import { redirect } from "next/navigation";
@@ -6,6 +8,11 @@ import { getCities, getCurrentUser, getMyTrips, withdrawTripReview } from "../li
 import { fallbackCities } from "../lib/cities";
 import { ProfileAccount } from "./profile-account";
 import styles from "./profile.module.css";
+
+export const metadata: Metadata = {
+  title: "Профиль",
+  ...noIndexMetadata,
+};
 
 async function withdrawReviewAction(formData: FormData) {
   "use server";

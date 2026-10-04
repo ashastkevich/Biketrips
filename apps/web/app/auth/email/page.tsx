@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
+import { noIndexMetadata } from "../../lib/site";
 import { AppTopbar, PageHeader } from "../../lib/components";
 import { Card } from "../../ui/components";
 import { EmailLogin } from "./email-login";
 import styles from "./email.module.css";
+
+export const metadata: Metadata = {
+  title: "Вход по email",
+  ...noIndexMetadata,
+};
 
 interface EmailAuthPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

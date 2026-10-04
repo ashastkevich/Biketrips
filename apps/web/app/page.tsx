@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import { FindTripSection } from "./find-trip-section";
 import { cookies } from "next/headers";
 import Image from "next/image";
@@ -8,7 +10,22 @@ import { ArrowIcon } from "./lib/components";
 import { CreateTripLauncher } from "./lib/create-trip-launcher";
 import { legalLinks } from "./legal/legal-documents";
 import { LinkButton } from "./ui/components";
+import { baseOpenGraph, DEFAULT_DESCRIPTION, SITE_NAME } from "./lib/site";
 import styles from "./home.module.css";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: `Совместные велопоездки и покатушки — найти компанию для велопрогулки | ${SITE_NAME}`,
+  },
+  description: DEFAULT_DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    ...baseOpenGraph,
+    url: "/",
+    title: `${SITE_NAME} — совместные велопоездки`,
+    description: DEFAULT_DESCRIPTION,
+  },
+};
 
 interface HomePageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

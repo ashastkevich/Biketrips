@@ -3,12 +3,19 @@ import type { ReactNode } from "react";
 
 import { CookieNotice } from "./cookie-notice";
 import { fontVariables } from "./fonts";
+import { baseOpenGraph, DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "./lib/site";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./styles.css";
 
 export const metadata: Metadata = {
-  title: "BikeTrips",
-  description: "Совместные велопоездки",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} — совместные велопоездки`,
+    template: `%s — ${SITE_NAME}`,
+  },
+  description: DEFAULT_DESCRIPTION,
+  applicationName: SITE_NAME,
+  openGraph: baseOpenGraph,
   icons: {
     icon: "/icon.svg",
   },

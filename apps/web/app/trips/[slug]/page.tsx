@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
+import type { TripDetail } from "@biketrips/domain";
 import { notFound, redirect } from "next/navigation";
 
 import { AppTopbar, DataNotice, getTripCardProps } from "../../lib/components";
 import { getCurrentUser, getTrip, joinTrip, updateTripStatus } from "../../lib/api";
 import { readParticipantInput } from "../../lib/form-data";
-import { getTripEditHref } from "../../lib/trip-links";
+import { difficultyLabels } from "../../lib/labels";
+import { baseOpenGraph, noIndexMetadata } from "../../lib/site";
+import { DEFAULT_TRIP_TIME_ZONE } from "../../lib/trip-time";
+import { getTripEditHref, getTripHref } from "../../lib/trip-links";
 import { Alert, Button, CapacityIndicator, LinkButton, TextField } from "../../ui/components";
 import { TripDetailsCard } from "../../ui/trip-details-card";
 import tripDetailsStyles from "../../ui/trip-details.module.css";
@@ -15,6 +20,60 @@ interface TripPageProps {
 
 function hasFlag(value: string | string[] | undefined): boolean {
   return value === "1" || (Array.isArray(value) && value.includes("1"));
+}
+
+const indexableStatuses = new Set<TripDetail["status"]>(["published", "cancelled", "finished"]);
+
+function isIndexableTrip(trip: TripDetail): boolean {
+  return trip.moderationStatus === "approved" && indexableStatuses.has(trip.status);
+}
+
+function formatTripDate(startDateTime: string): string {
+  return new Date(startDateTime).toLocaleDateString("ru-RU", {
+    timeZone: DEFAULT_TRIP_TIME_ZONE,
+    day: "numeric",
+    month: "long",
+  });
+}
+
+function describeTrip(trip: TripDetail): string {
+  const parts = [
+    `Велопоездка ${formatTripDate(trip.startDateTime)}, ${trip.city}`,
+    `${trip.distanceKm} км`,
+    `сложность: ${difficultyLabels[trip.difficulty].toLowerCase()}`,
+  ];
+  if (trip.paceMin && trip.paceMax) {
+    const pace = trip.paceMin === trip.paceMax ? `${trip.paceMin}` : `${trip.paceMin}–${trip.paceMax}`;
+    parts.push(`темп ${pace} км/ч`);
+  }
+  if (trip.startLocationName) parts.push(`старт: ${trip.startLocationName}`);
+
+  const summary = `${parts.join(", ")}.`;
+  const details = trip.description.replace(/\s+/g, " ").trim();
+  const text = details ? `${summary} ${details}` : summary;
+
+  return text.length > 200 ? `${text.slice(0, 197).trimEnd()}…` : text;
+}
+
+export async function generateMetadata({ params }: TripPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const { data: trip } = await getTrip(slug);
+
+  if (!trip) {
+    return { title: "Поездка не найдена", ...noIndexMetadata };
+  }
+
+  const title = `${trip.title} — ${trip.city}, ${formatTripDate(trip.startDateTime)}`;
+  const description = describeTrip(trip);
+  const canonical = getTripHref(trip);
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: { ...baseOpenGraph, type: "article", url: canonical, title, description },
+    ...(isIndexableTrip(trip) ? {} : noIndexMetadata),
+  };
 }
 
 export default async function TripPage({ params, searchParams }: TripPageProps) {

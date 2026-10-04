@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { noIndexMetadata } from "../../lib/site";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
@@ -13,6 +15,11 @@ import { AppTopbar } from "../../lib/components";
 import { readOptionalFile, readTripInput } from "../../lib/form-data";
 import { Alert } from "../../ui/components";
 import { TripCreationWizard } from "./trip-creation-wizard";
+
+export const metadata: Metadata = {
+  title: "Новая поездка",
+  ...noIndexMetadata,
+};
 
 async function createTripAction(formData: FormData) {
   "use server";
