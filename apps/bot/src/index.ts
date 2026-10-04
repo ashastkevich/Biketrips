@@ -184,7 +184,9 @@ async function claimNotification(): Promise<NotificationJob | null> {
     headers: { Authorization: `Bearer ${botToken}` },
   });
   if (!response.ok) throw new Error(`Notification claim failed: ${response.status}`);
-  return response.json() as Promise<NotificationJob | null>;
+  // Nest sends an empty body when the claim handler returns null (no queued jobs).
+  const body = await response.text();
+  return body ? JSON.parse(body) as NotificationJob : null;
 }
 
 async function completeNotification(id: string, successful: boolean): Promise<void> {
