@@ -12,6 +12,10 @@ import { JoinSignInButton } from "./join-sign-in-button";
 import { TripDetailsCard } from "./trip-details-card";
 import styles from "./trip-details.module.css";
 
+// The feed and profile keep the trip list they were rendered with, so signups changed in this
+// modal are remembered here; otherwise reopening it would briefly show the stale status.
+const knownParticipation = new Map<string, ParticipantStatus | null>();
+
 export interface TripDetailsModalProps {
   open: boolean;
   trip: TripDetail;
@@ -45,7 +49,22 @@ export function TripDetailsModal({
   const dialogRef = useRef<HTMLElement>(null);
   const [joined, setJoined] = useState(false);
   const isOrganizer = trip.organizer.userId === currentUserId;
-  const [participationStatus, setParticipationStatus] = useState<ParticipantStatus | null>(null);
+  // The trip payload already lists participants, so the panel can render the right state
+  // immediately; the request below only re-checks it in the background.
+  const participationKey = `${currentUserId}:${trip.id}`;
+  const renderedStatus =
+    trip.participants.find(
+      (participant) => participant.userId === currentUserId && participant.status !== "cancelled",
+    )?.status ?? null;
+  const [participationStatus, setStatus] = useState<ParticipantStatus | null>(() =>
+    knownParticipation.has(participationKey)
+      ? knownParticipation.get(participationKey)!
+      : renderedStatus,
+  );
+  function setParticipationStatus(status: ParticipantStatus | null) {
+    knownParticipation.set(participationKey, status);
+    setStatus(status);
+  }
   const [participationLoading, setParticipationLoading] = useState(false);
   const [participationError, setParticipationError] = useState("");
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
@@ -61,7 +80,13 @@ export function TripDetailsModal({
     !tripCancelled;
   const hasParticipantLimit = trip.capacity !== null;
   const pendingRequests = isOrganizer ? countPendingRequests(trip) : 0;
-  const placesLeft = Math.max((trip.capacity ?? 0) - trip.confirmedParticipants, 0);
+  // trip.confirmedParticipants was counted with the status the page was rendered with;
+  // correct it by the viewer's own signup changed since then.
+  const confirmedParticipants =
+    trip.confirmedParticipants -
+    (renderedStatus === "confirmed" ? 1 : 0) +
+    (participationStatus === "confirmed" ? 1 : 0);
+  const placesLeft = Math.max((trip.capacity ?? 0) - confirmedParticipants, 0);
   const waitlist = hasParticipantLimit && placesLeft === 0;
   const editTripHref = getTripEditHref(trip, {
     returnTo: returnPath,
@@ -102,8 +127,6 @@ export function TripDetailsModal({
     if (!open || !isAuthenticated) return;
 
     let active = true;
-    setParticipationLoading(true);
-    setParticipationError("");
 
     fetch(`/api/trips/${encodeURIComponent(trip.id)}/participation`, {
       cache: "no-store",
@@ -121,10 +144,7 @@ export function TripDetailsModal({
         );
       })
       .catch(() => {
-        if (active) setParticipationError("Не удалось проверить вашу запись. Попробуйте ещё раз.");
-      })
-      .finally(() => {
-        if (active) setParticipationLoading(false);
+        // Keep the status derived from the trip payload; join/cancel report their own errors.
       });
 
     return () => {
@@ -240,13 +260,13 @@ export function TripDetailsModal({
               <>
                 <p className={styles.joinKicker}>Участники</p>
                 <p className={styles.participantCount}>
-                  Записались: <strong>{trip.confirmedParticipants}</strong>
+                  Записались: <strong>{confirmedParticipants}</strong>
                   {hasParticipantLimit ? ` из ${trip.capacity}` : " участников"}
                 </p>
                 {hasParticipantLimit ? (
                   <CapacityIndicator
                     capacity={trip.capacity!}
-                    confirmed={trip.confirmedParticipants}
+                    confirmed={confirmedParticipants}
                   />
                 ) : null}
                 {pendingRequests > 0 ? (
@@ -285,75 +305,85 @@ export function TripDetailsModal({
                   ) : null}
                 </div>
               </>
-            ) : participationStatus || joined ? (
-              <div className={styles.success} role="status">
-                <span aria-hidden="true">✓</span>
-                <h3>
-                  {(participationStatus === "waitlisted" || (!participationStatus && waitlist))
-                    ? "Вы в листе ожидания"
-                    : participationStatus === "pending"
-                      ? "Заявка отправлена"
-                      : joined
-                        ? "Вы успешно записаны!"
-                        : "Вы уже записаны"}
-                </h3>
-                <p>
-                  {(participationStatus === "waitlisted" || (!participationStatus && waitlist))
-                    ? "Сообщим, если освободится место."
-                    : participationStatus === "pending"
-                      ? "Организатор подтвердит заявку."
-                      : "Эта поездка добавлена в ваш список."}
-                </p>
-                {participationError ? (
-                  <p className={styles.error} role="alert">{participationError}</p>
-                ) : null}
-                {participationStatus ? (
-                  <Button
-                    className={`${styles.joinButton} ${styles.successButton}`}
-                    tone="secondary"
-                    disabled={participationLoading}
-                    onClick={handleCancelParticipation}
-                  >
-                    {participationLoading
-                      ? "Отменяем…"
-                      : participationStatus === "pending"
-                        ? "Отозвать заявку"
-                        : participationStatus === "waitlisted"
-                          ? "Покинуть лист ожидания"
-                          : "Отменить запись"}
-                  </Button>
-                ) : null}
-              </div>
             ) : (
               <>
-                <p className={styles.joinKicker}>{waitlist ? "Места закончились" : "Можно присоединиться"}</p>
+                <p className={styles.joinKicker}>
+                  {participationStatus || joined
+                    ? "Ваша запись"
+                    : waitlist
+                      ? "Места закончились"
+                      : "Можно присоединиться"}
+                </p>
                 {hasParticipantLimit ? (
-                  <CapacityIndicator capacity={trip.capacity!} confirmed={trip.confirmedParticipants} />
+                  <CapacityIndicator capacity={trip.capacity!} confirmed={confirmedParticipants} />
                 ) : (
                   <p className={styles.participantCount}>
-                    Записались: <strong>{trip.confirmedParticipants}</strong> участников
+                    Записались: <strong>{confirmedParticipants}</strong> участников
                   </p>
                 )}
-                {participationError ? (
-                  <p className={styles.error} role="alert">{participationError}</p>
-                ) : null}
-                {isAuthenticated ? (
-                  <Button className={styles.joinButton} size="large" disabled={participationLoading} onClick={handleJoin}>
-                    {participationLoading
-                      ? "Проверяем…"
-                      : waitlist
-                        ? "Встать в лист ожидания"
-                        : "Записаться"}
-                  </Button>
+                {participationStatus || joined ? (
+                  <div className={styles.success} role="status">
+                    <span aria-hidden="true">✓</span>
+                    <h3>
+                      {(participationStatus === "waitlisted" || (!participationStatus && waitlist))
+                        ? "Вы в листе ожидания"
+                        : participationStatus === "pending"
+                          ? "Заявка отправлена"
+                          : joined
+                            ? "Вы успешно записаны!"
+                            : "Вы уже записаны"}
+                    </h3>
+                    <p>
+                      {(participationStatus === "waitlisted" || (!participationStatus && waitlist))
+                        ? "Сообщим, если освободится место."
+                        : participationStatus === "pending"
+                          ? "Организатор подтвердит заявку."
+                          : "Эта поездка добавлена в ваш список."}
+                    </p>
+                    {participationError ? (
+                      <p className={styles.error} role="alert">{participationError}</p>
+                    ) : null}
+                    {participationStatus ? (
+                      <Button
+                        className={`${styles.joinButton} ${styles.successButton}`}
+                        tone="secondary"
+                        disabled={participationLoading}
+                        onClick={handleCancelParticipation}
+                      >
+                        {participationLoading
+                          ? "Отменяем…"
+                          : participationStatus === "pending"
+                            ? "Отозвать заявку"
+                            : participationStatus === "waitlisted"
+                              ? "Покинуть лист ожидания"
+                              : "Отменить запись"}
+                      </Button>
+                    ) : null}
+                  </div>
                 ) : (
-                  <JoinSignInButton className={styles.joinButton} returnTo={getTripHref(trip)}>
-                    {waitlist ? "Встать в лист ожидания" : "Записаться"}
-                  </JoinSignInButton>
+                  <>
+                    {participationError ? (
+                      <p className={styles.error} role="alert">{participationError}</p>
+                    ) : null}
+                    {isAuthenticated ? (
+                      <Button className={styles.joinButton} size="large" disabled={participationLoading} onClick={handleJoin}>
+                        {participationLoading
+                          ? "Записываем…"
+                          : waitlist
+                            ? "Встать в лист ожидания"
+                            : "Записаться"}
+                      </Button>
+                    ) : (
+                      <JoinSignInButton className={styles.joinButton} returnTo={getTripHref(trip)}>
+                        {waitlist ? "Встать в лист ожидания" : "Записаться"}
+                      </JoinSignInButton>
+                    )}
+                    <p className={styles.joinNote}>{trip.registrationMode === "automatic" ? "Запись подтвердится сразу" : "Организатор подтвердит заявку"}</p>
+                    <p className={styles.contactsNote}>
+                      Организатор увидит контакты из вашего <a href="/profile">профиля</a>: телефон, почту и Telegram.
+                    </p>
+                  </>
                 )}
-                <p className={styles.joinNote}>{trip.registrationMode === "automatic" ? "Запись подтвердится сразу" : "Организатор подтвердит заявку"}</p>
-                <p className={styles.contactsNote}>
-                  Организатор увидит контакты из вашего <a href="/profile">профиля</a>: телефон, почту и Telegram.
-                </p>
               </>
             )}
           </aside>

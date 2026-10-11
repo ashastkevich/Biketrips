@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ParticipantStatus, TripDetail } from "@biketrips/domain";
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 
 import { AppTopbar } from "../../lib/app-topbar";
@@ -172,6 +173,8 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
 
     try {
       await joinTrip(trip.id);
+      // Drop cached feed/profile pages so going back does not show the old signup state.
+      revalidatePath("/", "layout");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Не удалось записаться";
       destination = `/trips/${slug}?joinError=${encodeURIComponent(message)}`;
@@ -187,6 +190,7 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
 
     try {
       await cancelParticipation(trip.id);
+      revalidatePath("/", "layout");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Не удалось отменить запись";
       destination = `/trips/${slug}?leaveError=${encodeURIComponent(message)}`;
