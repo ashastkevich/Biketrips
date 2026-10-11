@@ -252,36 +252,38 @@ export function TripDetailsModal({
                 {pendingRequests > 0 ? (
                   <p className={styles.pendingRequests}>{formatPendingRequests(pendingRequests)}</p>
                 ) : null}
-                <Button
-                  className={styles.joinButton}
-                  tone={pendingRequests > 0 ? "primary" : "secondary"}
-                  onClick={() => {
-                    // The modal already shows the trip URL, so a plain link would only change the hash.
-                    window.location.assign(`${getTripHref(trip)}?view=participants#participants`);
-                  }}
-                >
-                  Все участники →
-                </Button>
-                {canCancelTrip ? (
+                <div className={styles.joinActions}>
                   <Button
                     className={styles.joinButton}
-                    tone="secondary"
+                    tone={pendingRequests > 0 ? "primary" : "secondary"}
                     onClick={() => {
-                      window.location.assign(editTripHref);
+                      // The modal already shows the trip URL, so a plain link would only change the hash.
+                      window.location.assign(`${getTripHref(trip)}?view=participants#participants`);
                     }}
                   >
-                    Редактировать поездку
+                    Все участники →
                   </Button>
-                ) : null}
-                {tripCancelled ? (
-                  <p className={styles.cancelled} role="status">
-                    Поездка отменена
-                  </p>
-                ) : canCancelTrip ? (
-                  <Button className={styles.joinButton} tone="danger" onClick={() => setShowCancelConfirmation(true)}>
-                    Отменить поездку
-                  </Button>
-                ) : null}
+                  {canCancelTrip ? (
+                    <Button
+                      className={styles.joinButton}
+                      tone="secondary"
+                      onClick={() => {
+                        window.location.assign(editTripHref);
+                      }}
+                    >
+                      Редактировать поездку
+                    </Button>
+                  ) : null}
+                  {tripCancelled ? (
+                    <p className={styles.cancelled} role="status">
+                      Поездка отменена
+                    </p>
+                  ) : canCancelTrip ? (
+                    <Button className={styles.joinButton} tone="danger" onClick={() => setShowCancelConfirmation(true)}>
+                      Отменить поездку
+                    </Button>
+                  ) : null}
+                </div>
               </>
             ) : participationStatus || joined ? (
               <div className={styles.success} role="status">

@@ -360,6 +360,16 @@
   width: 100%;
 }
 
+.joinActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.joinActions .cancelled {
+  margin: 0;
+}
+
 .pendingRequests {
   margin: 16px 0 12px;
   padding: 9px 12px;
