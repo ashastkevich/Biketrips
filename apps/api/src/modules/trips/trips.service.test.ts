@@ -221,7 +221,10 @@ describe("TripsService", () => {
         title: "Детали поездки обновлены",
       },
     ]);
-    expect(context.notifications.enqueueTripUpdatedNotification).toHaveBeenCalledWith(trip);
+    expect(context.notifications.enqueueTripKeyChanges).toHaveBeenCalledWith(
+      trip,
+      expect.objectContaining({ startLocationName: "Парк", distanceKm: 42 }),
+    );
     expect(context.notifications.enqueueModerationSubmitted).toHaveBeenCalledWith(trip);
   });
 
@@ -265,7 +268,7 @@ describe("TripsService", () => {
         context.service.update(tripId, { title: "Нельзя менять" }, { id: actorId, role: "user" })
       ).rejects.toThrow(BadRequestException);
       expect(context.tripUpdates).toHaveLength(0);
-      expect(context.notifications.enqueueTripUpdatedNotification).not.toHaveBeenCalled();
+      expect(context.notifications.enqueueTripKeyChanges).not.toHaveBeenCalled();
     }
   });
 
@@ -302,7 +305,7 @@ describe("TripsService", () => {
 
     expect(trip.routeDescription).toBe("Черновик уточнён");
     expect(context.tripUpdates).toHaveLength(0);
-    expect(context.notifications.enqueueTripUpdatedNotification).not.toHaveBeenCalled();
+    expect(context.notifications.enqueueTripKeyChanges).not.toHaveBeenCalled();
   });
 
   it("does not allow administrators to edit trips owned by another organizer", async () => {
@@ -338,10 +341,7 @@ describe("TripsService", () => {
         title: "Поездка опубликована",
       },
     ]);
-    expect(context.notifications.enqueueTripStatusNotification).toHaveBeenCalledWith(
-      trip,
-      "published"
-    );
+    expect(context.notifications.enqueueTripCancelled).not.toHaveBeenCalled();
   });
 
   it("hides an unpublished trip from everyone except its organizer and administrators", async () => {
@@ -459,6 +459,31 @@ describe("TripsService", () => {
     ).rejects.toThrow(BadRequestException);
   });
 
+  it("notifies participants about key fields changed by an approved revision", async () => {
+    const context = createTripsService({
+      trips: [createTrip({
+        status: "published",
+        moderationStatus: "pending_review",
+        pendingRevision: { startLocationName: "Сокольники" },
+      })],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+
+    const approved = await context.service.moderate(
+      tripId,
+      "approve",
+      undefined,
+      { id: "admin-user", role: "admin" },
+    );
+
+    expect(approved.startLocationName).toBe("Сокольники");
+    expect(context.notifications.enqueueTripKeyChanges).toHaveBeenCalledWith(
+      approved,
+      expect.objectContaining({ startLocationName: "Парк" }),
+    );
+  });
+
   it("cancels an upcoming active trip and records a status update", async () => {
     const context = createTripsService({
       trips: [createTrip({ status: "published" })],
@@ -479,10 +504,7 @@ describe("TripsService", () => {
         body: "Организатор отменил поездку.",
       },
     ]);
-    expect(context.notifications.enqueueTripStatusNotification).toHaveBeenCalledWith(
-      trip,
-      "cancelled"
-    );
+    expect(context.notifications.enqueueTripCancelled).toHaveBeenCalledWith(trip);
   });
 
   it("rejects status transitions from users who do not own the trip", async () => {
@@ -501,7 +523,7 @@ describe("TripsService", () => {
 
     expect(context.trips[0]?.status).toBe("published");
     expect(context.tripUpdates).toHaveLength(0);
-    expect(context.notifications.enqueueTripStatusNotification).not.toHaveBeenCalled();
+    expect(context.notifications.enqueueTripCancelled).not.toHaveBeenCalled();
   });
 
   it("rejects cancelling trips that are already cancelled or finished", async () => {
@@ -516,7 +538,7 @@ describe("TripsService", () => {
         context.service.transition(tripId, "cancelled", { id: actorId, role: "user" })
       ).rejects.toThrow(BadRequestException);
       expect(context.tripUpdates).toHaveLength(0);
-      expect(context.notifications.enqueueTripStatusNotification).not.toHaveBeenCalled();
+      expect(context.notifications.enqueueTripCancelled).not.toHaveBeenCalled();
     }
   });
 
@@ -546,7 +568,7 @@ describe("TripsService", () => {
 
     expect(trip.status).toBe("finished");
     expect(context.tripUpdates).toHaveLength(0);
-    expect(context.notifications.enqueueTripStatusNotification).not.toHaveBeenCalled();
+    expect(context.notifications.enqueueTripCancelled).not.toHaveBeenCalled();
   });
 
   it("throws not found for unknown trip references", async () => {
@@ -703,8 +725,8 @@ function createTripsService(
   const existingSlugs = input.existingSlugs ?? [];
   const queryBuilder = createQueryBuilder();
   const notifications = {
-    enqueueTripUpdatedNotification: vi.fn().mockResolvedValue(undefined),
-    enqueueTripStatusNotification: vi.fn().mockResolvedValue(undefined),
+    enqueueTripKeyChanges: vi.fn().mockResolvedValue(undefined),
+    enqueueTripCancelled: vi.fn().mockResolvedValue(undefined),
     enqueueModerationSubmitted: vi.fn().mockResolvedValue(undefined),
     enqueueModerationDecision: vi.fn().mockResolvedValue(undefined),
   };

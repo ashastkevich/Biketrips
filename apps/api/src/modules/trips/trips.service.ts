@@ -13,6 +13,10 @@ import { OrganizerEntity } from "../../infrastructure/database/entities/organize
 import { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
 import { CityEntity } from "../../infrastructure/database/entities/city.entity.js";
 import { RouteFileEntity } from "../../infrastructure/database/entities/route-file.entity.js";
+import {
+  snapshotTripKeyFields,
+  type TripKeySnapshot,
+} from "../notifications/trip-key-changes.js";
 import { NotificationsService } from "../notifications/notifications.service.js";
 import type { CreateTripDto, TripFiltersDto, UpdateTripDto } from "./dto/trip.dto.js";
 import { normalizeRouteFileName } from "./route-file-names.js";
@@ -365,6 +369,17 @@ export class TripsService {
     dto: UpdateTripDto,
     actor: TripActor,
   ): Promise<TripEntity> {
+    const { tripId, before } = await this.applyUpdate(id, dto, actor);
+    const updatedTrip = await this.getBySlugOrId(tripId);
+    await this.notifyAboutKeyChanges(updatedTrip, before);
+    return updatedTrip;
+  }
+
+  private async applyUpdate(
+    id: string,
+    dto: UpdateTripDto,
+    actor: TripActor,
+  ): Promise<{ tripId: string; before: TripKeySnapshot }> {
     const trip = await this.getBySlugOrId(id);
     if (trip.organizer.userId !== actor.id) {
       throw new ForbiddenException("Only the trip organizer can edit it");
@@ -383,6 +398,7 @@ export class TripsService {
       dto.asphaltPercent ?? trip.asphaltPercent,
       dto.unpavedPercent ?? trip.unpavedPercent
     );
+    const before = snapshotTripKeyFields(trip);
     const writableFields = this.mapUpdateFields(dto);
     const requiresRevision = trip.status === "published" && actor.role !== "admin";
 
@@ -417,14 +433,19 @@ export class TripsService {
           body: "Организатор изменил информацию о поездке.",
         }),
       );
-      await this.notificationsService.enqueueTripUpdatedNotification(savedTrip);
     }
 
     if (savedTrip.moderationStatus === "pending_review" && savedTrip.pendingRevision) {
       await this.notificationsService.enqueueModerationSubmitted(savedTrip);
     }
 
-    return this.getBySlugOrId(savedTrip.id);
+    return { tripId: savedTrip.id, before };
+  }
+
+  private async notifyAboutKeyChanges(trip: TripEntity, before: TripKeySnapshot): Promise<void> {
+    if (trip.status === "published") {
+      await this.notificationsService.enqueueTripKeyChanges(trip, before);
+    }
   }
 
   async updateWithRouteFile(
@@ -439,28 +460,30 @@ export class TripsService {
     if (coverImage) this.validateUploadedCoverImage(coverImage);
     const currentTrip = await this.getBySlugOrId(id);
     const stageCover = currentTrip.status === "published" && actor.role !== "admin";
-    const savedTrip = await this.update(id, dto, actor);
+    const { tripId, before } = await this.applyUpdate(id, dto, actor);
 
     if (routeFile) {
-      await this.replaceRouteFile(savedTrip.id, routeFile);
+      await this.replaceRouteFile(tripId, routeFile);
     } else if (removeRouteFile) {
-      await this.deleteRouteFiles(savedTrip.id);
+      await this.deleteRouteFiles(tripId);
     }
     if (coverImage) {
       if (stageCover) {
-        await this.stageCoverImage(savedTrip.id, coverImage);
+        await this.stageCoverImage(tripId, coverImage);
       } else {
-        await this.replaceCoverImage(savedTrip.id, coverImage);
+        await this.replaceCoverImage(tripId, coverImage);
       }
     } else if (
       !stageCover &&
       dto.coverImage !== undefined &&
       !this.isUploadedCoverImageUrl(dto.coverImage)
     ) {
-      await this.deleteCoverImage(savedTrip.id);
+      await this.deleteCoverImage(tripId);
     }
 
-    return this.getBySlugOrId(savedTrip.id);
+    const updatedTrip = await this.getBySlugOrId(tripId);
+    await this.notifyAboutKeyChanges(updatedTrip, before);
+    return updatedTrip;
   }
 
   async transition(
@@ -497,7 +520,9 @@ export class TripsService {
               : "Организатор отменил поездку.",
         })
       );
-      await this.notificationsService.enqueueTripStatusNotification(savedTrip, status);
+      if (status === "cancelled") {
+        await this.notificationsService.enqueueTripCancelled(savedTrip);
+      }
     }
 
     return savedTrip;
@@ -574,6 +599,7 @@ export class TripsService {
     }
 
     const isPublishedRevision = trip.status === "published";
+    const before = snapshotTripKeyFields(trip);
     trip.moderatedAt = new Date();
     trip.moderatedByUserId = admin.id;
     trip.moderationComment = normalizedComment ?? null;
@@ -613,11 +639,12 @@ export class TripsService {
     }
 
     const savedTrip = await this.tripsRepository.save(trip);
-    if (decision === "approve" && !isPublishedRevision) {
-      await this.notificationsService.enqueueTripStatusNotification(savedTrip, "published");
-    }
     await this.notificationsService.enqueueModerationDecision(savedTrip, decision);
-    return this.getBySlugOrId(id);
+    const moderatedTrip = await this.getBySlugOrId(savedTrip.id);
+    if (decision === "approve" && isPublishedRevision) {
+      await this.notifyAboutKeyChanges(moderatedTrip, before);
+    }
+    return moderatedTrip;
   }
 
   private mapWritableFields(dto: CreateTripDto): Partial<TripEntity> {

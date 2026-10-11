@@ -6,6 +6,8 @@ import { setDefaultResultOrder } from "node:dns";
 
 import { readOptionalEnv } from "@biketrips/config";
 
+import { notificationText, type NotificationJob } from "./notification-text.js";
+
 setDefaultResultOrder("ipv4first");
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -48,20 +50,6 @@ interface TelegramResponse<T> {
   ok: boolean;
   result?: T;
   description?: string;
-}
-
-interface NotificationJob {
-  id: string;
-  channel: "telegram" | "email";
-  type:
-    | "participant_joined"
-    | "participant_promoted"
-    | "moderation_submitted"
-    | "trip_approved"
-    | "trip_changes_requested"
-    | "trip_rejected";
-  destination: string | null;
-  payload: Record<string, unknown>;
 }
 
 function delay(ms: number): Promise<void> {
@@ -150,62 +138,6 @@ async function handleUpdate(update: TelegramUpdate): Promise<void> {
   await confirmTelegramLogin(update, startParam);
 }
 
-function notificationText(job: NotificationJob): { subject: string; text: string } {
-  const title = typeof job.payload.title === "string" ? job.payload.title : "Поездка";
-  const slug = typeof job.payload.publicSlug === "string" ? job.payload.publicSlug : "";
-  const comment = typeof job.payload.comment === "string" ? job.payload.comment : "";
-  const tripUrl = slug ? `${publicWebUrl}/trips/${encodeURIComponent(slug)}` : publicWebUrl;
-
-  if (job.type === "participant_joined") {
-    const name = typeof job.payload.participantName === "string" ? job.payload.participantName : "Участник";
-    const status = job.payload.participantStatus;
-    if (status === "pending") {
-      return {
-        subject: "Новая заявка на поездку",
-        text: `Новая заявка на поездку «${title}»: ${name}. Подтвердите или отклоните её.\n${tripUrl}#participants`,
-      };
-    }
-    if (status === "waitlisted") {
-      return {
-        subject: "Новый участник в листе ожидания",
-        text: `В лист ожидания поездки «${title}» добавлен участник: ${name}.\n${tripUrl}#participants`,
-      };
-    }
-    return {
-      subject: "Новый участник поездки",
-      text: `Новый участник поездки «${title}»: ${name}.\n${tripUrl}#participants`,
-    };
-  }
-  if (job.type === "participant_promoted") {
-    return {
-      subject: "Освободилось место в поездке",
-      text: `Освободилось место — вы переведены из листа ожидания в участники поездки «${title}».\n${tripUrl}`,
-    };
-  }
-  if (job.type === "moderation_submitted") {
-    return {
-      subject: "Новая поездка на модерации",
-      text: `Новая поездка «${title}» ожидает проверки.\n${publicWebUrl}/admin/moderation`,
-    };
-  }
-  if (job.type === "trip_approved") {
-    return {
-      subject: "Поездка одобрена",
-      text: `Поездка «${title}» одобрена и опубликована.\n${tripUrl}`,
-    };
-  }
-  if (job.type === "trip_changes_requested") {
-    return {
-      subject: "Поездку нужно исправить",
-      text: `Поездка «${title}» возвращена на исправление.\nКомментарий: ${comment}\n${publicWebUrl}/profile`,
-    };
-  }
-  return {
-    subject: "Поездка отклонена",
-    text: `Поездка «${title}» отклонена.\nКомментарий: ${comment}\n${publicWebUrl}/profile`,
-  };
-}
-
 async function claimNotification(): Promise<NotificationJob | null> {
   const response = await fetch(`${apiUrl}/internal/notifications/claim`, {
     method: "POST",
@@ -262,7 +194,7 @@ async function processNotificationJobs(): Promise<void> {
     let successful = false;
     try {
       if (!job.destination) throw new Error("Notification recipient is unavailable");
-      const message = notificationText(job);
+      const message = notificationText(job, publicWebUrl);
       if (job.channel === "telegram") {
         await sendMessage(Number(job.destination), message.text);
       } else {

@@ -40,7 +40,7 @@ export class ParticipantsService {
       throw new NotFoundException("Trip not found");
     }
 
-    const savedParticipant = await this.dataSource.transaction(async (manager) => {
+    const { savedParticipant, waitlistPosition } = await this.dataSource.transaction(async (manager) => {
       let user = await manager.findOne(UserEntity, { where: { id: dto.userId } });
       if (!user) {
         user = await manager.save(
@@ -101,40 +101,45 @@ export class ParticipantsService {
         status,
       });
       const savedParticipant = await manager.save(participant);
+      let waitlistPosition: number | null = null;
 
       if (status === "waitlisted") {
-        const position = await manager.count(WaitlistEntryEntity, { where: { tripId } });
+        waitlistPosition = (await manager.count(WaitlistEntryEntity, { where: { tripId } })) + 1;
         await manager.save(
           manager.create(WaitlistEntryEntity, {
             tripId,
             userId: dto.userId,
-            position: position + 1,
+            position: waitlistPosition,
           })
         );
       }
 
-      return savedParticipant;
+      return { savedParticipant, waitlistPosition };
     });
 
-    await this.notifyOrganizerAboutJoin(tripId, savedParticipant);
+    await this.notifyAboutJoin(tripId, savedParticipant, waitlistPosition);
 
     return savedParticipant;
   }
 
-  private async notifyOrganizerAboutJoin(
+  private async notifyAboutJoin(
     tripId: string,
     participant: TripParticipantEntity,
+    waitlistPosition: number | null,
   ): Promise<void> {
     const trip = await this.tripsRepository.findOne({
       where: { id: tripId },
-      relations: { organizer: true },
+      relations: { organizer: true, city: true },
     });
 
-    if (!trip?.organizer || trip.organizer.userId === participant.userId) {
+    if (!trip || trip.organizer?.userId === participant.userId) {
       return;
     }
 
-    await this.notificationsService.enqueueParticipantJoined(trip, participant);
+    await this.notificationsService.enqueueRegistration(trip, participant, waitlistPosition);
+    if (trip.organizer) {
+      await this.notificationsService.enqueueParticipantJoined(trip, participant);
+    }
   }
 
   async getForUser(
@@ -180,7 +185,7 @@ export class ParticipantsService {
   ): Promise<TripParticipantEntity> {
     const participant = await this.participantsRepository.findOne({
       where: { id: participantId, tripId },
-      relations: { trip: true, user: { telegramAccounts: true } },
+      relations: { trip: { city: true }, user: { telegramAccounts: true } },
     });
 
     if (!participant) {
@@ -211,11 +216,19 @@ export class ParticipantsService {
       await this.promoteNextWaitlistParticipant(tripId);
     }
 
+    if (participant.trip && status !== previousStatus) {
+      if (status === "confirmed") {
+        await this.notificationsService.enqueueRegistrationDecision(participant.trip, savedParticipant, "approved");
+      } else if (status === "cancelled") {
+        await this.notificationsService.enqueueRegistrationDecision(participant.trip, savedParticipant, "declined");
+      }
+    }
+
     return savedParticipant;
   }
 
   private async promoteNextWaitlistParticipant(tripId: string): Promise<void> {
-    const trip = await this.tripsRepository.findOne({ where: { id: tripId } });
+    const trip = await this.tripsRepository.findOne({ where: { id: tripId }, relations: { city: true } });
 
     if (!trip) {
       return;

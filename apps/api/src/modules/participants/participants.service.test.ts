@@ -71,13 +71,18 @@ describe("ParticipantsService", () => {
     });
 
     expect(participant.status).toBe("pending");
+    expect(context.notifications.enqueueRegistration).toHaveBeenCalledWith(
+      context.trips[0],
+      participant,
+      null,
+    );
     expect(context.notifications.enqueueParticipantJoined).toHaveBeenCalledWith(
       context.trips[0],
       participant
     );
     expect(context.repositories.trips.findOne).toHaveBeenCalledWith({
       where: { id: tripId },
-      relations: { organizer: true },
+      relations: { organizer: true, city: true },
     });
   });
 
@@ -89,6 +94,7 @@ describe("ParticipantsService", () => {
     await context.service.joinTrip(tripId, { userId: firstUserId, name: "Alex" });
 
     expect(context.notifications.enqueueParticipantJoined).not.toHaveBeenCalled();
+    expect(context.notifications.enqueueRegistration).not.toHaveBeenCalled();
   });
 
   it("rejects registration for trips that are not published", async () => {
@@ -128,6 +134,11 @@ describe("ParticipantsService", () => {
         promotedAt: null,
       },
     ]);
+    expect(context.notifications.enqueueRegistration).toHaveBeenCalledWith(
+      context.trips[0],
+      participant,
+      1,
+    );
   });
 
   it("does not allow duplicate active registration", async () => {
@@ -350,6 +361,29 @@ describe("ParticipantsService", () => {
 
     expect(participant.status).toBe("confirmed");
     expect(context.waitlistEntries).toHaveLength(0);
+    expect(context.notifications.enqueueRegistrationDecision).toHaveBeenCalledWith(
+      trip,
+      participant,
+      "approved",
+    );
+  });
+
+  it("tells the participant when the organizer declines a registration", async () => {
+    const trip = createTrip({ registrationMode: "manual" });
+    const context = createParticipantsService({
+      trips: [trip],
+      participants: [
+        createParticipant({ id: "pending-participant", userId: secondUserId, status: "pending", trip }),
+      ],
+    });
+
+    const participant = await context.service.updateStatus(tripId, "pending-participant", "cancelled");
+
+    expect(context.notifications.enqueueRegistrationDecision).toHaveBeenCalledWith(
+      trip,
+      participant,
+      "declined",
+    );
   });
 
   it("refuses to confirm a participant when the trip has no free places", async () => {
@@ -427,6 +461,8 @@ function createParticipantsService(
   const notifications = {
     enqueueParticipantPromoted: vi.fn().mockResolvedValue(undefined),
     enqueueParticipantJoined: vi.fn().mockResolvedValue(undefined),
+    enqueueRegistration: vi.fn().mockResolvedValue(undefined),
+    enqueueRegistrationDecision: vi.fn().mockResolvedValue(undefined),
   };
   const manager = createEntityManager({ trips, users, participants, waitlistEntries });
   const dataSource = {

@@ -30,6 +30,7 @@ import { AddUserTelegramUsername1738600000000 } from "./migrations/1738600000000
 import { AddLookupIndexes1738700000000 } from "./migrations/1738700000000-AddLookupIndexes.js";
 import { DisableJit1738800000000 } from "./migrations/1738800000000-DisableJit.js";
 import { AddEmailCodeRequestIp1738900000000 } from "./migrations/1738900000000-AddEmailCodeRequestIp.js";
+import { AddNotificationJobAttempts1739000000000 } from "./migrations/1739000000000-AddNotificationJobAttempts.js";
 
 export const appDataSource = new DataSource({
   type: "postgres",
@@ -65,6 +66,7 @@ export const appDataSource = new DataSource({
     AddLookupIndexes1738700000000,
     DisableJit1738800000000,
     AddEmailCodeRequestIp1738900000000,
+    AddNotificationJobAttempts1739000000000,
   ],
   synchronize: false,
 });
