@@ -27,17 +27,6 @@ export class UsersService {
     return user;
   }
 
-  async create(input: { name: string; email?: string }): Promise<UserEntity> {
-    const email = input.email?.trim().toLowerCase() || null;
-    return this.usersRepository.save(
-      this.usersRepository.create({
-        name: input.name,
-        email,
-        emailVerifiedAt: null,
-      })
-    );
-  }
-
   async update(
     id: string,
     input: {

@@ -1,18 +1,9 @@
-import { Body, Controller, ForbiddenException, Get, Inject, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, ForbiddenException, Get, Inject, Param, Patch, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { IsOptional, IsString, Matches } from "class-validator";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 import { UsersService } from "./users.service.js";
-
-class CreateUserDto {
-  @IsString()
-  name!: string;
-
-  @IsOptional()
-  @IsString()
-  email?: string;
-}
 
 class UpdateUserDto {
   @IsString()
@@ -47,7 +38,13 @@ export class UsersController {
   @Get(":id")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  async get(@Param("id") id: string) {
+  async get(
+    @Param("id") id: string,
+    @Req() request: { user: { id: string; role: "user" | "admin" } },
+  ) {
+    if (request.user.id !== id && request.user.role !== "admin") {
+      throw new ForbiddenException("You can only view your own profile");
+    }
     return this.usersService.get(id);
   }
 
@@ -63,10 +60,5 @@ export class UsersController {
       throw new ForbiddenException("You can only edit your own profile");
     }
     return this.usersService.update(id, dto);
-  }
-
-  @Post()
-  async create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
   }
 }

@@ -15,22 +15,6 @@ describe("UsersService", () => {
     await expect(context.service.get(userId)).rejects.toThrow(NotFoundException);
   });
 
-  it("normalizes email when creating a user", async () => {
-    const context = createUsersService();
-
-    const user = await context.service.create({
-      name: "Alex",
-      email: " Rider@Example.COM ",
-    });
-
-    expect(user).toMatchObject({
-      name: "Alex",
-      email: "rider@example.com",
-      emailVerifiedAt: null,
-    });
-    expect(context.users).toHaveLength(1);
-  });
-
   it("updates profile fields and keeps email verification when email is unchanged", async () => {
     const verifiedAt = new Date("2026-08-16T08:00:00.000Z");
     const city = createCity();
