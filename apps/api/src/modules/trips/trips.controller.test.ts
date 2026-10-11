@@ -24,6 +24,27 @@ describe("TripsController", () => {
     ]);
   });
 
+  it("lists my trips and shows pending revisions only to the organizer", async () => {
+    const context = createTripsController();
+    const pendingRevision = { description: "Updated description" };
+    const organizedTrip = { ...createTrip(), pendingRevision };
+    const joinedTrip = {
+      ...createTrip(),
+      id: "22222222-2222-4222-8222-222222222222",
+      pendingRevision,
+      organizer: { ...createTrip().organizer, userId: "user-2" },
+    };
+    context.tripsService.listMine.mockResolvedValue([organizedTrip, joinedTrip]);
+
+    const result = await context.controller.listMine({ user: { id: "user-1" } });
+
+    expect(context.tripsService.listMine).toHaveBeenCalledWith("user-1");
+    expect(result.map((trip) => trip.description)).toEqual([
+      "Updated description",
+      "A ride through forest roads",
+    ]);
+  });
+
   it("sets route download headers and returns a streamable file", async () => {
     const context = createTripsController();
     const response = createHeaderResponse();
@@ -180,6 +201,7 @@ describe("TripsController", () => {
 function createTripsController() {
   const tripsService = {
     list: vi.fn(),
+    listMine: vi.fn(),
     getRouteFileForDownload: vi.fn(),
     getCoverImageForDownload: vi.fn(),
     getBySlugOrId: vi.fn(),

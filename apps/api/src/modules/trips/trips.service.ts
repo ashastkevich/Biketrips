@@ -4,7 +4,7 @@ import path from "node:path";
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import sharp from "sharp";
-import { Not, Repository } from "typeorm";
+import { In, Not, Repository } from "typeorm";
 import { slugifyTripTitle, type TripStatus } from "@biketrips/domain";
 
 import { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
@@ -137,9 +137,27 @@ export class TripsService {
     return result.affected ?? 0;
   }
 
+  /** Trips the actor organizes or has an active (not cancelled) participation in. */
   async listMine(actorId: string): Promise<TripEntity[]> {
+    const rows = await this.tripsRepository
+      .createQueryBuilder("trip")
+      .select("trip.id", "id")
+      .innerJoin("trip.organizer", "organizer")
+      .where("organizer.userId = :actorId", { actorId })
+      .orWhere(
+        `EXISTS (
+          SELECT 1 FROM trip_participants participant
+          WHERE participant.trip_id = trip.id
+            AND participant.user_id = :actorId
+            AND participant.status <> 'cancelled'
+        )`,
+        { actorId },
+      )
+      .getRawMany<{ id: string }>();
+    if (rows.length === 0) return [];
+
     return this.tripsRepository.find({
-      where: { organizer: { userId: actorId } },
+      where: { id: In(rows.map((row) => row.id)) },
       relations: {
         city: true,
         organizer: { user: true },

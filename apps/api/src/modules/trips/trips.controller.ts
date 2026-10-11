@@ -92,7 +92,11 @@ export class TripsController {
   @ApiBearerAuth()
   async listMine(@Req() request: { user: { id: string } }) {
     const trips = await this.tripsService.listMine(request.user.id);
-    return trips.map((trip) => serializeTripDetail(trip, { includePendingRevision: true }));
+    return trips.map((trip) =>
+      serializeTripDetail(trip, {
+        includePendingRevision: trip.organizer.userId === request.user.id,
+      }),
+    );
   }
 
   @Get(":id/route-file")
