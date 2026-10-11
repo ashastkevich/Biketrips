@@ -14,16 +14,6 @@ export class CreateParticipantDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  telegramUsername?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  phone?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
   comment?: string;
 }
 

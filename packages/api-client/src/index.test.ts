@@ -146,7 +146,7 @@ describe("BikeTripsApiClient", () => {
       fetcher,
     });
 
-    await client.joinTrip("trip 1", { userId: "user-1", name: "Alex" });
+    await client.joinTrip("trip 1");
     await client.getParticipation("trip 1");
     await client.cancelParticipation("trip 1");
     await client.updateParticipantStatus("trip 1", "participant 1", "confirmed");

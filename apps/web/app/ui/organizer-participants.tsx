@@ -48,8 +48,9 @@ function StatusForm({
 function ParticipantContacts({ participant }: { participant: TripParticipant }) {
   const telegram = normalizeTelegramUsername(participant.telegramUsername);
   const phone = participant.phone?.trim();
+  const email = participant.email?.trim();
 
-  if (!telegram && !phone) {
+  if (!telegram && !phone && !email) {
     return <span className={styles.contacts}>Контакты не указаны</span>;
   }
 
@@ -61,6 +62,7 @@ function ParticipantContacts({ participant }: { participant: TripParticipant }) 
         </a>
       ) : null}
       {phone ? <a href={`tel:${phone.replace(/[^\d+]/g, "")}`}>{phone}</a> : null}
+      {email ? <a href={`mailto:${email}`}>{email}</a> : null}
     </span>
   );
 }

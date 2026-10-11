@@ -30,7 +30,7 @@ export class ParticipantsService {
   async listForTrip(tripId: string): Promise<TripParticipantEntity[]> {
     return this.participantsRepository.find({
       where: { tripId },
-      relations: { user: true },
+      relations: { user: { telegramAccounts: true } },
       order: { createdAt: "ASC" },
     });
   }
@@ -94,8 +94,9 @@ export class ParticipantsService {
         tripId,
         userId: dto.userId,
         name: dto.name,
-        telegramUsername: dto.telegramUsername ?? null,
-        phone: dto.phone ?? null,
+        // Contacts are read from the user's profile; these legacy columns stay empty.
+        telegramUsername: null,
+        phone: null,
         comment: dto.comment ?? null,
         status,
       });
@@ -179,7 +180,7 @@ export class ParticipantsService {
   ): Promise<TripParticipantEntity> {
     const participant = await this.participantsRepository.findOne({
       where: { id: participantId, tripId },
-      relations: { trip: true },
+      relations: { trip: true, user: { telegramAccounts: true } },
     });
 
     if (!participant) {

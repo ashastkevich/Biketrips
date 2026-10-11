@@ -16,6 +16,17 @@ export interface ParticipantContactsAccess {
   viewerUserId?: string | null;
 }
 
+/** Contacts always come from the participant's current profile, never from signup input. */
+function serializeParticipantContacts(participant: TripParticipantEntity) {
+  const user = participant.user;
+  return {
+    telegramUsername:
+      user?.telegramAccounts?.find((account) => account.username)?.username ?? null,
+    phone: user?.phoneNumber ?? null,
+    email: user?.email ?? null,
+  };
+}
+
 export function serializeTripParticipant(
   participant: TripParticipantEntity,
   includeContacts: boolean,
@@ -25,9 +36,7 @@ export function serializeTripParticipant(
     status: participant.status,
     userId: participant.userId,
     name: participant.name,
-    ...(includeContacts
-      ? { telegramUsername: participant.telegramUsername, phone: participant.phone }
-      : {}),
+    ...(includeContacts ? serializeParticipantContacts(participant) : {}),
   };
 }
 

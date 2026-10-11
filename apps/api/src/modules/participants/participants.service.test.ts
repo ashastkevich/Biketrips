@@ -32,7 +32,7 @@ describe("ParticipantsService", () => {
     expect(participants.map((participant) => participant.id)).toEqual(["first", "second"]);
     expect(context.repositories.participants.find).toHaveBeenCalledWith({
       where: { tripId },
-      relations: { user: true },
+      relations: { user: { telegramAccounts: true } },
       order: { createdAt: "ASC" },
     });
   });
@@ -45,14 +45,14 @@ describe("ParticipantsService", () => {
     const participant = await context.service.joinTrip(tripId, {
       userId: firstUserId,
       name: "Alex",
-      telegramUsername: "alex_rides",
     });
 
     expect(participant).toMatchObject({
       tripId,
       userId: firstUserId,
       name: "Alex",
-      telegramUsername: "alex_rides",
+      telegramUsername: null,
+      phone: null,
       status: "confirmed",
     });
     expect(context.users).toHaveLength(1);

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ParticipantStatus, TripDetail } from "@biketrips/domain";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { AppTopbar } from "../../lib/app-topbar";
@@ -11,12 +12,12 @@ import {
   updateParticipantStatus,
   updateTripStatus,
 } from "../../lib/api";
-import { readParticipantInput } from "../../lib/form-data";
 import { difficultyLabels } from "../../lib/labels";
 import { baseOpenGraph, noIndexMetadata } from "../../lib/site";
 import { DEFAULT_TRIP_TIME_ZONE } from "../../lib/trip-time";
 import { getTripEditHref, getTripHref } from "../../lib/trip-links";
-import { Alert, Button, CapacityIndicator, LinkButton, TextField } from "../../ui/components";
+import { Alert, Button, CapacityIndicator, LinkButton } from "../../ui/components";
+import { JoinSignInButton } from "../../ui/join-sign-in-button";
 import { OrganizerParticipants } from "../../ui/organizer-participants";
 import { TripDetailsCard } from "../../ui/trip-details-card";
 import tripDetailsStyles from "../../ui/trip-details.module.css";
@@ -25,6 +26,20 @@ interface TripPageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
+
+const participationTitles: Record<ParticipantStatus, string> = {
+  confirmed: "Вы записаны",
+  pending: "Заявка отправлена",
+  waitlisted: "Вы в листе ожидания",
+  cancelled: "Запись отменена",
+};
+
+const participationDescriptions: Record<ParticipantStatus, string> = {
+  confirmed: "Поездка добавлена в ваш список.",
+  pending: "Организатор подтвердит заявку.",
+  waitlisted: "Сообщим, если освободится место.",
+  cancelled: "",
+};
 
 const participantUpdateNotices: Partial<Record<ParticipantStatus, string>> = {
   confirmed: "Участник подтверждён.",
@@ -121,6 +136,10 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
     new Date(trip.startDateTime).getTime() > Date.now() &&
     trip.status !== "cancelled" &&
     trip.status !== "finished";
+  const myParticipation = trip.participants.find(
+    (participant) => participant.userId === currentUser?.id && participant.status !== "cancelled",
+  );
+  const joinLabel = waitlist ? "Встать в лист ожидания" : "Записаться";
   const participantError = readQueryValue(query.participantError);
   const participantSuccess =
     participantUpdateNotices[readQueryValue(query.participantUpdated) as ParticipantStatus];
@@ -130,13 +149,13 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
       ? { tone: "success" as const, text: participantSuccess }
       : undefined;
 
-  async function joinAction(formData: FormData) {
+  async function joinAction() {
     "use server";
 
     let destination = `/trips/${slug}?joined=1`;
 
     try {
-      await joinTrip(trip.id, readParticipantInput(formData));
+      await joinTrip(trip.id);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Не удалось записаться";
       destination = `/trips/${slug}?joinError=${encodeURIComponent(message)}`;
@@ -271,29 +290,39 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
                       Записались: <strong>{trip.confirmedParticipants}</strong> участников
                     </p>
                   )}
-                  <form
-                    action={joinAction}
-                    className={`${tripDetailsStyles.joinForm} ${tripDetailsStyles.pageForm}`}
-                  >
-                    <input name="userId" type="hidden" value={`web-${trip.id}`} />
-                    <label>
-                      <span>Как вас зовут</span>
-                      <TextField name="name" required minLength={2} placeholder="Алексей" />
-                    </label>
-                    <label>
-                      <span>Telegram</span>
-                      <TextField name="telegramUsername" required placeholder="@username" />
-                    </label>
-                    <Button className={tripDetailsStyles.joinButton} type="submit">
-                      {waitlist ? "Встать в лист ожидания" : "Записаться"}
-                    </Button>
-                    <small>Контакт увидит только организатор.</small>
-                  </form>
-                  <p className={tripDetailsStyles.joinNote}>
-                    {trip.registrationMode === "automatic"
-                      ? "Запись подтвердится сразу"
-                      : "Организатор подтвердит заявку"}
-                  </p>
+                  {myParticipation ? (
+                    <div className={tripDetailsStyles.success} role="status">
+                      <span aria-hidden="true">✓</span>
+                      <h3>{participationTitles[myParticipation.status]}</h3>
+                      <p>{participationDescriptions[myParticipation.status]}</p>
+                    </div>
+                  ) : (
+                    <>
+                      {currentUser ? (
+                        <form action={joinAction}>
+                          <Button className={tripDetailsStyles.joinButton} size="large" type="submit">
+                            {joinLabel}
+                          </Button>
+                        </form>
+                      ) : (
+                        <JoinSignInButton
+                          className={tripDetailsStyles.joinButton}
+                          returnTo={getTripHref(trip)}
+                        >
+                          {joinLabel}
+                        </JoinSignInButton>
+                      )}
+                      <p className={tripDetailsStyles.joinNote}>
+                        {trip.registrationMode === "automatic"
+                          ? "Запись подтвердится сразу"
+                          : "Организатор подтвердит заявку"}
+                      </p>
+                      <p className={tripDetailsStyles.contactsNote}>
+                        Организатор увидит контакты из вашего{" "}
+                        <Link href="/profile">профиля</Link>: телефон, почту и Telegram.
+                      </p>
+                    </>
+                  )}
                 </>
               )}
             </aside>

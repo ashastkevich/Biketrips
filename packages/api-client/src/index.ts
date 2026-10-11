@@ -138,7 +138,7 @@ export class BikeTripsApiClient {
     return this.post<TripDetail>(`/trips/${encodeURIComponent(id)}/finish`, {}, true);
   }
 
-  async joinTrip(id: string, input: CreateParticipantInput): Promise<TripParticipant> {
+  async joinTrip(id: string, input: CreateParticipantInput = {}): Promise<TripParticipant> {
     return this.post<TripParticipant>(`/trips/${encodeURIComponent(id)}/participants`, input, true);
   }
 

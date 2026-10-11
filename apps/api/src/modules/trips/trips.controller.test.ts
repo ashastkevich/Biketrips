@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
 import type { TripParticipantEntity } from "../../infrastructure/database/entities/trip-participant.entity.js";
+import type { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
 import { TripsController } from "./trips.controller.js";
 import type { CreateTripDto } from "./dto/trip.dto.js";
 
@@ -51,8 +52,16 @@ describe("TripsController", () => {
     const trip = {
       ...createTrip(),
       participants: [
-        createParticipant({ id: "participant-1", userId: "user-2", phone: "+79990000002" }),
-        createParticipant({ id: "participant-2", userId: "user-3", phone: "+79990000003" }),
+        createParticipant({
+          id: "participant-1",
+          userId: "user-2",
+          user: { phoneNumber: "+79990000002" } as UserEntity,
+        }),
+        createParticipant({
+          id: "participant-2",
+          userId: "user-3",
+          user: { phoneNumber: "+79990000003" } as UserEntity,
+        }),
       ],
     };
     const contactsOf = (result: { participants: Array<{ phone?: string | null }> }) =>
@@ -100,11 +109,19 @@ describe("TripsController", () => {
     expect(context.participantsService.updateStatus).not.toHaveBeenCalled();
   });
 
-  it("returns participants to the organizer without nested user records", async () => {
+  it("returns participants to the organizer with profile contacts only", async () => {
     const context = createTripsController();
     context.tripsService.getManagedTrip.mockResolvedValue(createTrip());
     context.participantsService.listForTrip.mockResolvedValue([
-      { ...createParticipant({ id: "participant-1", userId: "user-2" }), user: { email: "x@y.z" } },
+      createParticipant({
+        id: "participant-1",
+        userId: "user-2",
+        user: {
+          email: "x@y.z",
+          phoneNumber: "+7 (999) 000-00-02",
+          telegramAccounts: [{ username: "rider" }],
+        } as UserEntity,
+      }),
     ]);
 
     const result = await context.controller.listParticipants(tripId, {
@@ -118,7 +135,8 @@ describe("TripsController", () => {
         userId: "user-2",
         name: "Rider",
         telegramUsername: "rider",
-        phone: null,
+        phone: "+7 (999) 000-00-02",
+        email: "x@y.z",
       },
     ]);
   });

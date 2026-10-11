@@ -1,6 +1,5 @@
 import type {
   BikeType,
-  CreateParticipantInput,
   CreateTripInput,
   DifficultyLevel,
   DropPolicy,
@@ -89,15 +88,6 @@ export function readTripUpdateInput(formData: FormData): UpdateTripInput {
   };
 }
 
-export function readParticipantInput(formData: FormData): CreateParticipantInput {
-  return {
-    userId: readString(formData, "userId"),
-    name: readString(formData, "name"),
-    telegramUsername: readOptionalString(formData, "telegramUsername"),
-    phone: readOptionalString(formData, "phone"),
-    comment: readOptionalString(formData, "comment"),
-  };
-}
 
 export function readParticipantStatus(formData: FormData): ParticipantStatus {
   return readString(formData, "status") as ParticipantStatus;

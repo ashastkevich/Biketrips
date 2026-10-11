@@ -2,12 +2,13 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { FormEvent, MouseEvent } from "react";
+import type { MouseEvent } from "react";
 import type { ParticipantStatus, TripDetail } from "@biketrips/domain";
 
 import { countPendingRequests, formatPendingRequests } from "../lib/participant-groups";
 import { getTripEditHref, getTripHref } from "../lib/trip-links";
-import { Button, CapacityIndicator, CloseButton, TextField } from "./components";
+import { Button, CapacityIndicator, CloseButton } from "./components";
+import { JoinSignInButton } from "./join-sign-in-button";
 import { TripDetailsCard } from "./trip-details-card";
 import styles from "./trip-details.module.css";
 
@@ -18,7 +19,7 @@ export interface TripDetailsModalProps {
   isAuthenticated?: boolean;
   currentUserId: string | undefined;
   onClose: () => void;
-  onJoin?: (participant?: { name: string; telegramUsername: string }) => void;
+  onJoin?: () => void;
   returnPath?: "/" | "/profile";
   returnScope?: "feed" | "created" | "participating";
   savedChanges?: string[] | null;
@@ -42,7 +43,6 @@ export function TripDetailsModal({
   const cancelTitleId = useId();
   const router = useRouter();
   const dialogRef = useRef<HTMLElement>(null);
-  const [showForm, setShowForm] = useState(false);
   const [joined, setJoined] = useState(false);
   const isOrganizer = trip.organizer.userId === currentUserId;
   const [participationStatus, setParticipationStatus] = useState<ParticipantStatus | null>(null);
@@ -138,47 +138,31 @@ export function TripDetailsModal({
     if (event.target === event.currentTarget) onClose();
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    onJoin?.({
-      name: String(form.get("name") ?? ""),
-      telegramUsername: String(form.get("telegramUsername") ?? ""),
-    });
-    setJoined(true);
-    setShowForm(false);
-  }
-
   async function handleJoin() {
-    if (isAuthenticated) {
-      setParticipationLoading(true);
-      setParticipationError("");
+    setParticipationLoading(true);
+    setParticipationError("");
 
-      const response = await fetch(
-        `/api/trips/${encodeURIComponent(trip.id)}/participation`,
-        { method: "POST" },
-      ).catch(() => null);
+    const response = await fetch(
+      `/api/trips/${encodeURIComponent(trip.id)}/participation`,
+      { method: "POST" },
+    ).catch(() => null);
 
-      if (!response?.ok) {
-        const error = await response?.json().catch(() => null) as { message?: string } | null;
-        setParticipationError(
-          response?.status === 404
-            ? "Поездка не найдена в базе. Обновите страницу и попробуйте снова."
-            : error?.message ?? "Не удалось записаться на поездку. Попробуйте ещё раз.",
-        );
-        setParticipationLoading(false);
-        return;
-      }
-
-      const participation = await response.json() as { status: ParticipantStatus };
-      setParticipationStatus(participation.status);
+    if (!response?.ok) {
+      const error = await response?.json().catch(() => null) as { message?: string } | null;
+      setParticipationError(
+        response?.status === 404
+          ? "Поездка не найдена в базе. Обновите страницу и попробуйте снова."
+          : error?.message ?? "Не удалось записаться на поездку. Попробуйте ещё раз.",
+      );
       setParticipationLoading(false);
-      onJoin?.();
-      setJoined(true);
       return;
     }
 
-    setShowForm(true);
+    const participation = await response.json() as { status: ParticipantStatus };
+    setParticipationStatus(participation.status);
+    setParticipationLoading(false);
+    onJoin?.();
+    setJoined(true);
   }
 
   async function handleCancelParticipation() {
@@ -328,16 +312,6 @@ export function TripDetailsModal({
                   </Button>
                 ) : null}
               </div>
-            ) : showForm ? (
-              <form className={styles.joinForm} onSubmit={handleSubmit}>
-                <div><button type="button" onClick={() => setShowForm(false)} aria-label="Назад">←</button><h3>{waitlist ? "Встать в лист ожидания" : "Записаться"}</h3></div>
-                <label><span>Как вас зовут</span><TextField name="name" placeholder="Алексей" required minLength={2} autoFocus /></label>
-                <label><span>Telegram</span><TextField name="telegramUsername" placeholder="@username" required /></label>
-                <Button className={styles.joinButton} type="submit">
-                  {waitlist ? "Встать в лист ожидания" : hasParticipantLimit ? "Подтвердить запись" : "Записаться"}
-                </Button>
-                <small>Контакт увидит только организатор.</small>
-              </form>
             ) : (
               <>
                 <p className={styles.joinKicker}>{waitlist ? "Места закончились" : "Можно присоединиться"}</p>
@@ -351,14 +325,23 @@ export function TripDetailsModal({
                 {participationError ? (
                   <p className={styles.error} role="alert">{participationError}</p>
                 ) : null}
-                <Button className={styles.joinButton} size="large" disabled={participationLoading} onClick={handleJoin}>
-                  {participationLoading
-                    ? "Проверяем…"
-                    : waitlist
-                      ? "Встать в лист ожидания"
-                      : "Записаться"}
-                </Button>
+                {isAuthenticated ? (
+                  <Button className={styles.joinButton} size="large" disabled={participationLoading} onClick={handleJoin}>
+                    {participationLoading
+                      ? "Проверяем…"
+                      : waitlist
+                        ? "Встать в лист ожидания"
+                        : "Записаться"}
+                  </Button>
+                ) : (
+                  <JoinSignInButton className={styles.joinButton} returnTo={getTripHref(trip)}>
+                    {waitlist ? "Встать в лист ожидания" : "Записаться"}
+                  </JoinSignInButton>
+                )}
                 <p className={styles.joinNote}>{trip.registrationMode === "automatic" ? "Запись подтвердится сразу" : "Организатор подтвердит заявку"}</p>
+                <p className={styles.contactsNote}>
+                  Организатор увидит контакты из вашего <a href="/profile">профиля</a>: телефон, почту и Telegram.
+                </p>
               </>
             )}
           </aside>

@@ -62,8 +62,18 @@ describe("trip serializers", () => {
       }),
       participants: [
         createParticipant({
-          telegramUsername: "rider",
-          phone: "+7 (999) 000-00-00",
+          // Signup-time copies are ignored: contacts come from the profile.
+          telegramUsername: "stale_handle",
+          phone: "+7 (000) 000-00-00",
+          user: createUser({
+            id: "participant-user",
+            phoneNumber: "+7 (999) 000-00-00",
+            email: "rider@example.com",
+            telegramAccounts: [
+              { username: null } as UserEntity["telegramAccounts"][number],
+              { username: "rider" } as UserEntity["telegramAccounts"][number],
+            ],
+          }),
         }),
       ],
       waitlistEntries: [
@@ -82,6 +92,7 @@ describe("trip serializers", () => {
 
     expect(serializeTripDetail(trip).participants[0]).not.toHaveProperty("phone");
     expect(serializeTripDetail(trip).participants[0]).not.toHaveProperty("telegramUsername");
+    expect(serializeTripDetail(trip).participants[0]).not.toHaveProperty("email");
     expect(
       serializeTripDetail(trip, { participantContacts: { all: false, viewerUserId: "participant-user" } })
         .participants[0],
@@ -106,6 +117,7 @@ describe("trip serializers", () => {
           name: "Participant",
           telegramUsername: "rider",
           phone: "+7 (999) 000-00-00",
+          email: "rider@example.com",
         },
       ],
       waitlist: [

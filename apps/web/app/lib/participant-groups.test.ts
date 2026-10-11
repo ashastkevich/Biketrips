@@ -64,11 +64,16 @@ describe("participant groups", () => {
   it("formats contacts one participant per line", () => {
     expect(
       formatParticipantContacts([
-        participant({ name: "Анна Петрова", telegramUsername: "@anna_p", phone: "+79990000000" }),
+        participant({
+          name: "Анна Петрова",
+          telegramUsername: "@anna_p",
+          phone: "+79990000000",
+          email: "anna@example.com",
+        }),
         participant({ name: "Иван", telegramUsername: "ivan" }),
         participant({ name: "Олег", telegramUsername: null }),
       ]),
-    ).toBe("Анна Петрова — @anna_p — +79990000000\nИван — @ivan\nОлег");
+    ).toBe("Анна Петрова — @anna_p — +79990000000 — anna@example.com\nИван — @ivan\nОлег");
   });
 
   it("builds initials from up to two name parts", () => {

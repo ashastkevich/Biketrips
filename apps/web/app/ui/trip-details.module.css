@@ -382,42 +382,22 @@
   text-align: center;
 }
 
-.joinForm > div {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 22px;
-}
-
-.joinForm h3 {
-  margin: 0;
-  font-size: 19px;
-}
-
-.joinForm > div button {
-  padding: 0;
-  color: var(--green-dark);
-  background: transparent;
-  border: 0;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-.joinForm label {
-  display: grid;
-  gap: 7px;
-  margin-bottom: 15px;
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.joinForm > small {
-  display: block;
-  margin-top: 12px;
+.contactsNote {
+  margin: -12px 0 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1.5;
   text-align: center;
 }
+
+.contactsNote a {
+  color: var(--green-dark);
+}
+
+
+
+
+
 
 .success {
   padding-top: 18px;
@@ -534,9 +514,6 @@
   border-radius: 28px;
 }
 
-.pageForm {
-  margin-top: 22px;
-}
 
 @media (max-width: 760px) {
   .backdrop {

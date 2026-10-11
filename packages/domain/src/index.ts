@@ -161,9 +161,13 @@ export interface TripParticipant {
   status: ParticipantStatus;
   userId: string;
   name: string;
-  /** Present only for the trip organizer, admins and the participant themselves. */
+  /**
+   * Contacts come from the participant's profile and are present only for the trip
+   * organizer, admins and the participant themselves.
+   */
   telegramUsername?: string | null;
   phone?: string | null;
+  email?: string | null;
 }
 
 export interface TripWaitlistEntry {
@@ -244,10 +248,6 @@ export interface TripFilters {
 }
 
 export interface CreateParticipantInput {
-  userId: string;
-  name: string;
-  telegramUsername?: string;
-  phone?: string;
   comment?: string;
 }
 

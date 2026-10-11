@@ -305,11 +305,12 @@ export class TripsController {
     @Req() request: { user: { id: string; name?: string } },
     @Body() dto: Pick<CreateParticipantDto, "comment">,
   ) {
-    return this.participantsService.joinTrip(id, {
+    const participant = await this.participantsService.joinTrip(id, {
       userId: request.user.id,
       name: request.user.name ?? "Участник BikeTrips",
       comment: dto.comment,
     });
+    return serializeTripParticipant(participant, false);
   }
 
   @Get(":id/participation")

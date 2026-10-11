@@ -4,7 +4,6 @@ import {
   readNumber,
   readOptionalFile,
   readOptionalNumber,
-  readParticipantInput,
   readParticipantStatus,
   readString,
   readTripInput,
@@ -72,22 +71,10 @@ describe("form-data helpers", () => {
     expect(readTripUpdateInput(formData).maxParticipants).toBe(10);
   });
 
-  it("reads participant input and status", () => {
+  it("reads participant status", () => {
     const formData = new FormData();
-    formData.set("userId", "user-1");
-    formData.set("name", " Alex ");
-    formData.set("telegramUsername", "alex_rides");
-    formData.set("phone", "+7 (999) 000-00-00");
-    formData.set("comment", "See you");
     formData.set("status", "confirmed");
 
-    expect(readParticipantInput(formData)).toEqual({
-      userId: "user-1",
-      name: "Alex",
-      telegramUsername: "alex_rides",
-      phone: "+7 (999) 000-00-00",
-      comment: "See you",
-    });
     expect(readParticipantStatus(formData)).toBe("confirmed");
   });
 

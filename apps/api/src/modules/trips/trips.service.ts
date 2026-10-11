@@ -161,7 +161,7 @@ export class TripsService {
       relations: {
         city: true,
         organizer: { user: true },
-        participants: { user: true },
+        participants: { user: { telegramAccounts: true } },
         waitlistEntries: { user: true },
         updates: true,
         routeFiles: true,
@@ -177,6 +177,8 @@ export class TripsService {
       .leftJoinAndSelect("trip.organizer", "organizer")
       .leftJoinAndSelect("organizer.user", "organizerUser")
       .leftJoinAndSelect("trip.participants", "participants")
+      .leftJoinAndSelect("participants.user", "participantUser")
+      .leftJoinAndSelect("participantUser.telegramAccounts", "participantTelegramAccounts")
       .leftJoinAndSelect("trip.routeFiles", "routeFiles")
       .where("trip.moderationStatus = :status", { status: "pending_review" })
       .orderBy("trip.submittedForReviewAt", "ASC", "NULLS LAST")
@@ -193,7 +195,7 @@ export class TripsService {
       relations: {
         city: true,
         organizer: { user: true },
-        participants: { user: true },
+        participants: { user: { telegramAccounts: true } },
         waitlistEntries: { user: true },
         updates: true,
         routeFiles: true,

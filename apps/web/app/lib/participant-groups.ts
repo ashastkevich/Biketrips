@@ -54,7 +54,12 @@ export function formatParticipantContacts(participants: TripParticipant[]): stri
   return participants
     .map((participant) => {
       const telegram = normalizeTelegramUsername(participant.telegramUsername);
-      return [participant.name, telegram ? `@${telegram}` : null, participant.phone?.trim() || null]
+      return [
+        participant.name,
+        telegram ? `@${telegram}` : null,
+        participant.phone?.trim() || null,
+        participant.email?.trim() || null,
+      ]
         .filter(Boolean)
         .join(" — ");
     })

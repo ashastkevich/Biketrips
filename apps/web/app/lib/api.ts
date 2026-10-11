@@ -5,7 +5,6 @@ import { cache } from "react";
 import type {
   AuthenticatedUser,
   City,
-  CreateParticipantInput,
   CreateTripInput,
   ParticipantStatus,
   TripDetail,
@@ -241,12 +240,10 @@ export async function updateTripWithRouteFile(
   return client.updateTripWithRouteFile(tripId, input, options);
 }
 
-export async function joinTrip(
-  tripId: string,
-  input: CreateParticipantInput
-): Promise<TripParticipant> {
+/** Contacts are taken from the signed-in user's profile, so only the session is sent. */
+export async function joinTrip(tripId: string): Promise<TripParticipant> {
   const client = await createClient({ requireUserSession: true });
-  return client.joinTrip(tripId, input);
+  return client.joinTrip(tripId);
 }
 
 export async function updateTripStatus(
