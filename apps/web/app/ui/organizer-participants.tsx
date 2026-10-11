@@ -7,6 +7,7 @@ import {
   normalizeTelegramUsername,
 } from "../lib/participant-groups";
 import { Button } from "./components";
+import { ScrollToHash } from "./scroll-to-hash";
 import styles from "./organizer-participants.module.css";
 
 type UpdateParticipantAction = (formData: FormData) => Promise<void>;
@@ -116,6 +117,7 @@ export function OrganizerParticipants({ trip, updateAction, notice }: OrganizerP
 
   return (
     <div className={styles.root} id="participants">
+      <ScrollToHash id="participants" />
       {notice ? (
         <p
           className={notice.tone === "danger" ? styles.noticeDanger : styles.noticeSuccess}
