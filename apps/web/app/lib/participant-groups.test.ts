@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   countPendingRequests,
-  formatParticipantContacts,
   formatPendingRequests,
   getParticipantInitials,
   groupParticipants,
@@ -59,21 +58,6 @@ describe("participant groups", () => {
     expect(formatPendingRequests(5)).toBe("5 заявок ждут подтверждения");
     expect(formatPendingRequests(12)).toBe("12 заявок ждут подтверждения");
     expect(formatPendingRequests(21)).toBe("21 заявка ждёт подтверждения");
-  });
-
-  it("formats contacts one participant per line", () => {
-    expect(
-      formatParticipantContacts([
-        participant({
-          name: "Анна Петрова",
-          telegramUsername: "@anna_p",
-          phone: "+79990000000",
-          email: "anna@example.com",
-        }),
-        participant({ name: "Иван", telegramUsername: "ivan" }),
-        participant({ name: "Олег", telegramUsername: null }),
-      ]),
-    ).toBe("Анна Петрова — @anna_p — +79990000000 — anna@example.com\nИван — @ivan\nОлег");
   });
 
   it("builds initials from up to two name parts", () => {

@@ -2,13 +2,11 @@ import type { ReactNode } from "react";
 import type { ParticipantStatus, TripDetail, TripParticipant } from "@biketrips/domain";
 
 import {
-  formatParticipantContacts,
   getParticipantInitials,
   groupParticipants,
   normalizeTelegramUsername,
 } from "../lib/participant-groups";
 import { Button } from "./components";
-import { CopyContactsButton } from "./copy-contacts-button";
 import styles from "./organizer-participants.module.css";
 
 type UpdateParticipantAction = (formData: FormData) => Promise<void>;
@@ -204,13 +202,6 @@ export function OrganizerParticipants({ trip, updateAction, notice }: OrganizerP
             ))}
           </ul>
         </details>
-      ) : null}
-
-      {groups.confirmed.length > 0 ? (
-        <CopyContactsButton
-          className={styles.copyButton}
-          text={formatParticipantContacts(groups.confirmed)}
-        />
       ) : null}
     </div>
   );

@@ -49,23 +49,6 @@ export function normalizeTelegramUsername(username: string | null | undefined): 
   return value ? value : null;
 }
 
-/** One line per participant, ready to paste into a chat. */
-export function formatParticipantContacts(participants: TripParticipant[]): string {
-  return participants
-    .map((participant) => {
-      const telegram = normalizeTelegramUsername(participant.telegramUsername);
-      return [
-        participant.name,
-        telegram ? `@${telegram}` : null,
-        participant.phone?.trim() || null,
-        participant.email?.trim() || null,
-      ]
-        .filter(Boolean)
-        .join(" — ");
-    })
-    .join("\n");
-}
-
 export function getParticipantInitials(name: string): string {
   return name
     .split(/\s+/)
