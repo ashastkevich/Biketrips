@@ -9,6 +9,7 @@ import {
 } from "../lib/labels";
 import { DEFAULT_TRIP_TIME_ZONE } from "../lib/trip-time";
 import { RouteMapToggle } from "./route-map-toggle";
+import { tripHeroImageSizes } from "./trip-hero-image";
 import styles from "./trip-details.module.css";
 
 interface TripDetailsCardProps {
@@ -90,8 +91,9 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
               src={coverImage}
               alt=""
               fill
-              sizes="(max-width: 760px) 100vw, 1040px"
-              priority={headingLevel === "h1"}
+              sizes={tripHeroImageSizes}
+              // The hero is the first thing shown on the trip page and in the modal.
+              priority
             />
           ) : null}
           <div className={styles.heroShade} />

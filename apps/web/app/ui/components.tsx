@@ -30,6 +30,7 @@ import {
 import filterStyles from "./route-filters.module.css";
 import styles from "./components.module.css";
 import tripCardStyles from "./trip-card.module.css";
+import { preloadTripHeroImage } from "./trip-hero-image";
 
 function classes(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
@@ -1144,6 +1145,8 @@ export function TripCard({
     </Link>
   ) : title;
   const cardIsButton = Boolean(onOpen) && !href;
+  // Cards that open the trip modal warm up its large cover as soon as the visitor aims at them.
+  const preloadHero = onOpen ? () => preloadTripHeroImage(coverImage) : undefined;
 
   return (
     <article
@@ -1152,6 +1155,9 @@ export function TripCard({
       tabIndex={cardIsButton ? 0 : undefined}
       aria-label={cardIsButton ? `Открыть поездку «${title}»` : undefined}
       onClick={onOpen}
+      onPointerEnter={preloadHero}
+      onPointerDown={preloadHero}
+      onFocus={preloadHero}
       onKeyDown={cardIsButton && onOpen ? (event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();

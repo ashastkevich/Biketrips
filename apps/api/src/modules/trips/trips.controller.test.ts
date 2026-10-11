@@ -214,6 +214,19 @@ describe("TripsController", () => {
     });
   });
 
+  it("caches versioned cover image URLs for a year", async () => {
+    const context = createTripsController();
+    const response = createHeaderResponse();
+    context.tripsService.getCoverImageForDownload.mockResolvedValue({
+      contentType: "image/webp",
+      content: Buffer.from("cover"),
+    });
+
+    await context.controller.downloadCoverImage(tripId, response, undefined, "1760000000000");
+
+    expect(response.headers["Cache-Control"]).toBe("public, max-age=31536000, immutable");
+  });
+
   it("creates a trip with files from a multipart payload", async () => {
     const context = createTripsController();
     const trip = createTrip();

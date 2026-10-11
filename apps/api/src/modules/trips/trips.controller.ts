@@ -148,10 +148,17 @@ export class TripsController {
     @Param("id") id: string,
     @Res({ passthrough: true }) response: HeaderResponse,
     @Req() request?: { user?: { id: string; role: "user" | "admin" } },
+    @Query("v") version?: string,
   ) {
     const coverImage = await this.tripsService.getCoverImageForDownload(id, request?.user ?? null);
     response.setHeader("Content-Type", coverImage.contentType);
-    response.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+    // Cover URLs carry the upload version (?v=), so a versioned response never changes.
+    response.setHeader(
+      "Cache-Control",
+      version
+        ? "public, max-age=31536000, immutable"
+        : "public, max-age=86400, stale-while-revalidate=604800",
+    );
 
     return new StreamableFile(coverImage.content);
   }

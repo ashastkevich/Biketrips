@@ -12,6 +12,7 @@ import { difficultyLabels, formatShortDate } from "../lib/labels";
 import { formatPendingRequests } from "../lib/participant-groups";
 import { Badge, Button, LinkButton } from "../ui/components";
 import { TripDetailsModal } from "../ui/trip-details-modal";
+import { preloadTripHeroImage } from "../ui/trip-hero-image";
 import { useTripModal } from "../ui/use-trip-modal";
 import { getOrganizerTripState, type OrganizerTripState } from "./organizer-trip-state";
 import styles from "./profile.module.css";
@@ -169,6 +170,9 @@ export function UpcomingTrips({
                 className={classes(styles.trip, variant === "created" && styles.tripCreated)}
                 href={getTripHref(trip)}
                 onClick={(event) => handleTripClick(event, trip)}
+                onPointerEnter={() => preloadTripHeroImage(coverImage)}
+                onPointerDown={() => preloadTripHeroImage(coverImage)}
+                onFocus={() => preloadTripHeroImage(coverImage)}
               >
                 <div
                   className={classes(styles.tripCover, !coverImage && styles.tripCoverFallback)}
