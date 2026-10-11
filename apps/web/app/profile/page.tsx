@@ -12,7 +12,8 @@ import {
   withdrawTripReview,
 } from "../lib/api";
 import { fallbackCities } from "../lib/cities";
-import { getTripEditHref } from "../lib/trip-links";
+import { Badge } from "../ui/components";
+import { getOrganizerTripState } from "./organizer-trip-state";
 import { ProfileAccount } from "./profile-account";
 import styles from "./profile.module.css";
 
@@ -53,6 +54,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     ? tripsResult.data.filter(
         (trip) =>
           trip.status === "published" &&
+          trip.organizer.userId !== user.id &&
           new Date(trip.startDateTime).getTime() > now &&
           trip.participants.some(
             (participant) => participant.userId === user.id && participant.status !== "cancelled"
@@ -62,12 +64,20 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const createdTrips = user
     ? tripsResult.data.filter((trip) => trip.organizer.userId === user.id)
     : [];
-  const upcomingCreatedTrips = createdTrips.filter(
-    (trip) =>
-      new Date(trip.startDateTime).getTime() > now &&
-      trip.status !== "finished" &&
-      trip.status !== "cancelled"
-  );
+  const upcomingCreatedTrips = createdTrips
+    .filter(
+      (trip) =>
+        new Date(trip.startDateTime).getTime() > now &&
+        trip.status !== "finished" &&
+        trip.status !== "cancelled"
+    )
+    .map((trip) => ({ trip, state: getOrganizerTripState(trip, now) }))
+    .sort(
+      (left, right) =>
+        left.state.priority - right.state.priority ||
+        new Date(left.trip.startDateTime).getTime() - new Date(right.trip.startDateTime).getTime()
+    );
+  const attentionCount = upcomingCreatedTrips.filter(({ state }) => state.needsAttention).length;
   const pastCreatedTrips = createdTrips
     .filter(
       (trip) =>
@@ -155,52 +165,23 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                   <p className={styles.sectionLabel}>Вы организатор</p>
                   <h2 id="created-trips-title">Созданные поездки</h2>
                 </div>
+                {attentionCount > 0 ? (
+                  <Badge tone="warning" dot>
+                    Требуют внимания: {attentionCount}
+                  </Badge>
+                ) : null}
               </div>
-              {createdTrips.some((trip) => trip.moderationStatus !== "approved") ? (
-                <div className={styles.moderationNotices}>
-                  {createdTrips
-                    .filter((trip) => trip.moderationStatus !== "approved")
-                    .map((trip) => (
-                      <article className={styles.moderationNotice} key={trip.id}>
-                        <div>
-                          <strong>{trip.title}</strong>
-                          <p>
-                            {trip.moderationStatus === "pending_review"
-                              ? "Поездка ожидает проверки администратора."
-                              : trip.moderationStatus === "changes_requested"
-                                ? "Администратор вернул поездку на исправление."
-                                : trip.moderationStatus === "rejected"
-                                  ? "Администратор окончательно отклонил поездку."
-                                  : "Поездка сохранена как черновик. Её пока не видят другие участники."}
-                          </p>
-                          {trip.moderationComment ? <blockquote>{trip.moderationComment}</blockquote> : null}
-                        </div>
-                        {trip.moderationStatus === "pending_review" ? (
-                          <form action={withdrawReviewAction}>
-                            <input name="tripId" type="hidden" value={trip.id} />
-                            <button type="submit">Отозвать заявку</button>
-                          </form>
-                        ) : trip.status === "draft" && new Date(trip.startDateTime).getTime() > now ? (
-                          <div className={styles.moderationNoticeActions}>
-                            <a href={getTripEditHref(trip)}>Редактировать</a>
-                            <form action={submitDraftAction}>
-                              <input name="tripId" type="hidden" value={trip.id} />
-                              <button type="submit">Отправить на модерацию</button>
-                            </form>
-                          </div>
-                        ) : null}
-                      </article>
-                    ))}
-                </div>
-              ) : null}
               <section className={styles.tripSubsection} aria-labelledby="created-upcoming-title">
                 <h3 id="created-upcoming-title">Предстоящие</h3>
                 <UpcomingTrips
-                  trips={upcomingCreatedTrips}
+                  trips={upcomingCreatedTrips.map(({ trip }) => trip)}
                   isAuthenticated={isAuthenticated}
                   currentUserId={user?.id}
                   emptyMessage="У вас пока нет предстоящих созданных поездок."
                   variant="created"
+                  now={now}
+                  submitAction={submitDraftAction}
+                  withdrawAction={withdrawReviewAction}
                 />
               </section>
               <section className={styles.tripSubsection} aria-labelledby="created-past-title">
@@ -211,6 +192,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                   currentUserId={user?.id}
                   emptyMessage="У вас пока нет прошедших созданных поездок."
                   variant="created"
+                  now={now}
                 />
               </section>
             </section>

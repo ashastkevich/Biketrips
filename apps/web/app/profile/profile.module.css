@@ -12,57 +12,6 @@
   font-weight: 700;
 }
 
-.moderationNotices {
-  display: grid;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.moderationNotice {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 16px;
-  background: #fff8e8;
-  border: 1px solid #ead7a5;
-  border-radius: 14px;
-}
-
-.moderationNotice p,
-.moderationNotice blockquote {
-  margin: 6px 0 0;
-  color: var(--muted);
-}
-
-.moderationNotice blockquote {
-  padding-left: 12px;
-  border-left: 3px solid #b9902d;
-  font-style: normal;
-}
-
-.moderationNoticeActions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.moderationNotice button,
-.moderationNoticeActions a {
-  padding: 8px 12px;
-  color: #713d20;
-  background: #fff;
-  border: 1px solid #d8b28c;
-  border-radius: 10px;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 750;
-  line-height: 1.2;
-  text-decoration: none;
-  cursor: pointer;
-}
-
 .hero {
   display: flex;
   align-items: center;
@@ -159,6 +108,11 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 18px;
+}
+
+.cardHeading {
+  flex-wrap: wrap;
+  row-gap: 12px;
 }
 
 .card h2 {
@@ -415,15 +369,75 @@
   font: inherit;
   text-align: left;
   background: transparent;
-  border-right: 0;
-  border-bottom: 0;
-  border-left: 0;
-  border-top: 1px solid #e8e3d8;
+  border: 0;
   cursor: pointer;
 }
 
-.trip:first-child {
-  border-top: 0;
+.tripItem + .tripItem {
+  border-top: 1px solid #e8e3d8;
+}
+
+.tripPanel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 18px;
+  margin: 0 0 14px 88px;
+  padding: 12px 14px;
+  background: #f6f4ef;
+  border: 1px solid #e8e3d8;
+  border-radius: 14px;
+  font-size: 14px;
+}
+
+.tripPanelWarning {
+  background: #fff8e8;
+  border-color: #ead7a5;
+}
+
+.tripPanelDanger {
+  background: #fcefed;
+  border-color: #ebc6c1;
+}
+
+.tripPanelInfo {
+  background: #eef3f8;
+  border-color: #cfdbe8;
+}
+
+.tripPanelCopy {
+  min-width: 0;
+}
+
+.tripPanelCopy p,
+.tripPanelCopy blockquote {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.tripPanelCopy blockquote {
+  margin-top: 6px;
+  padding-left: 12px;
+  color: var(--text);
+  border-left: 3px solid #b9902d;
+  font-style: normal;
+}
+
+.tripPanelDanger .tripPanelCopy blockquote {
+  border-left-color: #b8493f;
+}
+
+.tripPanelActions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.tripPanelActions form {
+  display: contents;
 }
 
 .tripCover {
@@ -581,15 +595,6 @@
     padding-top: 18px;
   }
 
-  .moderationNotice {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .moderationNoticeActions {
-    justify-content: flex-start;
-  }
-
   .hero {
     align-items: flex-start;
     gap: 16px;
@@ -676,6 +681,21 @@
 
   .tripCreated .tripCapacity {
     grid-column: 3;
+  }
+
+  .tripPanel {
+    flex-direction: column;
+    align-items: stretch;
+    margin-left: 0;
+  }
+
+  .tripPanelActions {
+    flex-direction: column;
+  }
+
+  .tripPanelActions a,
+  .tripPanelActions button {
+    width: 100%;
   }
 
   .settings {
