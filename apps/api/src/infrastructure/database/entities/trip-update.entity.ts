@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, type Relation } from "typeorm";
 
 import { TripEntity } from "./trip.entity.js";
 
@@ -15,7 +15,7 @@ export class TripUpdateEntity {
 
   @ManyToOne(() => TripEntity, (trip) => trip.updates, { nullable: false })
   @JoinColumn({ name: "trip_id" })
-  trip!: TripEntity;
+  trip!: Relation<TripEntity>;
 
   @Column({ name: "trip_id", type: "uuid" })
   tripId!: string;

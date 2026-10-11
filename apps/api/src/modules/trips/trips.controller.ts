@@ -91,6 +91,24 @@ export class TripsController {
     return trips.map((trip) => serializeTripSummary(trip));
   }
 
+  /** Feed trips as full cards, so the web feed needs one request instead of one per trip. */
+  @Get("feed")
+  @UseGuards(OptionalJwtAuthGuard)
+  async listFeed(
+    @Query() filters: TripFiltersDto,
+    @Req() request: { user: { id: string; role: "user" | "admin" } | null },
+  ) {
+    const trips = await this.tripsService.listFeed(filters);
+    return trips.map((trip) => {
+      const canManage =
+        trip.organizer.userId === request.user?.id || request.user?.role === "admin";
+      return serializeTripDetail(trip, {
+        includePendingRevision: canManage,
+        participantContacts: { all: canManage, viewerUserId: request.user?.id },
+      });
+    });
+  }
+
   @Get("mine")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

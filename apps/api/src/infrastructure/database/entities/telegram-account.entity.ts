@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique, type Relation } from "typeorm";
 
 import { UserEntity } from "./user.entity.js";
 
@@ -25,7 +25,7 @@ export class TelegramAccountEntity {
 
   @ManyToOne(() => UserEntity, (user) => user.telegramAccounts, { nullable: false })
   @JoinColumn({ name: "user_id" })
-  user!: UserEntity;
+  user!: Relation<UserEntity>;
 
   @Column({ name: "user_id", type: "uuid" })
   userId!: string;

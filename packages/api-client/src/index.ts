@@ -44,6 +44,11 @@ export class BikeTripsApiClient {
     return this.get<TripSummary[]>(this.withQuery("/trips", filters));
   }
 
+  /** The public feed as full trip cards in one request (the session, if any, unlocks own contacts). */
+  async listTripFeed(filters: TripFilters = {}): Promise<TripDetail[]> {
+    return this.get<TripDetail[]>(this.withQuery("/trips/feed", filters), Boolean(this.authToken));
+  }
+
   async getTrip(slugOrId: string): Promise<TripDetail> {
     return this.get<TripDetail>(
       `/trips/${encodeURIComponent(slugOrId)}`,

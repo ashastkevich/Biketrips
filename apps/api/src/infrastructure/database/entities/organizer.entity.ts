@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn, type Relation } from "typeorm";
 
 import { TripEntity } from "./trip.entity.js";
 import { UserEntity } from "./user.entity.js";
@@ -22,7 +22,7 @@ export class OrganizerEntity {
 
   @ManyToOne(() => UserEntity, (user) => user.organizerProfiles, { nullable: false })
   @JoinColumn({ name: "user_id" })
-  user!: UserEntity;
+  user!: Relation<UserEntity>;
 
   @Column({ name: "user_id", type: "uuid" })
   userId!: string;

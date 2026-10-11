@@ -55,6 +55,31 @@ describe("TripsService", () => {
     });
   });
 
+  it("loads the feed as full trip cards in one query after filtering ids", async () => {
+    const trip = createTrip();
+    const context = createTripsService({ trips: [trip] });
+    context.queryBuilder.getRawMany.mockResolvedValue([{ id: tripId }]);
+
+    const result = await context.service.listFeed({ city: "moscow" });
+
+    expect(context.queryBuilder.andWhere).toHaveBeenCalledWith("city.slug = :city", {
+      city: "moscow",
+    });
+    expect(context.tripsRepository.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        relations: expect.objectContaining({ participants: { user: { telegramAccounts: true } } }),
+      }),
+    );
+    expect(result).toEqual([trip]);
+  });
+
+  it("skips loading trip cards when the feed is empty", async () => {
+    const context = createTripsService();
+
+    await expect(context.service.listFeed({})).resolves.toEqual([]);
+    expect(context.tripsRepository.find).not.toHaveBeenCalled();
+  });
+
   it("lists only upcoming trips by default", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-04T12:00:00.000Z"));
@@ -685,6 +710,9 @@ function createTripsService(
   };
   const tripsRepository = {
     createQueryBuilder: vi.fn(() => queryBuilder),
+    find: vi.fn(({ where }: { where: { id: { value: string[] } } }) =>
+      Promise.resolve(trips.filter((trip) => where.id.value.includes(trip.id)))
+    ),
     findOne: vi.fn(({ where }: { where: { id?: string; publicSlug?: string } }) =>
       Promise.resolve(
         trips.find((trip) =>
@@ -778,6 +806,7 @@ function createTripsService(
     cities,
     routeFiles,
     queryBuilder,
+    tripsRepository,
     notifications,
   };
 }
@@ -785,6 +814,9 @@ function createTripsService(
 function createQueryBuilder() {
   const queryBuilder = {
     leftJoinAndSelect: vi.fn(() => queryBuilder),
+    select: vi.fn(() => queryBuilder),
+    innerJoin: vi.fn(() => queryBuilder),
+    getRawMany: vi.fn(() => Promise.resolve([] as Array<{ id: string }>)),
     orderBy: vi.fn(() => queryBuilder),
     andWhere: vi.fn(() => queryBuilder),
     getMany: vi.fn(() => Promise.resolve([])),

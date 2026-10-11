@@ -29,6 +29,25 @@ describe("BikeTripsApiClient", () => {
     expect((fetcher.mock.calls[0]?.[1]?.headers as Headers).get("Accept")).toBe("application/json");
   });
 
+  it("loads the trip feed anonymously or with the session token", async () => {
+    const fetcher = vi.fn().mockImplementation(async () => jsonResponse([]));
+    const anonymous = new BikeTripsApiClient({ baseUrl: "https://api.example.test", fetcher });
+    const signedIn = new BikeTripsApiClient({
+      baseUrl: "https://api.example.test",
+      authToken: "secret-token",
+      fetcher,
+    });
+
+    await anonymous.listTripFeed({ city: "moscow" });
+    await signedIn.listTripFeed({ city: "moscow" });
+
+    expect(fetcher.mock.calls[0]?.[0]).toBe("https://api.example.test/trips/feed?city=moscow");
+    expect((fetcher.mock.calls[0]?.[1]?.headers as Headers).get("Authorization")).toBeNull();
+    expect((fetcher.mock.calls[1]?.[1]?.headers as Headers).get("Authorization")).toBe(
+      "Bearer secret-token",
+    );
+  });
+
   it("adds JSON and auth headers for authenticated requests", async () => {
     const fetcher = vi.fn().mockResolvedValue(jsonResponse({ id: "trip-1" }));
     const client = new BikeTripsApiClient({

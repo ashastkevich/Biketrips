@@ -4,7 +4,7 @@ import path from "node:path";
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import sharp from "sharp";
-import { In, Not, Repository } from "typeorm";
+import { In, Not, Repository, type FindOptionsOrder, type FindOptionsRelations, type SelectQueryBuilder } from "typeorm";
 import { slugifyTripTitle, type TripStatus } from "@biketrips/domain";
 
 import { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
@@ -27,6 +27,25 @@ const finishBufferHours = 2;
 const estimatedTripEndSql =
   `start_at + ((distance_km::float8 / ((COALESCE(pace_min, ${defaultPaceKmh}) + ` +
   `COALESCE(pace_max, ${defaultPaceKmh})) / 2.0)) + ${finishBufferHours}) * interval '1 hour'`;
+// Everything a trip card shows: organizer, participants with contacts, waitlist, updates and route.
+const tripDetailRelations: FindOptionsRelations<TripEntity> = {
+  city: true,
+  organizer: { user: true },
+  participants: { user: { telegramAccounts: true } },
+  waitlistEntries: { user: true },
+  updates: true,
+  routeFiles: true,
+};
+const tripDetailRelationOrder: FindOptionsOrder<TripEntity> = {
+  participants: { createdAt: "ASC" },
+  updates: { createdAt: "DESC" },
+  waitlistEntries: { position: "ASC" },
+};
+
+function isTripUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 const routeFilesDirectory =
   process.env.ROUTE_FILES_DIR ?? path.join(process.cwd(), "storage", "route-files");
 const coverImagesDirectory =
@@ -99,6 +118,29 @@ export class TripsService {
       .leftJoinAndSelect("trip.participants", "participants")
       .orderBy("trip.startAt", "ASC");
 
+    return this.applyPublicFeedFilters(query, filters).getMany();
+  }
+
+  /** The public feed with full trip details, loaded in one pass instead of one request per trip. */
+  async listFeed(filters: TripFiltersDto): Promise<TripEntity[]> {
+    const query = this.tripsRepository
+      .createQueryBuilder("trip")
+      .select("trip.id", "id")
+      .innerJoin("trip.city", "city");
+    const rows = await this.applyPublicFeedFilters(query, filters).getRawMany<{ id: string }>();
+    if (rows.length === 0) return [];
+
+    return this.tripsRepository.find({
+      where: { id: In(rows.map((row) => row.id)) },
+      relations: tripDetailRelations,
+      order: { startAt: "ASC", ...tripDetailRelationOrder },
+    });
+  }
+
+  private applyPublicFeedFilters<TQuery extends SelectQueryBuilder<TripEntity>>(
+    query: TQuery,
+    filters: TripFiltersDto,
+  ): TQuery {
     query.andWhere("trip.status = :status", { status: "published" });
 
     if (filters.city) {
@@ -123,7 +165,7 @@ export class TripsService {
       query.andWhere("trip.startAt <= :dateTo", { dateTo: filters.dateTo });
     }
 
-    return query.getMany();
+    return query;
   }
 
   async finishElapsedTrips(now = new Date()): Promise<number> {
@@ -158,15 +200,8 @@ export class TripsService {
 
     return this.tripsRepository.find({
       where: { id: In(rows.map((row) => row.id)) },
-      relations: {
-        city: true,
-        organizer: { user: true },
-        participants: { user: { telegramAccounts: true } },
-        waitlistEntries: { user: true },
-        updates: true,
-        routeFiles: true,
-      },
-      order: { startAt: "ASC" },
+      relations: tripDetailRelations,
+      order: { startAt: "ASC", ...tripDetailRelationOrder },
     });
   }
 
@@ -186,25 +221,11 @@ export class TripsService {
   }
 
   async getBySlugOrId(slugOrId: string): Promise<TripEntity> {
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        slugOrId,
-      );
+    const isUuid = isTripUuid(slugOrId);
     const trip = await this.tripsRepository.findOne({
       where: isUuid ? { id: slugOrId } : { publicSlug: slugOrId },
-      relations: {
-        city: true,
-        organizer: { user: true },
-        participants: { user: { telegramAccounts: true } },
-        waitlistEntries: { user: true },
-        updates: true,
-        routeFiles: true,
-      },
-      order: {
-        participants: { createdAt: "ASC" },
-        updates: { createdAt: "DESC" },
-        waitlistEntries: { position: "ASC" },
-      },
+      relations: tripDetailRelations,
+      order: tripDetailRelationOrder,
     });
 
     if (!trip) {
@@ -655,7 +676,14 @@ export class TripsService {
   }
 
   async getCoverImageForDownload(id: string, actor: TripActor | null = null): Promise<CoverImageDownload> {
-    const trip = await this.getBySlugOrId(id);
+    // Only the organizer is needed for the visibility check; skip the full trip card joins.
+    const trip = await this.tripsRepository.findOne({
+      where: isTripUuid(id) ? { id } : { publicSlug: id },
+      relations: { organizer: true },
+    });
+    if (!trip) {
+      throw new NotFoundException("Cover image not found");
+    }
     if (
       trip.status !== "published" &&
       trip.organizer.userId !== actor?.id &&

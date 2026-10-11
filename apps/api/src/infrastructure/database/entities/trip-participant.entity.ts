@@ -7,6 +7,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  type Relation,
 } from "typeorm";
 import type { ParticipantStatus } from "@biketrips/domain";
 
@@ -36,14 +37,14 @@ export class TripParticipantEntity {
 
   @ManyToOne(() => TripEntity, (trip) => trip.participants, { nullable: false })
   @JoinColumn({ name: "trip_id" })
-  trip!: TripEntity;
+  trip!: Relation<TripEntity>;
 
   @Column({ name: "trip_id", type: "uuid" })
   tripId!: string;
 
   @ManyToOne(() => UserEntity, (user) => user.tripParticipants, { nullable: false })
   @JoinColumn({ name: "user_id" })
-  user!: UserEntity;
+  user!: Relation<UserEntity>;
 
   @Column({ name: "user_id", type: "uuid" })
   userId!: string;

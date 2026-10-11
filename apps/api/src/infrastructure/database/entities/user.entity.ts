@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn, type Relation } from "typeorm";
 
 import { CityEntity } from "./city.entity.js";
 import { OrganizerEntity } from "./organizer.entity.js";
@@ -41,7 +41,7 @@ export class UserEntity {
 
   @ManyToOne(() => CityEntity, { nullable: true })
   @JoinColumn({ name: "city_id" })
-  city!: CityEntity | null;
+  city!: Relation<CityEntity | null>;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;

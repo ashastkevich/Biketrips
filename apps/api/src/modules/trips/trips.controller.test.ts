@@ -90,6 +90,43 @@ describe("TripsController", () => {
     ).toEqual(["+79990000002", "+79990000003"]);
   });
 
+  it("lists the feed as full trip cards with contacts only for those who may see them", async () => {
+    const context = createTripsController();
+    const trip = {
+      ...createTrip(),
+      participants: [
+        createParticipant({
+          id: "participant-1",
+          userId: "user-2",
+          user: { phoneNumber: "+79990000002" } as UserEntity,
+        }),
+        createParticipant({
+          id: "participant-2",
+          userId: "user-3",
+          user: { phoneNumber: "+79990000003" } as UserEntity,
+        }),
+      ],
+    };
+    context.tripsService.listFeed.mockResolvedValue([trip]);
+    const contactsOf = (result: Array<{ participants: Array<{ phone?: string | null }> }>) =>
+      result[0]!.participants.map((participant) => participant.phone);
+
+    const anonymous = await context.controller.listFeed({ city: "moscow" }, { user: null });
+
+    expect(context.tripsService.listFeed).toHaveBeenCalledWith({ city: "moscow" });
+    expect(anonymous[0]).toMatchObject({ id: tripId, description: "A ride through forest roads" });
+    expect(contactsOf(anonymous)).toEqual([undefined, undefined]);
+    expect(
+      contactsOf(await context.controller.listFeed({}, { user: { id: "user-2", role: "user" } })),
+    ).toEqual(["+79990000002", undefined]);
+    expect(
+      contactsOf(await context.controller.listFeed({}, { user: { id: "user-1", role: "user" } })),
+    ).toEqual(["+79990000002", "+79990000003"]);
+    expect(
+      contactsOf(await context.controller.listFeed({}, { user: { id: "admin-1", role: "admin" } })),
+    ).toEqual(["+79990000002", "+79990000003"]);
+  });
+
   it("rejects participant management by someone other than the organizer", async () => {
     const context = createTripsController();
     context.tripsService.getManagedTrip.mockRejectedValue(new ForbiddenException());
@@ -305,6 +342,7 @@ describe("TripsController", () => {
 function createTripsController() {
   const tripsService = {
     list: vi.fn(),
+    listFeed: vi.fn(),
     listMine: vi.fn(),
     getVisibleBySlugOrId: vi.fn(),
     getManagedTrip: vi.fn(),

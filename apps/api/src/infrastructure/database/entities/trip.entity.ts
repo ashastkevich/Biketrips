@@ -8,6 +8,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  type Relation,
 } from "typeorm";
 import type {
   BikeType,
@@ -124,14 +125,14 @@ export class TripEntity {
 
   @ManyToOne(() => OrganizerEntity, (organizer) => organizer.trips, { nullable: false })
   @JoinColumn({ name: "organizer_id" })
-  organizer!: OrganizerEntity;
+  organizer!: Relation<OrganizerEntity>;
 
   @Column({ name: "organizer_id", type: "uuid" })
   organizerId!: string;
 
   @ManyToOne(() => CityEntity, (city) => city.trips, { nullable: false })
   @JoinColumn({ name: "city_id" })
-  city!: CityEntity;
+  city!: Relation<CityEntity>;
 
   @Column({ name: "city_id", type: "uuid" })
   cityId!: string;

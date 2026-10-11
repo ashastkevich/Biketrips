@@ -84,7 +84,8 @@ export async function hasActiveSession(): Promise<boolean> {
   return token !== undefined && verifySessionToken(token) !== null;
 }
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+// Cached per request: layouts, metadata and pages can all ask without repeating the API call.
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const token = await getSessionAuthToken();
 
   if (!token) return null;
@@ -143,17 +144,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   } catch {
     return null;
   }
-}
-
-export async function getTrips(filters: TripFilters = {}): Promise<DataResult<TripSummary[]>> {
-  try {
-    const client = await createClient();
-    const trips = await client.listTrips(filters);
-    return { data: trips, source: "api" };
-  } catch (error) {
-    return { data: [], source: "unavailable", error: getErrorMessage(error) };
-  }
-}
+});
 
 // Anonymous read for crawlers (sitemap): never forwards the visitor's session.
 export async function getPublicTrips(): Promise<DataResult<TripSummary[]>> {
@@ -168,9 +159,13 @@ export async function getPublicTrips(): Promise<DataResult<TripSummary[]>> {
   }
 }
 
+// Cities rarely change and are the same for everyone, so they are fetched anonymously and cached.
 export async function getCities(): Promise<DataResult<City[]>> {
   try {
-    const client = await createClient();
+    const client = new BikeTripsApiClient({
+      baseUrl: apiUrl,
+      fetcher: (input, init) => fetch(input, { ...init, next: { revalidate: 3600 } }),
+    });
     const cities = await client.listCities();
     return { data: cities, source: "api" };
   } catch (error) {
@@ -189,19 +184,13 @@ export const getTrip = cache(async (slugOrId: string): Promise<DataResult<TripDe
   }
 });
 
-export async function getTripDetails(filters: TripFilters = {}): Promise<DataResult<TripDetail[]>> {
-  const summaries = await getTrips(filters);
-  if (summaries.source === "unavailable") {
-    return { data: [], source: "unavailable", error: summaries.error };
+export async function getTripFeed(filters: TripFilters = {}): Promise<DataResult<TripDetail[]>> {
+  try {
+    const client = await createClient();
+    return { data: await client.listTripFeed(filters), source: "api" };
+  } catch (error) {
+    return { data: [], source: "unavailable", error: getErrorMessage(error) };
   }
-
-  const details = await Promise.all(
-    summaries.data.map((trip) => getTrip(trip.id)),
-  );
-  return {
-    data: details.flatMap((result) => result.data ? [result.data] : []),
-    source: "api",
-  };
 }
 
 export async function getMyTrips(): Promise<DataResult<TripDetail[]>> {

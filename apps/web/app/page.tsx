@@ -4,7 +4,7 @@ import { FindTripSection } from "./find-trip-section";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import { HomeHeader } from "./home-header";
-import { getCities, getCurrentUser, getTrip, getTripDetails } from "./lib/api";
+import { getCities, getCurrentUser, getTrip, getTripFeed } from "./lib/api";
 import { CITY_COOKIE_NAME, fallbackCities, selectCity } from "./lib/cities";
 import { ArrowIcon } from "./lib/components";
 import { CreateTripLauncher } from "./lib/create-trip-launcher";
@@ -44,12 +44,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     cities,
     queryCity ?? cookieStore.get(CITY_COOKIE_NAME)?.value,
   );
-  const tripsResult = await getTripDetails({ city: selectedCity.slug });
   const requestedTripSlug = Array.isArray(query.trip) ? query.trip[0] : query.trip;
-  const requestedTripResult =
-    query.scope === "feed" && requestedTripSlug
-      ? await getTrip(requestedTripSlug)
-      : null;
+  const [tripsResult, requestedTripResult] = await Promise.all([
+    getTripFeed({ city: selectedCity.slug }),
+    query.scope === "feed" && requestedTripSlug ? getTrip(requestedTripSlug) : null,
+  ]);
   const trips =
     requestedTripResult?.data &&
     !tripsResult.data.some((trip) => trip.id === requestedTripResult.data?.id)

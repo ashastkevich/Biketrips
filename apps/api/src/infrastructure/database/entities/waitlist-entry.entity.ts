@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, type Relation } from "typeorm";
 
 import { TripEntity } from "./trip.entity.js";
 import { UserEntity } from "./user.entity.js";
@@ -17,14 +17,14 @@ export class WaitlistEntryEntity {
 
   @ManyToOne(() => TripEntity, (trip) => trip.waitlistEntries, { nullable: false })
   @JoinColumn({ name: "trip_id" })
-  trip!: TripEntity;
+  trip!: Relation<TripEntity>;
 
   @Column({ name: "trip_id", type: "uuid" })
   tripId!: string;
 
   @ManyToOne(() => UserEntity, { nullable: false })
   @JoinColumn({ name: "user_id" })
-  user!: UserEntity;
+  user!: Relation<UserEntity>;
 
   @Column({ name: "user_id", type: "uuid" })
   userId!: string;
