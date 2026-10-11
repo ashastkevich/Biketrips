@@ -106,12 +106,44 @@ Production runs on one virtual machine:
   - `biketrips-postgres`, bound to `127.0.0.1:5432`.
   - `biketrips-redis`, bound to `127.0.0.1:6379`.
 
-Nginx routes:
+Nginx routes (`/etc/nginx/sites-enabled/biketrips`):
 
 - `/` proxies to Next.js.
 - `/backend/` proxies to the NestJS API.
 - Next.js owns its own `/api/...` route handlers, so do not proxy all `/api`
   traffic directly to NestJS.
+- `/_next/static/` and `/img/` are served by nginx straight from disk
+  (`/srv/biketrips/app/apps/web/.next/static/` and `.../public/img/`) with
+  `Cache-Control: public, max-age=31536000, immutable`, so they never reach
+  Node.js.
+- HTTPS listeners use HTTP/2 (`listen 443 ssl http2;`, the nginx 1.24 syntax).
+  `gzip_types` in the server block covers CSS, JS, JSON and SVG served from
+  disk; Next.js compresses its own proxied responses.
+
+Performance-related part of the server block, added on 2026-10-11 (the
+pre-change file is kept at `/root/biketrips.nginx.bak-2026-10-11`):
+
+```nginx
+gzip_vary on;
+gzip_types text/css application/javascript application/json image/svg+xml;
+
+location /_next/static/ {
+    alias /srv/biketrips/app/apps/web/.next/static/;
+    add_header Cache-Control "public, max-age=31536000, immutable";
+    access_log off;
+}
+
+location /img/ {
+    alias /srv/biketrips/app/apps/web/public/img/;
+    add_header Cache-Control "public, max-age=31536000, immutable";
+    access_log off;
+}
+
+listen [::]:443 ssl http2 ipv6only=on; # managed by Certbot
+listen 443 ssl http2; # managed by Certbot
+```
+
+After editing nginx, always run `nginx -t` before `systemctl reload nginx`.
 
 Useful production checks:
 
