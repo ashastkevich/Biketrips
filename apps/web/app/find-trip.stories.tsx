@@ -5,8 +5,9 @@ import { useMemo, useState } from "react";
 
 import { storyTrips } from "./ui/story-fixtures";
 import { getTripCardProps } from "./lib/components";
-import { RouteFilterBar, TripCard } from "./ui/components";
-import type { RouteFilterValue } from "./ui/components";
+import { TripCard } from "./ui/components";
+import { RouteFilterBar } from "./ui/route-filter-bar";
+import type { RouteFilterValue } from "./ui/route-filter-bar";
 import styles from "./find-trip-section.module.css";
 
 const meta = {

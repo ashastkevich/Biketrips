@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import type { CurrentUser } from "../lib/api";
 import type { City } from "@biketrips/domain";
@@ -244,9 +245,9 @@ function VerificationControl({ verified, href }: { verified: boolean; href: stri
       Подтверждено
     </span>
   ) : (
-    <a className={styles.verification} href={href}>
+    <Link className={styles.verification} href={href}>
       Подтвердить
-    </a>
+    </Link>
   );
 }
 

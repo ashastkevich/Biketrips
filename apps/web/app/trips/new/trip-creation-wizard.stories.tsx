@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { StartLocationPicker } from "./start-location-picker";
 import { TripCreationWizard } from "./trip-creation-wizard";
-import { FormField, TextField } from "../../ui/components";
+import { FormField, TextField } from "../../ui/form-controls";
 import { fallbackCities } from "../../lib/cities";
 
 const meta = {

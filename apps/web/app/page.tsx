@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { FindTripSection } from "./find-trip-section";
 import { cookies } from "next/headers";
 import Image from "next/image";
+import Link from "next/link";
 import { HomeHeader } from "./home-header";
 import { getCities, getCurrentUser, getTrip, getTripFeed } from "./lib/api";
 import { CITY_COOKIE_NAME, fallbackCities, selectCity } from "./lib/cities";
@@ -138,9 +139,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <p>Документы</p>
             <nav className={styles.footerLinks} aria-label="Юридическая информация">
               {legalLinks.map((link) => (
-                <a href={link.href} key={link.href}>
+                <Link href={link.href} key={link.href}>
                   {link.label}
-                </a>
+                </Link>
               ))}
             </nav>
           </div>

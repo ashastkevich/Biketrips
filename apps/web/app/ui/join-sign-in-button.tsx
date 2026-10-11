@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { savePostAuthReturnTo } from "../auth/post-auth-return";
@@ -17,11 +18,12 @@ export function JoinSignInButton({
   children: string;
   className?: string;
 }) {
+  const router = useRouter();
   const [showAuth, setShowAuth] = useState(false);
 
   function startAuthorization(provider: AuthProvider) {
     savePostAuthReturnTo(returnTo);
-    window.location.assign(`/auth/${provider}?returnTo=${encodeURIComponent(returnTo)}`);
+    router.push(`/auth/${provider}?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
   return (

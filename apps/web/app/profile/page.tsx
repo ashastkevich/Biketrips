@@ -3,6 +3,7 @@ import { noIndexMetadata } from "../lib/site";
 import { AppTopbar } from "../lib/app-topbar";
 import { UpcomingTrips } from "./upcoming-trips";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import {
   getCities,
@@ -118,7 +119,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
               <h1>{name}</h1>
             </div>
             {user?.role === "admin" ? (
-              <a className={styles.adminLink} href="/admin/moderation">Открыть модерацию поездок</a>
+              <Link className={styles.adminLink} href="/admin/moderation">Открыть модерацию поездок</Link>
             ) : null}
           </div>
         </header>

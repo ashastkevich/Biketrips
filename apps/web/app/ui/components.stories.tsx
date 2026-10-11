@@ -16,34 +16,20 @@ import {
 } from "../lib/labels";
 import {
   Alert,
-  BackLink,
   Button,
   CapacityIndicator,
   Card,
-  Chip,
   CloseButton,
   DifficultyBadge,
-  DifficultySelect,
-  EmptyState,
-  FileField,
-  FormField,
   IconButton,
   LinkButton,
-  ParticipantRow,
-  ParticipationStatusBadge,
-  RouteFilterBar,
-  SelectField,
-  Skeleton,
-  StickyActionBar,
-  Switch,
-  TextareaField,
-  TextField,
-  TripMeta,
   TripCard as TripCardComponent,
-  TripStatusBadge,
 } from "./components";
+import { BackLink, EmptyState, ParticipantRow, ParticipationStatusBadge, Skeleton, StickyActionBar, TripMeta, TripStatusBadge } from "./extra-components";
+import { Chip, DifficultySelect, FileField, FormField, SelectField, Switch, TextareaField, TextField } from "./form-controls";
+import { RouteFilterBar } from "./route-filter-bar";
 
-import type { RouteFilterValue } from "./components";
+import type { RouteFilterValue } from "./route-filter-bar";
 
 const meta = {
   title: "Design System/Components/MVP Kit",

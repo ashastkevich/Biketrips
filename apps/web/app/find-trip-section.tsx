@@ -4,10 +4,11 @@ import { useMemo, useState } from "react";
 import type { TripDetail } from "@biketrips/domain";
 
 import { getTripCardProps } from "./lib/components";
-import { Button, RouteFilterBar, TripCard } from "./ui/components";
+import { Button, TripCard } from "./ui/components";
+import { RouteFilterBar } from "./ui/route-filter-bar";
 import { TripDetailsModal } from "./ui/trip-details-modal";
 import { useTripModal } from "./ui/use-trip-modal";
-import type { RouteFilterValue } from "./ui/components";
+import type { RouteFilterValue } from "./ui/route-filter-bar";
 import type { City } from "@biketrips/domain";
 import { CitySelector } from "./city-selector";
 import { LinkButton } from "./ui/components";

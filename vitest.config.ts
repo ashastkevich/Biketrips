@@ -4,6 +4,8 @@ export default defineConfig({
   test: {
     exclude: [
       "**/node_modules/**",
+      // Worktrees of parallel agent sessions hold full copies of the repository.
+      "**/.claude/**",
       "**/.next/**",
       "**/dist/**",
       "**/coverage/**",

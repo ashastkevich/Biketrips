@@ -1,25 +1,13 @@
 "use client";
 
 import type { City, DifficultyLevel, UnpavedSurfaceDetail } from "@biketrips/domain";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { savePostAuthReturnTo } from "../../auth/post-auth-return";
 import { unpavedSurfaceDetailLabels } from "../../lib/labels";
-import {
-  Button,
-  Card,
-  Chip,
-  DifficultySelect,
-  FileField,
-  FormField,
-  LinkButton,
-  Stepper,
-  Switch,
-  TextareaField,
-  TextField,
-  TripCard,
-  type StepperSaveStatus,
-} from "../../ui/components";
+import { Button, Card, LinkButton, TripCard } from "../../ui/components";
+import { Chip, DifficultySelect, FileField, FormField, Stepper, Switch, TextareaField, TextField, type StepperSaveStatus } from "../../ui/form-controls";
 import type { AuthProvider } from "../../ui/auth-options";
 import { AuthOptionsDialog } from "../../ui/auth-options-dialog";
 import componentStyles from "../../ui/components.module.css";
@@ -143,6 +131,7 @@ export function TripCreationWizard({
   cities,
 }: TripCreationWizardProps) {
   const defaultDraft = useMemo(() => ({ ...initialDraft, ...initialValues }), [initialValues]);
+  const router = useRouter();
   const [step, setStep] = useState<number>(initialStep);
   const [draft, setDraft] = useState<TripDraft>(() => defaultDraft);
   const [saveStatus, setSaveStatus] = useState<StepperSaveStatus>("idle");
@@ -350,7 +339,7 @@ export function TripCreationWizard({
   function startAuthorization(provider: AuthProvider) {
     const returnTo = mode === "edit" ? cancelHref : "/trips/new?step=3";
     if (mode === "create") savePostAuthReturnTo(returnTo);
-    window.location.assign(`/auth/${provider}?returnTo=${encodeURIComponent(returnTo)}`);
+    router.push(`/auth/${provider}?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
   const title = draft.title || (isTitleEdited ? "" : suggestedTitle);
@@ -372,7 +361,7 @@ export function TripCreationWizard({
         if (!canPublish) {
           event.preventDefault();
           if (isRegistered) {
-            window.location.assign("/profile?verifyPhone=1");
+            router.push("/profile?verifyPhone=1");
           } else {
             setShowAuth(true);
           }

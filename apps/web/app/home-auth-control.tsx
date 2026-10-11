@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import type { AuthProvider } from "./ui/auth-options";
@@ -97,10 +98,11 @@ export function HomeAuthControl({
   isAuthorized: boolean;
   tone?: "light" | "dark";
 }) {
+  const router = useRouter();
   const [showAuth, setShowAuth] = useState(false);
 
   function startAuthorization(provider: AuthProvider) {
-    window.location.assign(`/auth/${provider}?returnTo=/`);
+    router.push(`/auth/${provider}?returnTo=/`);
   }
 
   if (isAuthorized) return <ProfileMenu tone={tone} />;

@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { MouseEvent } from "react";
 import type { ParticipantStatus, TripDetail } from "@biketrips/domain";
 
@@ -277,8 +278,9 @@ export function TripDetailsModal({
                     className={styles.joinButton}
                     tone={pendingRequests > 0 ? "primary" : "secondary"}
                     onClick={() => {
-                      // The modal already shows the trip URL, so a plain link would only change the hash.
-                      window.location.assign(`${getTripHref(trip)}?view=participants#participants`);
+                      // The modal already shows the trip URL, so a plain link would only change the hash;
+                      // the query makes it a real navigation to the trip page.
+                      router.push(`${getTripHref(trip)}?view=participants#participants`);
                     }}
                   >
                     Все участники →
@@ -287,9 +289,7 @@ export function TripDetailsModal({
                     <Button
                       className={styles.joinButton}
                       tone="secondary"
-                      onClick={() => {
-                        window.location.assign(editTripHref);
-                      }}
+                      onClick={() => router.push(editTripHref)}
                     >
                       Редактировать поездку
                     </Button>
@@ -380,7 +380,7 @@ export function TripDetailsModal({
                     )}
                     <p className={styles.joinNote}>{trip.registrationMode === "automatic" ? "Запись подтвердится сразу" : "Организатор подтвердит заявку"}</p>
                     <p className={styles.contactsNote}>
-                      Организатор увидит контакты из вашего <a href="/profile">профиля</a>: телефон, почту и Telegram.
+                      Организатор увидит контакты из вашего <Link href="/profile">профиля</Link>: телефон, почту и Telegram.
                     </p>
                   </>
                 )}

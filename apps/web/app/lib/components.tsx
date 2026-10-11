@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import type { TripDetail, TripSummary } from "@biketrips/domain";
 
 import {
@@ -11,11 +12,8 @@ import {
   tripStatusLabels,
 } from "./labels";
 import { CreateTripLauncher } from "./create-trip-launcher";
-import {
-  Alert,
-  LinkButton,
-  ParticipantRow,
-} from "../ui/components";
+import { Alert, LinkButton } from "../ui/components";
+import { ParticipantRow } from "../ui/extra-components";
 import type { TripCardProps } from "../ui/components";
 import { DEFAULT_TRIP_TIME_ZONE } from "./trip-time";
 import { getTripHref } from "./trip-links";
@@ -128,8 +126,11 @@ export function Brand({
   href?: string;
   scrolled?: boolean;
 }) {
+  // In-page anchors (the home hero) stay plain links; pages are opened without a full reload.
+  const BrandLink = href.startsWith("#") ? "a" : Link;
+
   return (
-    <a
+    <BrandLink
       className={classes(
         shellStyles.brand,
         tone === "light" && shellStyles.brandLight,
@@ -148,7 +149,7 @@ export function Brand({
         <BikeIcon />
       </span>
       BikeTrips
-    </a>
+    </BrandLink>
   );
 }
 
