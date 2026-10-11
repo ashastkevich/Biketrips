@@ -44,6 +44,9 @@ describe("PATCH /api/profile", () => {
     const invalidEmail = await PATCH(
       createRequest(token, { name: "Alex", email: "алекс@example.com" })
     );
+    const invalidTelegram = await PATCH(
+      createRequest(token, { name: "Alex", telegram: "@ник" })
+    );
     const punycodeEmail = await PATCH(
       createRequest(token, { name: "Alex", email: "alex@xn--e1afmkfd.xn--p1ai" })
     );
@@ -51,6 +54,7 @@ describe("PATCH /api/profile", () => {
     expect(shortName.status).toBe(400);
     expect(invalidPhone.status).toBe(400);
     expect(invalidEmail.status).toBe(400);
+    expect(invalidTelegram.status).toBe(400);
     expect(punycodeEmail.status).toBe(400);
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -112,6 +116,7 @@ describe("PATCH /api/profile", () => {
           name: "Alex Rider",
           email: "new@example.com",
           phoneNumber: "+7 (999) 000-00-00",
+          telegramUsername: "alex_rides",
           cityId: "city-1",
         }),
         cache: "no-store",

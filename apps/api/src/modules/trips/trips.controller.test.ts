@@ -417,6 +417,7 @@ function createTrip(): TripEntity {
         role: "user",
         phoneNumber: null,
         phoneVerifiedAt: null,
+        telegramUsername: null,
         avatarUrl: null,
         cityId: null,
         city: null,

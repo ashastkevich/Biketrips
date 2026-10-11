@@ -1,6 +1,6 @@
 import { Body, Controller, ForbiddenException, Get, Inject, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { IsOptional, IsString } from "class-validator";
+import { IsOptional, IsString, Matches } from "class-validator";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 import { UsersService } from "./users.service.js";
@@ -25,6 +25,11 @@ class UpdateUserDto {
   @IsOptional()
   @IsString()
   phoneNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^(@?[A-Za-z0-9_]{5,32})?$/, { message: "Invalid Telegram username" })
+  telegramUsername?: string;
 
   @IsOptional()
   @IsString()

@@ -40,7 +40,13 @@ export class UsersService {
 
   async update(
     id: string,
-    input: { name: string; email?: string; phoneNumber?: string; cityId?: string },
+    input: {
+      name: string;
+      email?: string;
+      phoneNumber?: string;
+      telegramUsername?: string;
+      cityId?: string;
+    },
   ): Promise<UserEntity> {
     const user = await this.get(id);
     const cityId = input.cityId?.trim() || null;
@@ -70,6 +76,9 @@ export class UsersService {
     }
     user.email = nextEmail;
     user.phoneNumber = input.phoneNumber?.trim() || null;
+    if (input.telegramUsername !== undefined) {
+      user.telegramUsername = input.telegramUsername.trim().replace(/^@+/, "") || null;
+    }
     user.cityId = cityId;
     user.city = city;
     await this.usersRepository.save(user);

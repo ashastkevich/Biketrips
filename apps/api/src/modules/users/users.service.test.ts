@@ -61,6 +61,22 @@ describe("UsersService", () => {
     });
   });
 
+  it("stores the profile Telegram username without the leading @", async () => {
+    const context = createUsersService({ users: [createUser()] });
+
+    const user = await context.service.update(userId, {
+      name: "Alex",
+      telegramUsername: " @alex_rides ",
+    });
+    expect(user.telegramUsername).toBe("alex_rides");
+
+    const cleared = await context.service.update(userId, { name: "Alex", telegramUsername: "" });
+    expect(cleared.telegramUsername).toBeNull();
+
+    const untouched = await context.service.update(userId, { name: "Alex" });
+    expect(untouched.telegramUsername).toBeNull();
+  });
+
   it("resets email verification when email changes", async () => {
     const context = createUsersService({
       users: [
@@ -186,6 +202,7 @@ function createUser(input: Partial<TestUser> = {}): TestUser {
     role: "user",
     phoneNumber: null,
     phoneVerifiedAt: null,
+    telegramUsername: null,
     avatarUrl: null,
     cityId: null,
     city: null,
@@ -214,6 +231,7 @@ type TestUser = Pick<
   | "role"
   | "phoneNumber"
   | "phoneVerifiedAt"
+  | "telegramUsername"
   | "avatarUrl"
   | "cityId"
   | "city"

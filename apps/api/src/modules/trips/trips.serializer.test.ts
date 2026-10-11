@@ -94,6 +94,18 @@ describe("trip serializers", () => {
     expect(serializeTripDetail(trip).participants[0]).not.toHaveProperty("telegramUsername");
     expect(serializeTripDetail(trip).participants[0]).not.toHaveProperty("email");
     expect(
+      serializeTripDetail(
+        createTrip({
+          participants: [
+            createParticipant({
+              user: createUser({ id: "participant-user", telegramUsername: "typed_in_profile" }),
+            }),
+          ],
+        }),
+        { participantContacts: { all: true } },
+      ).participants[0],
+    ).toMatchObject({ telegramUsername: "typed_in_profile" });
+    expect(
       serializeTripDetail(trip, { participantContacts: { all: false, viewerUserId: "participant-user" } })
         .participants[0],
     ).toMatchObject({ phone: "+7 (999) 000-00-00" });
@@ -221,6 +233,7 @@ function createUser(input: Partial<UserEntity> = {}): UserEntity {
     role: "user",
     phoneNumber: null,
     phoneVerifiedAt: null,
+    telegramUsername: null,
     avatarUrl: null,
     cityId: null,
     city: null,

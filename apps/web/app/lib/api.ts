@@ -122,6 +122,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       emailVerifiedAt: string | null;
       phoneNumber: string | null;
       phoneVerifiedAt: string | null;
+      telegramUsername?: string | null;
       cityId: string | null;
       city: { name: string } | null;
       telegramAccounts?: Array<{ username: string | null }>;
@@ -134,7 +135,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       emailVerified: databaseUser.emailVerifiedAt !== null,
       phone: databaseUser.phoneNumber ?? "",
       phoneVerified: databaseUser.phoneVerifiedAt !== null,
-      telegram: verifiedTelegram || sessionUser.telegram,
+      telegram: verifiedTelegram || databaseUser.telegramUsername || sessionUser.telegram,
       telegramVerified: Boolean(verifiedTelegram) || sessionUser.telegramVerified,
       cityId: databaseUser.cityId ?? "",
       city: databaseUser.city?.name ?? "",

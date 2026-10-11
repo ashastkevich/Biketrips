@@ -29,6 +29,10 @@ export class UserEntity {
   @Column({ name: "phone_verified_at", type: "timestamptz", nullable: true })
   phoneVerifiedAt!: Date | null;
 
+  /** Entered manually in the profile; a linked Telegram account takes precedence. */
+  @Column({ name: "telegram_username", type: "text", nullable: true })
+  telegramUsername!: string | null;
+
   @Column({ name: "avatar_url", type: "text", nullable: true })
   avatarUrl!: string | null;
 

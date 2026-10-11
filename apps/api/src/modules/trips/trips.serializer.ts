@@ -21,7 +21,9 @@ function serializeParticipantContacts(participant: TripParticipantEntity) {
   const user = participant.user;
   return {
     telegramUsername:
-      user?.telegramAccounts?.find((account) => account.username)?.username ?? null,
+      user?.telegramAccounts?.find((account) => account.username)?.username ??
+      user?.telegramUsername ??
+      null,
     phone: user?.phoneNumber ?? null,
     email: user?.email ?? null,
   };

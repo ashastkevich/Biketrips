@@ -63,6 +63,13 @@ export async function PATCH(request: Request) {
     );
   }
 
+  if (telegram && !/^[A-Za-z0-9_]{5,32}$/.test(telegram)) {
+    return NextResponse.json(
+      { message: "Ник Telegram: от 5 до 32 латинских букв, цифр или подчёркиваний" },
+      { status: 400 },
+    );
+  }
+
   if (email && !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/.test(email)) {
     return NextResponse.json(
       { message: "Используйте латинские буквы и формат name@example.com" },
@@ -85,7 +92,7 @@ export async function PATCH(request: Request) {
         authorization: `Bearer ${decodeURIComponent(token)}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ name, email, phoneNumber: phone, cityId }),
+      body: JSON.stringify({ name, email, phoneNumber: phone, telegramUsername: telegram, cityId }),
       cache: "no-store",
     },
   ).catch(() => null);
