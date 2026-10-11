@@ -1,7 +1,8 @@
-import { BadRequestException, StreamableFile } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, StreamableFile } from "@nestjs/common";
 import { describe, expect, it, vi } from "vitest";
 
 import type { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
+import type { TripParticipantEntity } from "../../infrastructure/database/entities/trip-participant.entity.js";
 import { TripsController } from "./trips.controller.js";
 import type { CreateTripDto } from "./dto/trip.dto.js";
 
@@ -42,6 +43,83 @@ describe("TripsController", () => {
     expect(result.map((trip) => trip.description)).toEqual([
       "Updated description",
       "A ride through forest roads",
+    ]);
+  });
+
+  it("hides participant contacts from viewers who do not manage the trip", async () => {
+    const context = createTripsController();
+    const trip = {
+      ...createTrip(),
+      participants: [
+        createParticipant({ id: "participant-1", userId: "user-2", phone: "+79990000002" }),
+        createParticipant({ id: "participant-2", userId: "user-3", phone: "+79990000003" }),
+      ],
+    };
+    const contactsOf = (result: { participants: Array<{ phone?: string | null }> }) =>
+      result.participants.map((participant) => participant.phone);
+
+    context.tripsService.getVisibleBySlugOrId.mockResolvedValue({
+      trip,
+      includePendingRevision: false,
+      canManage: false,
+    });
+    expect(contactsOf(await context.controller.get(tripId, { user: null }))).toEqual([
+      undefined,
+      undefined,
+    ]);
+    expect(
+      contactsOf(await context.controller.get(tripId, { user: { id: "user-2", role: "user" } })),
+    ).toEqual(["+79990000002", undefined]);
+
+    context.tripsService.getVisibleBySlugOrId.mockResolvedValue({
+      trip,
+      includePendingRevision: false,
+      canManage: true,
+    });
+    expect(
+      contactsOf(await context.controller.get(tripId, { user: { id: "user-1", role: "user" } })),
+    ).toEqual(["+79990000002", "+79990000003"]);
+  });
+
+  it("rejects participant management by someone other than the organizer", async () => {
+    const context = createTripsController();
+    context.tripsService.getManagedTrip.mockRejectedValue(new ForbiddenException());
+
+    await expect(
+      context.controller.listParticipants(tripId, { user: { id: "user-2", role: "user" } }),
+    ).rejects.toThrow(ForbiddenException);
+    await expect(
+      context.controller.updateParticipant(
+        tripId,
+        "participant-1",
+        { status: "cancelled" },
+        { user: { id: "user-2", role: "user" } },
+      ),
+    ).rejects.toThrow(ForbiddenException);
+    expect(context.participantsService.listForTrip).not.toHaveBeenCalled();
+    expect(context.participantsService.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it("returns participants to the organizer without nested user records", async () => {
+    const context = createTripsController();
+    context.tripsService.getManagedTrip.mockResolvedValue(createTrip());
+    context.participantsService.listForTrip.mockResolvedValue([
+      { ...createParticipant({ id: "participant-1", userId: "user-2" }), user: { email: "x@y.z" } },
+    ]);
+
+    const result = await context.controller.listParticipants(tripId, {
+      user: { id: "user-1", role: "user" },
+    });
+
+    expect(result).toEqual([
+      {
+        id: "participant-1",
+        status: "confirmed",
+        userId: "user-2",
+        name: "Rider",
+        telegramUsername: "rider",
+        phone: null,
+      },
     ]);
   });
 
@@ -149,6 +227,7 @@ describe("TripsController", () => {
   it("delegates trip status transitions and participation actions", async () => {
     const context = createTripsController();
     context.tripsService.transition.mockResolvedValue(createTrip());
+    context.tripsService.getManagedTrip.mockResolvedValue(createTrip());
     context.participantsService.joinTrip.mockResolvedValue({ id: "participant-1" });
     context.participantsService.getForUser.mockResolvedValue({ id: "participant-1" });
     context.participantsService.cancelForUser.mockResolvedValue({ id: "participant-1" });
@@ -168,10 +247,13 @@ describe("TripsController", () => {
     );
     await context.controller.participation(tripId, { user: { id: "user-1" } });
     await context.controller.cancelParticipation(tripId, { user: { id: "user-1" } });
-    await context.controller.listParticipants(tripId);
-    await context.controller.updateParticipant(tripId, "participant-1", {
-      status: "confirmed",
-    });
+    await context.controller.listParticipants(tripId, { user: { id: "user-1", role: "user" } });
+    await context.controller.updateParticipant(
+      tripId,
+      "participant-1",
+      { status: "confirmed" },
+      { user: { id: "user-1", role: "user" } },
+    );
 
     expect(context.tripsService.transition).toHaveBeenCalledWith(tripId, "published", {
       id: "user-1",
@@ -190,6 +272,10 @@ describe("TripsController", () => {
       name: "Alex",
       comment: "See you",
     });
+    expect(context.tripsService.getManagedTrip).toHaveBeenCalledWith(tripId, {
+      id: "user-1",
+      role: "user",
+    });
     expect(context.participantsService.updateStatus).toHaveBeenCalledWith(
       tripId,
       "participant-1",
@@ -202,6 +288,8 @@ function createTripsController() {
   const tripsService = {
     list: vi.fn(),
     listMine: vi.fn(),
+    getVisibleBySlugOrId: vi.fn(),
+    getManagedTrip: vi.fn(),
     getRouteFileForDownload: vi.fn(),
     getCoverImageForDownload: vi.fn(),
     getBySlugOrId: vi.fn(),
@@ -342,4 +430,17 @@ function createTrip(): TripEntity {
     createdAt: new Date("2099-08-01T08:00:00.000Z"),
     updatedAt: new Date("2099-08-01T08:00:00.000Z"),
   };
+}
+
+function createParticipant(input: Partial<TripParticipantEntity> = {}): TripParticipantEntity {
+  return {
+    id: "participant-1",
+    status: "confirmed",
+    name: "Rider",
+    telegramUsername: "rider",
+    phone: null,
+    tripId,
+    userId: "user-2",
+    ...input,
+  } as TripParticipantEntity;
 }

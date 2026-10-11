@@ -1240,7 +1240,9 @@ export function ParticipantRow({
       <span className={styles.participantRowAvatar} aria-hidden="true">{initials}</span>
       <div className={styles.participantRowPerson}>
         <strong>{participant.name}</strong>
-        <span>{participant.telegramUsername ? `@${participant.telegramUsername}` : "Telegram не указан"}</span>
+        {participant.telegramUsername === undefined ? null : (
+          <span>{participant.telegramUsername ? `@${participant.telegramUsername}` : "Telegram не указан"}</span>
+        )}
       </div>
       <ParticipationStatusBadge status={participant.status} />
       {actions ? <div className={styles.participantRowActions}>{actions}</div> : null}

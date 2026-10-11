@@ -9,6 +9,28 @@ function countParticipants(
   return participants?.filter((participant) => participant.status === status).length ?? 0;
 }
 
+export interface ParticipantContactsAccess {
+  /** Organizer or admin: contacts of every participant are visible. */
+  all: boolean;
+  /** A participant always sees their own contacts. */
+  viewerUserId?: string | null;
+}
+
+export function serializeTripParticipant(
+  participant: TripParticipantEntity,
+  includeContacts: boolean,
+) {
+  return {
+    id: participant.id,
+    status: participant.status,
+    userId: participant.userId,
+    name: participant.name,
+    ...(includeContacts
+      ? { telegramUsername: participant.telegramUsername, phone: participant.phone }
+      : {}),
+  };
+}
+
 export function serializeTripSummary(
   trip: TripEntity,
   options: { includePendingRevision?: boolean } = {},
@@ -50,7 +72,10 @@ export function serializeTripSummary(
 
 export function serializeTripDetail(
   trip: TripEntity,
-  options: { includePendingRevision?: boolean } = {},
+  options: {
+    includePendingRevision?: boolean;
+    participantContacts?: ParticipantContactsAccess;
+  } = {},
 ) {
   const routeGpxFile = trip.routeFiles?.[0] ?? null;
   const detail = {
@@ -74,14 +99,16 @@ export function serializeTripDetail(
       isVerified: trip.organizer.isVerified,
     },
     participants:
-      trip.participants?.map((participant) => ({
-        id: participant.id,
-        status: participant.status,
-        userId: participant.userId,
-        name: participant.name,
-        telegramUsername: participant.telegramUsername,
-        phone: participant.phone,
-      })) ?? [],
+      trip.participants?.map((participant) =>
+        serializeTripParticipant(
+          participant,
+          Boolean(
+            options.participantContacts?.all ||
+              (options.participantContacts?.viewerUserId &&
+                participant.userId === options.participantContacts.viewerUserId),
+          ),
+        ),
+      ) ?? [],
     waitlist:
       trip.waitlistEntries?.map((entry) => ({
         id: entry.id,

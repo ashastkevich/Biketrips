@@ -161,8 +161,9 @@ export interface TripParticipant {
   status: ParticipantStatus;
   userId: string;
   name: string;
-  telegramUsername: string | null;
-  phone: string | null;
+  /** Present only for the trip organizer, admins and the participant themselves. */
+  telegramUsername?: string | null;
+  phone?: string | null;
 }
 
 export interface TripWaitlistEntry {

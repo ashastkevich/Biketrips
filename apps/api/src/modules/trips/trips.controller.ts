@@ -25,7 +25,11 @@ import { ParticipantsService } from "../participants/participants.service.js";
 import { CreateParticipantDto, UpdateParticipantStatusDto } from "../participants/dto/participant.dto.js";
 import { CreateTripDto, TripFiltersDto, UpdateTripDto } from "./dto/trip.dto.js";
 import { type UploadedCoverImage, type UploadedRouteFile, TripsService } from "./trips.service.js";
-import { serializeTripDetail, serializeTripSummary } from "./trips.serializer.js";
+import {
+  serializeTripDetail,
+  serializeTripParticipant,
+  serializeTripSummary,
+} from "./trips.serializer.js";
 
 interface MultipartTripBody {
   payload?: string;
@@ -95,6 +99,10 @@ export class TripsController {
     return trips.map((trip) =>
       serializeTripDetail(trip, {
         includePendingRevision: trip.organizer.userId === request.user.id,
+        participantContacts: {
+          all: trip.organizer.userId === request.user.id,
+          viewerUserId: request.user.id,
+        },
       }),
     );
   }
@@ -153,6 +161,7 @@ export class TripsController {
     const result = await this.tripsService.getVisibleBySlugOrId(slugOrId, request.user);
     return serializeTripDetail(result.trip, {
       includePendingRevision: result.includePendingRevision,
+      participantContacts: { all: result.canManage, viewerUserId: request.user?.id },
     });
   }
 
@@ -326,8 +335,13 @@ export class TripsController {
   @Get(":id/participants")
   @UseGuards(JwtAuthGuard, TripCreatorGuard)
   @ApiBearerAuth()
-  async listParticipants(@Param("id") id: string) {
-    return this.participantsService.listForTrip(id);
+  async listParticipants(
+    @Param("id") id: string,
+    @Req() request: { user: { id: string; role: "user" | "admin" } },
+  ) {
+    const trip = await this.tripsService.getManagedTrip(id, request.user);
+    const participants = await this.participantsService.listForTrip(trip.id);
+    return participants.map((participant) => serializeTripParticipant(participant, true));
   }
 
   @Patch(":id/participants/:participantId")
@@ -336,8 +350,15 @@ export class TripsController {
   async updateParticipant(
     @Param("id") id: string,
     @Param("participantId") participantId: string,
-    @Body() dto: UpdateParticipantStatusDto
+    @Body() dto: UpdateParticipantStatusDto,
+    @Req() request: { user: { id: string; role: "user" | "admin" } },
   ) {
-    return this.participantsService.updateStatus(id, participantId, dto.status);
+    const trip = await this.tripsService.getManagedTrip(id, request.user);
+    const participant = await this.participantsService.updateStatus(
+      trip.id,
+      participantId,
+      dto.status,
+    );
+    return serializeTripParticipant(participant, true);
   }
 }

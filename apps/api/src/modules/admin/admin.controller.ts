@@ -38,7 +38,12 @@ export class AdminController {
   @ApiBearerAuth()
   async listModerationQueue() {
     const trips = await this.tripsService.listModerationQueue();
-    return trips.map((trip) => serializeTripDetail(trip, { includePendingRevision: true }));
+    return trips.map((trip) =>
+      serializeTripDetail(trip, {
+        includePendingRevision: true,
+        participantContacts: { all: true },
+      }),
+    );
   }
 
   @Post("trips/:id/approve")

@@ -214,6 +214,7 @@ export class TripsService {
   async getVisibleBySlugOrId(slugOrId: string, actor: TripActor | null): Promise<{
     trip: TripEntity;
     includePendingRevision: boolean;
+    canManage: boolean;
   }> {
     const trip = await this.getBySlugOrId(slugOrId);
     const ownsTrip = actor?.id === trip.organizer.userId;
@@ -226,7 +227,18 @@ export class TripsService {
     return {
       trip,
       includePendingRevision: Boolean((ownsTrip || isAdmin) && trip.pendingRevision),
+      canManage: ownsTrip || isAdmin,
     };
+  }
+
+  /** Loads a trip whose participants the actor may see and manage: its organizer or an admin. */
+  async getManagedTrip(id: string, actor: TripActor): Promise<TripEntity> {
+    const trip = await this.getBySlugOrId(id);
+    if (trip.organizer.userId !== actor.id && actor.role !== "admin") {
+      throw new ForbiddenException("Only the trip organizer can manage its participants");
+    }
+
+    return trip;
   }
 
   async create(

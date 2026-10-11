@@ -80,7 +80,13 @@ describe("trip serializers", () => {
       ],
     });
 
-    expect(serializeTripDetail(trip)).toMatchObject({
+    expect(serializeTripDetail(trip).participants[0]).not.toHaveProperty("phone");
+    expect(serializeTripDetail(trip).participants[0]).not.toHaveProperty("telegramUsername");
+    expect(
+      serializeTripDetail(trip, { participantContacts: { all: false, viewerUserId: "participant-user" } })
+        .participants[0],
+    ).toMatchObject({ phone: "+7 (999) 000-00-00" });
+    expect(serializeTripDetail(trip, { participantContacts: { all: true } })).toMatchObject({
       pace: "steady",
       startLat: null,
       startLng: null,

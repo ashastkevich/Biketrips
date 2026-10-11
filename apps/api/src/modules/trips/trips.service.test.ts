@@ -337,6 +337,24 @@ describe("TripsService", () => {
     ).resolves.toMatchObject({ trip: { id: tripId } });
   });
 
+  it("lets only the organizer or an administrator manage trip participants", async () => {
+    const context = createTripsService({
+      trips: [createTrip()],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+
+    await expect(
+      context.service.getManagedTrip(tripId, { id: "another-user", role: "user" }),
+    ).rejects.toThrow(ForbiddenException);
+    await expect(
+      context.service.getManagedTrip(tripId, { id: actorId, role: "user" }),
+    ).resolves.toMatchObject({ id: tripId });
+    await expect(
+      context.service.getManagedTrip(tripId, { id: "admin-user", role: "admin" }),
+    ).resolves.toMatchObject({ id: tripId });
+  });
+
   it("submits and withdraws a new trip review", async () => {
     const context = createTripsService({
       trips: [createTrip({ status: "draft", moderationStatus: "draft" })],
