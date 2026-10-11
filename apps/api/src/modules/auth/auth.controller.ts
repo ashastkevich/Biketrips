@@ -62,16 +62,19 @@ class DevLoginDto {
   phone?: string;
 }
 
+// Messages are shown to the visitor as is, so they are in Russian.
+const invalidEmailMessage = "Укажите корректный адрес электронной почты";
+
 class EmailCodeRequestDto {
-  @IsEmail()
+  @IsEmail({}, { message: invalidEmailMessage })
   email!: string;
 }
 
 class EmailCodeVerifyDto {
-  @IsEmail()
+  @IsEmail({}, { message: invalidEmailMessage })
   email!: string;
 
-  @Matches(/^\d{6}$/)
+  @Matches(/^\d{6}$/, { message: "Неверный код подтверждения" })
   code!: string;
 }
 

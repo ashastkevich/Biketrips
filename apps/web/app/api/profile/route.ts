@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 
 import { getServerApiUrl } from "../../lib/server-api-url";
+import { getApiErrorMessage } from "../../lib/api-error-message";
 import { isSecureRequest } from "../auth/session-cookie";
 
 const apiUrl = getServerApiUrl();
@@ -98,9 +99,9 @@ export async function PATCH(request: Request) {
   ).catch(() => null);
 
   if (!apiResponse?.ok) {
-    const apiError = await apiResponse?.json().catch(() => null) as { message?: string } | null;
+    const apiError: unknown = await apiResponse?.json().catch(() => null);
     return NextResponse.json(
-      { message: apiError?.message ?? "Не удалось сохранить профиль в базе данных" },
+      { message: getApiErrorMessage(apiError, "Не удалось сохранить профиль в базе данных") },
       { status: apiResponse?.status ?? 503 },
     );
   }

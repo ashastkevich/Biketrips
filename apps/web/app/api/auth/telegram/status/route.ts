@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getServerApiUrl } from "../../../../lib/server-api-url";
+import { getApiErrorMessage } from "../../../../lib/api-error-message";
 import { isSecureRequest } from "../../session-cookie";
 
 const apiUrl = getServerApiUrl();
@@ -25,12 +26,12 @@ export async function POST(request: Request) {
   }
 
   const result = (await apiResponse.json().catch(() => null)) as
-    | { status?: string; accessToken?: string; tokenType?: string; message?: string }
+    | { status?: string; accessToken?: string; tokenType?: string; message?: unknown }
     | null;
 
   if (!apiResponse.ok) {
     return NextResponse.json(
-      { message: result?.message ?? "Не удалось проверить вход через Telegram" },
+      { message: getApiErrorMessage(result, "Не удалось проверить вход через Telegram") },
       { status: apiResponse.status },
     );
   }

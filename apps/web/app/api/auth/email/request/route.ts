@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getServerApiUrl } from "../../../../lib/server-api-url";
+import { getApiErrorMessage } from "../../../../lib/api-error-message";
 
 const apiUrl = getServerApiUrl();
 
@@ -31,16 +32,10 @@ export async function POST(request: Request) {
 
   if (!apiResponse.ok) {
     return NextResponse.json(
-      { message: getApiMessage(result, "Не удалось отправить код") },
+      { message: getApiErrorMessage(result, "Не удалось отправить код") },
       { status: apiResponse.status },
     );
   }
 
   return NextResponse.json(result ?? { ok: true });
-}
-
-function getApiMessage(result: unknown, fallback: string): string {
-  if (!result || typeof result !== "object" || !("message" in result)) return fallback;
-  const message = result.message;
-  return typeof message === "string" ? message : fallback;
 }

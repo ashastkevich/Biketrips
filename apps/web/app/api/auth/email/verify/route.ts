@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getServerApiUrl } from "../../../../lib/server-api-url";
+import { getApiErrorMessage } from "../../../../lib/api-error-message";
 import { isSecureRequest } from "../../session-cookie";
 
 const apiUrl = getServerApiUrl();
@@ -36,12 +37,12 @@ export async function POST(request: Request) {
   }
 
   const result = (await apiResponse.json().catch(() => null)) as
-    | { accessToken?: string; message?: string }
+    | { accessToken?: string; message?: unknown }
     | null;
 
   if (!apiResponse.ok || !result?.accessToken) {
     return NextResponse.json(
-      { message: result?.message ?? "Не удалось проверить код" },
+      { message: getApiErrorMessage(result, "Не удалось проверить код") },
       { status: apiResponse.status },
     );
   }
