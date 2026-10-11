@@ -6,6 +6,7 @@ import { notFound, redirect } from "next/navigation";
 import { AppTopbar } from "../../lib/app-topbar";
 import { DataNotice, getTripCardProps } from "../../lib/components";
 import {
+  cancelParticipation,
   getCurrentUser,
   getTrip,
   joinTrip,
@@ -38,6 +39,20 @@ const participationDescriptions: Record<ParticipantStatus, string> = {
   confirmed: "Поездка добавлена в ваш список.",
   pending: "Организатор подтвердит заявку.",
   waitlisted: "Сообщим, если освободится место.",
+  cancelled: "",
+};
+
+const joinedTitles: Record<ParticipantStatus, string> = {
+  confirmed: "Вы записаны на поездку",
+  pending: "Заявка отправлена",
+  waitlisted: "Вы в листе ожидания",
+  cancelled: "Запись отменена",
+};
+
+const cancelParticipationLabels: Record<ParticipantStatus, string> = {
+  confirmed: "Отменить запись",
+  pending: "Отозвать заявку",
+  waitlisted: "Покинуть лист ожидания",
   cancelled: "",
 };
 
@@ -139,6 +154,7 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
   const myParticipation = trip.participants.find(
     (participant) => participant.userId === currentUser?.id && participant.status !== "cancelled",
   );
+  const canChangeParticipation = trip.status !== "cancelled" && trip.status !== "finished";
   const joinLabel = waitlist ? "Встать в лист ожидания" : "Записаться";
   const participantError = readQueryValue(query.participantError);
   const participantSuccess =
@@ -159,6 +175,21 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
     } catch (error) {
       const message = error instanceof Error ? error.message : "Не удалось записаться";
       destination = `/trips/${slug}?joinError=${encodeURIComponent(message)}`;
+    }
+
+    redirect(destination);
+  }
+
+  async function cancelParticipationAction() {
+    "use server";
+
+    let destination = `/trips/${slug}?left=1`;
+
+    try {
+      await cancelParticipation(trip.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Не удалось отменить запись";
+      destination = `/trips/${slug}?leaveError=${encodeURIComponent(message)}`;
     }
 
     redirect(destination);
@@ -208,11 +239,19 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
 
       <main className="shell app-content-shell detail-shell">
         <DataNotice source={result.source} error={result.error} />
-        {hasFlag(query.joined) ? (
-          <Alert title="Заявка отправлена" tone="success">
-            {waitlist
-              ? "Вы в листе ожидания. Сообщим, если освободится место."
-              : "Эта поездка добавлена в ваш список."}
+        {hasFlag(query.joined) && myParticipation ? (
+          <Alert title={joinedTitles[myParticipation.status]} tone="success">
+            {participationDescriptions[myParticipation.status]}
+          </Alert>
+        ) : null}
+        {hasFlag(query.left) && !myParticipation ? (
+          <Alert title="Запись отменена" tone="success">
+            Если планы изменятся, вы сможете записаться снова.
+          </Alert>
+        ) : null}
+        {query.leaveError ? (
+          <Alert title="Не удалось отменить запись" tone="danger">
+            {Array.isArray(query.leaveError) ? query.leaveError[0] : query.leaveError}
           </Alert>
         ) : null}
         {query.joinError ? (
@@ -278,7 +317,11 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
               ) : (
                 <>
                   <p className={tripDetailsStyles.joinKicker}>
-                    {waitlist ? "Места закончились" : "Можно присоединиться"}
+                    {myParticipation
+                      ? "Ваша запись"
+                      : waitlist
+                        ? "Места закончились"
+                        : "Можно присоединиться"}
                   </p>
                   {hasParticipantLimit ? (
                     <CapacityIndicator
@@ -295,6 +338,17 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
                       <span aria-hidden="true">✓</span>
                       <h3>{participationTitles[myParticipation.status]}</h3>
                       <p>{participationDescriptions[myParticipation.status]}</p>
+                      {canChangeParticipation ? (
+                        <form action={cancelParticipationAction}>
+                          <Button
+                            className={`${tripDetailsStyles.joinButton} ${tripDetailsStyles.successButton}`}
+                            tone="secondary"
+                            type="submit"
+                          >
+                            {cancelParticipationLabels[myParticipation.status]}
+                          </Button>
+                        </form>
+                      ) : null}
                     </div>
                   ) : (
                     <>

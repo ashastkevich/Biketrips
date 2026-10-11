@@ -289,14 +289,18 @@ export function TripDetailsModal({
                 <h3>
                   {(participationStatus === "waitlisted" || (!participationStatus && waitlist))
                     ? "Вы в листе ожидания"
-                    : joined
-                      ? "Вы успешно записаны!"
-                      : "Вы уже записаны"}
+                    : participationStatus === "pending"
+                      ? "Заявка отправлена"
+                      : joined
+                        ? "Вы успешно записаны!"
+                        : "Вы уже записаны"}
                 </h3>
                 <p>
                   {(participationStatus === "waitlisted" || (!participationStatus && waitlist))
                     ? "Сообщим, если освободится место."
-                    : "Эта поездка добавлена в ваш список."}
+                    : participationStatus === "pending"
+                      ? "Организатор подтвердит заявку."
+                      : "Эта поездка добавлена в ваш список."}
                 </p>
                 {participationError ? (
                   <p className={styles.error} role="alert">{participationError}</p>
@@ -308,7 +312,13 @@ export function TripDetailsModal({
                     disabled={participationLoading}
                     onClick={handleCancelParticipation}
                   >
-                    {participationLoading ? "Отменяем…" : "Отменить запись"}
+                    {participationLoading
+                      ? "Отменяем…"
+                      : participationStatus === "pending"
+                        ? "Отозвать заявку"
+                        : participationStatus === "waitlisted"
+                          ? "Покинуть лист ожидания"
+                          : "Отменить запись"}
                   </Button>
                 ) : null}
               </div>

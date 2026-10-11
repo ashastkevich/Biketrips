@@ -247,6 +247,11 @@ export async function joinTrip(tripId: string): Promise<TripParticipant> {
   return client.joinTrip(tripId);
 }
 
+export async function cancelParticipation(tripId: string): Promise<TripParticipant> {
+  const client = await createClient({ requireUserSession: true });
+  return client.cancelParticipation(tripId);
+}
+
 export async function updateTripStatus(
   tripId: string,
   action: "publish" | "cancel" | "finish"
