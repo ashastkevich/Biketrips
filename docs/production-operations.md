@@ -263,16 +263,22 @@ If email login fails:
   incoming request protocol to decide the cookie `secure` flag, so session
   cookies are secure on the HTTPS domain while still behaving correctly in local
   HTTP development.
-- The API currently runs in production through:
+- Since 2026-10-11 `biketrips-api.service` runs the compiled build built by the
+  deploy script, from `WorkingDirectory=/srv/biketrips/app`:
 
   ```bash
-  npx tsx --tsconfig apps/api/tsconfig.json apps/api/src/index.ts
+  /usr/bin/node apps/api/dist/index.js
   ```
 
-  This is a deployment workaround because `node dist/index.js` currently hits an
-  ESM/TypeORM circular metadata runtime error around `OrganizerEntity` and
-  `UserEntity`. Fix that code issue before switching systemd back to
-  `npm run start -w @biketrips/api`.
+  Singular entity relations are typed as `Relation<...>` so the compiled ESM
+  output has no `OrganizerEntity`/`UserEntity` import cycle; keep using
+  `Relation<>` for new `@ManyToOne`/`@OneToOne` properties. `@biketrips/domain`
+  is still loaded as TypeScript source, which relies on Node's built-in type
+  stripping (Node 22.18+). The previous `npx tsx` unit is kept at
+  `/root/biketrips-api.service.bak-2026-10-11`.
+- Postgres JIT is disabled for the app database (migration `DisableJit`). With
+  JIT on, every trip lookup by slug spent about 300 ms compiling a 2 ms query,
+  because small tables without statistics look huge to the planner.
 - Backups are not configured yet. Add PostgreSQL backups before collecting
   valuable production data.
 - `apps/bot` exits successfully only when `TELEGRAM_BOT_TOKEN` is missing or
