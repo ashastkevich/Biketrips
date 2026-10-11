@@ -294,6 +294,7 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
                   </p>
                   {hasParticipantLimit ? (
                     <CapacityIndicator
+                      className={tripDetailsStyles.capacity}
                       capacity={trip.capacity!}
                       confirmed={trip.confirmedParticipants}
                     />
@@ -329,6 +330,7 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
                   </p>
                   {hasParticipantLimit ? (
                     <CapacityIndicator
+                      className={tripDetailsStyles.capacity}
                       capacity={trip.capacity!}
                       confirmed={trip.confirmedParticipants}
                     />

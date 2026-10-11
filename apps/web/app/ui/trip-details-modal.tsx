@@ -266,6 +266,7 @@ export function TripDetailsModal({
                 </p>
                 {hasParticipantLimit ? (
                   <CapacityIndicator
+                    className={styles.capacity}
                     capacity={trip.capacity!}
                     confirmed={confirmedParticipants}
                   />
@@ -315,7 +316,11 @@ export function TripDetailsModal({
                       : "Можно присоединиться"}
                 </p>
                 {hasParticipantLimit ? (
-                  <CapacityIndicator capacity={trip.capacity!} confirmed={confirmedParticipants} />
+                  <CapacityIndicator
+                    className={styles.capacity}
+                    capacity={trip.capacity!}
+                    confirmed={confirmedParticipants}
+                  />
                 ) : (
                   <p className={styles.participantCount}>
                     Записались: <strong>{confirmedParticipants}</strong> участников

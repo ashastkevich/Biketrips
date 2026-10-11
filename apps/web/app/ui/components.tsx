@@ -308,9 +308,11 @@ export function TripCard({
 
 export function CapacityIndicator({
   capacity,
+  className,
   confirmed,
 }: {
   capacity: number;
+  className?: string;
   confirmed: number;
 }) {
   const placesLeft = Math.max(capacity - confirmed, 0);
@@ -318,7 +320,7 @@ export function CapacityIndicator({
   const percentage = Math.min((confirmed / capacity) * 100, 100);
 
   return (
-    <div className={classes(styles.capacity, full && styles.capacityFull)}>
+    <div className={classes(styles.capacity, full && styles.capacityFull, className)}>
       <div className={styles.capacityCopy}>
         <strong>{full ? "Лист ожидания" : `${placesLeft} ${placesLeft === 1 ? "место" : "мест"} свободно`}</strong>
         <span>{confirmed} из {capacity}</span>

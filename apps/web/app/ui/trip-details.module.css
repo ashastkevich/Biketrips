@@ -338,7 +338,7 @@
   text-transform: uppercase;
 }
 
-.join :global(.capacity) {
+.capacity {
   margin-bottom: 24px;
 }
 
