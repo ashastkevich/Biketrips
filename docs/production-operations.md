@@ -262,6 +262,59 @@ If email login fails:
 3. Check the UniSender API response logged by `[BikeTrips] UniSender email
    delivery failed`.
 
+## Backups
+
+Nightly backups of the database and uploaded files (cover images, GPX routes)
+run on the production server. Sources live in `ops/backup/`; the server copies
+are installed by hand (they are not part of the deploy script):
+
+- `ops/backup/biketrips-backup.sh` -> `/usr/local/bin/biketrips-backup`
+- `ops/backup/biketrips-backup.service` and `.timer` -> `/etc/systemd/system/`
+
+The timer runs at 00:30 UTC (03:30 Moscow time). Each run writes
+`/var/backups/biketrips/daily/<UTC timestamp>/` (root-only, mode 700) with:
+
+- `database.dump`: `pg_dump --format=custom` of the app database, checked with
+  `pg_restore --list` before it is kept;
+- `storage.tar.gz`: `/srv/biketrips/storage` (cover images and route files);
+- `SHA256SUMS`.
+
+Retention: 14 daily, 8 weekly (Sunday runs) and 12 monthly (runs on the 1st)
+copies. Weekly and monthly copies are hard links, so they take no extra space.
+
+Useful commands:
+
+```bash
+ssh root@135.106.155.78 'systemctl list-timers biketrips-backup.timer --no-pager'
+ssh root@135.106.155.78 'journalctl -u biketrips-backup.service -n 20 --no-pager'
+ssh root@135.106.155.78 'systemctl start biketrips-backup.service'   # backup now
+ssh root@135.106.155.78 'ls /var/backups/biketrips/daily'
+```
+
+Restoring (stop writers first so nothing changes mid-restore):
+
+```bash
+ssh root@135.106.155.78
+cd /var/backups/biketrips/daily/<timestamp> && sha256sum -c SHA256SUMS
+systemctl stop biketrips-api biketrips-web biketrips-bot
+docker exec biketrips-postgres psql -U biketrips -d postgres \
+  -c "DROP DATABASE biketrips" -c "CREATE DATABASE biketrips OWNER biketrips"
+docker exec -i biketrips-postgres pg_restore -U biketrips -d biketrips \
+  --no-owner --exit-on-error < database.dump
+# Database-level settings are not in the dump; the DisableJit migration is
+# already recorded as applied, so set it again by hand.
+docker exec biketrips-postgres psql -U biketrips -d postgres \
+  -c "ALTER DATABASE biketrips SET jit = off"
+tar -C /srv/biketrips -xzf storage.tar.gz
+chown -R deploy:deploy /srv/biketrips/storage
+systemctl start biketrips-api biketrips-web biketrips-bot
+```
+
+To check a backup without touching production data, restore it into a scratch
+database (`CREATE DATABASE biketrips_restore_check`), compare row counts with
+the live database, then drop it. This was done when backups were set up on
+2026-10-11: all 13 tables matched.
+
 ## Known production notes
 
 - The site now runs over HTTPS on `biketrips.ru`. The web route handlers use the
@@ -284,8 +337,8 @@ If email login fails:
 - Postgres JIT is disabled for the app database (migration `DisableJit`). With
   JIT on, every trip lookup by slug spent about 300 ms compiling a 2 ms query,
   because small tables without statistics look huge to the planner.
-- Backups are not configured yet. Add PostgreSQL backups before collecting
-  valuable production data.
+- Backups exist only on the production server's own disk; see
+  [Backups](#backups). An off-server copy is still to be set up.
 - `apps/bot` exits successfully only when `TELEGRAM_BOT_TOKEN` is missing or
   left as a placeholder. In production it should stay active and use long
   polling through the WireGuard tunnel.

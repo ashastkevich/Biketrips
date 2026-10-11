@@ -1,0 +1,10 @@
+[Unit]
+Description=BikeTrips database and uploads backup
+Requires=docker.service
+After=docker.service biketrips-stack.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/biketrips-backup
+Nice=10
+IOSchedulingClass=idle
