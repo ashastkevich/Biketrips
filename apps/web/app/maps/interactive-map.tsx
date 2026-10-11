@@ -1,6 +1,7 @@
 "use client";
 
-import maplibregl, { type Map as MapLibreMap, type Marker } from "maplibre-gl";
+import { maplibregl } from "./maplibre";
+import type { Map as MapLibreMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef } from "react";
 
