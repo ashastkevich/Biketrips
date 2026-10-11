@@ -1,6 +1,7 @@
 "use client";
 
 import maplibregl, { type Map as MapLibreMap } from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef } from "react";
 
 import { getMapStyleUrl } from "./map-config";

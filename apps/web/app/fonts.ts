@@ -7,8 +7,8 @@ export const manrope = Manrope({
 });
 
 export const unbounded = Unbounded({
+  // No fixed weights: one variable font file per subset instead of one file per weight.
   subsets: ["cyrillic", "latin"],
-  weight: ["400", "500", "600", "700"],
   variable: "--font-unbounded",
   display: "swap",
 });

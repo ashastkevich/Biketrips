@@ -52,7 +52,7 @@ Naming guidelines:
 
 - Use kebab-case for CSS classes, for example `ride-card` and `search-toolbar`.
 - Use lowercase, descriptive filenames for docs, for example `mvp-implementation-plan.md`.
-- Keep image names descriptive. Existing legacy names such as `Photo1.jpg` may remain in `apps/web/public/img/`, but new assets should use meaningful names.
+- Keep image names descriptive and remove assets that are no longer referenced.
 
 Prefer ASCII text unless a file already uses Russian copy or another clear project need requires non-ASCII content.
 

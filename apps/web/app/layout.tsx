@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { CookieNotice } from "./cookie-notice";
 import { fontVariables } from "./fonts";
 import { baseOpenGraph, DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "./lib/site";
-import "maplibre-gl/dist/maplibre-gl.css";
 import "./styles.css";
 
 export const metadata: Metadata = {

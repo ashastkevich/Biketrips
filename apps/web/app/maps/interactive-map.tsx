@@ -1,6 +1,7 @@
 "use client";
 
 import maplibregl, { type Map as MapLibreMap, type Marker } from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef } from "react";
 
 import { DEFAULT_MAP_ZOOM, getMapStyleUrl } from "./map-config";
