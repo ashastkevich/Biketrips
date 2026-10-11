@@ -8,7 +8,7 @@ Repository guidelines (structure, branch workflow, commit style, security notes)
 
 ## Commands
 
-npm workspaces monorepo (Node 22). Package names: `@biketrips/web`, `@biketrips/api`, `@biketrips/bot`, `@biketrips/domain`, `@biketrips/api-client`, `@biketrips/config`.
+npm workspaces monorepo (Node 24, pinned in `.nvmrc`). Package names: `@biketrips/web`, `@biketrips/api`, `@biketrips/bot`, `@biketrips/domain`, `@biketrips/api-client`, `@biketrips/config`.
 
 ```bash
 docker compose up -d postgres redis          # local Postgres 16 + Redis 7 (only via Docker)

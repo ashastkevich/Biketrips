@@ -38,6 +38,11 @@ pushed to `origin/main` so the next deploy does not revert it.
 - Alternate web URL: `https://www.biketrips.ru`.
 - Public backend health URL: `https://biketrips.ru/backend/health`.
 - OS: Ubuntu 24.04 LTS.
+- Node.js: 24.x from the NodeSource apt repository
+  (`/etc/apt/sources.list.d/nodesource.sources`, `node_24.x` since
+  2026-10-11; the `node_22.x` file is kept at
+  `/root/nodesource.sources.bak-2026-10-11`). Keep it in sync with `.nvmrc` and
+  the CI `node-version`.
 - Size: 2 vCPU, 4 GB RAM, 32 GB NVMe SSD.
 - SSH access used during setup: `root@135.106.155.78`.
 - Deploy user: `deploy`.
@@ -274,7 +279,7 @@ If email login fails:
   output has no `OrganizerEntity`/`UserEntity` import cycle; keep using
   `Relation<>` for new `@ManyToOne`/`@OneToOne` properties. `@biketrips/domain`
   is still loaded as TypeScript source, which relies on Node's built-in type
-  stripping (Node 22.18+). The previous `npx tsx` unit is kept at
+  stripping (Node 22.18+; production runs Node 24). The previous `npx tsx` unit is kept at
   `/root/biketrips-api.service.bak-2026-10-11`.
 - Postgres JIT is disabled for the app database (migration `DisableJit`). With
   JIT on, every trip lookup by slug spent about 300 ms compiling a 2 ms query,
