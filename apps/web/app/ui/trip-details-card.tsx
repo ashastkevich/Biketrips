@@ -93,7 +93,8 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
               fill
               sizes={tripHeroImageSizes}
               // The hero is the first thing shown on the trip page and in the modal.
-              priority
+              preload
+              fetchPriority="high"
             />
           ) : null}
           <div className={styles.heroShade} />

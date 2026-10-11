@@ -67,7 +67,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           src="/img/hero-cycling-group.webp"
           alt=""
           fill
-          priority
+          preload
+          fetchPriority="high"
           sizes="100vw"
         />
         <div className={styles.heroOverlay} aria-hidden="true" />

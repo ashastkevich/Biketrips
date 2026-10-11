@@ -26,7 +26,8 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="ru">
+    // Smooth scrolling is for in-page anchors; the attribute lets Next turn it off during route changes.
+    <html lang="ru" data-scroll-behavior="smooth">
       <body className={`${fontVariables} typography-theme app-theme`}>
         {children}
         <CookieNotice />
