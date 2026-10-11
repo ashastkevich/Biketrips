@@ -33,6 +33,11 @@ export type TokenPayload = {
 
 const EMAIL_CODE_TTL_MINUTES = 15;
 const EMAIL_CODE_MAX_ATTEMPTS = 5;
+// Sending limits protect inboxes from code spam and the UniSender budget from abuse.
+const EMAIL_CODE_RESEND_SECONDS = 60;
+const EMAIL_CODES_PER_EMAIL_PER_HOUR = 5;
+// Generous because mobile carriers put many people behind one address.
+const EMAIL_CODES_PER_IP_PER_HOUR = 20;
 const TELEGRAM_LOGIN_TTL_MINUTES = 10;
 const DEFAULT_UNISENDER_API_URL = "https://goapi.unisender.ru/ru/transactional/api/v1/email/send.json";
 
@@ -117,7 +122,10 @@ export class AuthService {
     };
   }
 
-  async requestEmailCode(input: { email: string }): Promise<{ ok: true; devCode?: string }> {
+  async requestEmailCode(
+    input: { email: string },
+    clientIp?: string,
+  ): Promise<{ ok: true; devCode?: string }> {
     if (!this.emailCodesRepository) {
       throw new ServiceUnavailableException("Email authorization storage is not configured");
     }
@@ -127,35 +135,62 @@ export class AuthService {
       throw new BadRequestException("Укажите корректный адрес электронной почты");
     }
 
-    const recentCodes = await this.emailCodesRepository.count({
-      where: {
+    const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    // The code is stored before the limits are checked, so concurrent requests count each other.
+    // A rejected or undelivered code is removed again and does not use up the limits.
+    const authCode = await this.emailCodesRepository.save(
+      this.emailCodesRepository.create({
         email,
-        usedAt: IsNull(),
-        expiresAt: MoreThan(new Date(Date.now() - 60 * 60 * 1000)),
-      },
-    });
+        codeHash: hashEmailCode(email, code),
+        expiresAt: new Date(Date.now() + EMAIL_CODE_TTL_MINUTES * 60 * 1000),
+        requestIp: clientIp ?? null,
+      }),
+    );
 
-    if (recentCodes >= 5) {
+    let delivery: "email" | "local";
+    try {
+      await this.enforceEmailCodeLimits(email, clientIp);
+      delivery = await this.deliverEmailCode(email, code);
+    } catch (error) {
+      await this.emailCodesRepository.delete({ id: authCode.id });
+      throw error;
+    }
+
+    return delivery === "local" ? { ok: true, devCode: code } : { ok: true };
+  }
+
+  private async enforceEmailCodeLimits(email: string, clientIp: string | undefined): Promise<void> {
+    const repository = this.emailCodesRepository!;
+    const createdWithin = (seconds: number) => MoreThan(new Date(Date.now() - seconds * 1000));
+
+    // Each count includes the code that was just stored.
+    if (await repository.count({ where: { email, createdAt: createdWithin(EMAIL_CODE_RESEND_SECONDS) } }) > 1) {
       throw new HttpException(
-        "Слишком много кодов для этой почты. Попробуйте позже",
+        "Код уже отправлен. Запросить новый можно через минуту",
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 
-    const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
-    const expiresAt = new Date(Date.now() + EMAIL_CODE_TTL_MINUTES * 60 * 1000);
+    if (
+      await repository.count({ where: { email, createdAt: createdWithin(60 * 60) } }) >
+      EMAIL_CODES_PER_EMAIL_PER_HOUR
+    ) {
+      throw new HttpException(
+        "Слишком много кодов для этой почты. Попробуйте через час",
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
 
-    const delivery = await this.deliverEmailCode(email, code);
-
-    await this.emailCodesRepository.save(
-      this.emailCodesRepository.create({
-        email,
-        codeHash: hashEmailCode(email, code),
-        expiresAt,
-      }),
-    );
-
-    return delivery === "local" ? { ok: true, devCode: code } : { ok: true };
+    if (
+      clientIp &&
+      (await repository.count({ where: { requestIp: clientIp, createdAt: createdWithin(60 * 60) } })) >
+        EMAIL_CODES_PER_IP_PER_HOUR
+    ) {
+      throw new HttpException(
+        "Слишком много запросов кода. Попробуйте позже",
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
   }
 
   async verifyEmailCode(

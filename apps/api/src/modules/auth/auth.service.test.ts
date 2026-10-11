@@ -356,6 +356,55 @@ describe("AuthService email login", () => {
     expect(users.find((user) => user.id === "user-current")?.email).toBeNull();
   });
 
+  it("asks to wait a minute before sending another code to the same email", async () => {
+    process.env.NODE_ENV = "development";
+    const { service, codes } = createEmailAuthService();
+
+    await service.requestEmailCode({ email: "rider@example.com" }, "203.0.113.7");
+    await expect(
+      service.requestEmailCode({ email: "rider@example.com" }, "203.0.113.7"),
+    ).rejects.toMatchObject({ status: 429 });
+
+    expect(codes).toHaveLength(1);
+    expect(codes[0]!.requestIp).toBe("203.0.113.7");
+  });
+
+  it("limits codes per email per hour", async () => {
+    process.env.NODE_ENV = "development";
+    const { service, codes } = createEmailAuthService();
+    for (let minutesAgo = 50; minutesAgo > 0; minutesAgo -= 10) {
+      codes.push(createStoredCode({ email: "rider@example.com", minutesAgo }));
+    }
+
+    await expect(service.requestEmailCode({ email: "rider@example.com" })).rejects.toMatchObject({
+      status: 429,
+    });
+    expect(codes).toHaveLength(5);
+
+    codes.splice(0, 1, createStoredCode({ email: "rider@example.com", minutesAgo: 61 }));
+    await expect(service.requestEmailCode({ email: "rider@example.com" })).resolves.toMatchObject({
+      ok: true,
+    });
+  });
+
+  it("limits codes per client address across different emails", async () => {
+    process.env.NODE_ENV = "development";
+    const { service, codes } = createEmailAuthService();
+    for (let index = 0; index < 20; index += 1) {
+      codes.push(
+        createStoredCode({ email: `rider${index}@example.com`, minutesAgo: 30, requestIp: "203.0.113.7" }),
+      );
+    }
+
+    await expect(
+      service.requestEmailCode({ email: "new@example.com" }, "203.0.113.7"),
+    ).rejects.toMatchObject({ status: 429 });
+    await expect(
+      service.requestEmailCode({ email: "new@example.com" }, "198.51.100.2"),
+    ).resolves.toMatchObject({ ok: true });
+    expect(codes.filter((code) => code.email === "new@example.com")).toHaveLength(1);
+  });
+
   it("locks email code verification after too many invalid attempts", async () => {
     process.env.NODE_ENV = "development";
     const { service, codes } = createEmailAuthService();
@@ -509,6 +558,20 @@ function restoreEnvValue(key: string, value: string | undefined) {
   }
 }
 
+function createStoredCode(input: { email: string; minutesAgo: number; requestIp?: string }) {
+  const createdAt = new Date(Date.now() - input.minutesAgo * 60 * 1000);
+  return {
+    id: `stored-${input.email}-${input.minutesAgo}`,
+    email: input.email,
+    codeHash: "stored",
+    attemptCount: 0,
+    expiresAt: new Date(createdAt.getTime() + 15 * 60 * 1000),
+    usedAt: null,
+    requestIp: input.requestIp ?? null,
+    createdAt,
+  };
+}
+
 function createEmailAuthService() {
   const codes: Array<{
     id: string;
@@ -517,8 +580,10 @@ function createEmailAuthService() {
     attemptCount: number;
     expiresAt: Date;
     usedAt: Date | null;
+    requestIp: string | null;
     createdAt: Date;
   }> = [];
+  let nextCodeId = 1;
   const users: Array<{
     id: string;
     name: string;
@@ -531,17 +596,31 @@ function createEmailAuthService() {
   }> = [];
 
   const emailCodesRepository = {
-    count: async ({ where }: { where: { email: string } }) =>
-      codes.filter((code) => code.email === where.email && code.usedAt === null).length,
+    count: async ({
+      where,
+    }: {
+      where: { email?: string; requestIp?: string; createdAt?: { value: Date } };
+    }) =>
+      codes.filter(
+        (code) =>
+          (where.email === undefined || code.email === where.email) &&
+          (where.requestIp === undefined || code.requestIp === where.requestIp) &&
+          (where.createdAt === undefined || code.createdAt > where.createdAt.value),
+      ).length,
     create: (input: Partial<(typeof codes)[number]>) => ({
-      id: `code-${codes.length + 1}`,
+      id: `code-${nextCodeId++}`,
       email: input.email ?? "",
       codeHash: input.codeHash ?? "",
       attemptCount: input.attemptCount ?? 0,
       expiresAt: input.expiresAt ?? new Date(),
       usedAt: input.usedAt ?? null,
+      requestIp: input.requestIp ?? null,
       createdAt: input.createdAt ?? new Date(),
     }),
+    delete: async ({ id }: { id: string }) => {
+      const index = codes.findIndex((code) => code.id === id);
+      if (index >= 0) codes.splice(index, 1);
+    },
     save: async (code: (typeof codes)[number]) => {
       const existingIndex = codes.findIndex((item) => item.id === code.id);
       if (existingIndex >= 0) {

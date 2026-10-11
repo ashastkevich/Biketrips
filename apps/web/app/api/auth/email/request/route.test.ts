@@ -49,6 +49,24 @@ describe("POST /api/auth/email/request", () => {
     );
   });
 
+  it("forwards the visitor address set by nginx", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await POST(
+      new Request("http://localhost/api/auth/email/request", {
+        method: "POST",
+        headers: { "x-real-ip": "203.0.113.7" },
+        body: JSON.stringify({ email: "rider@example.com" }),
+      })
+    );
+
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toEqual({
+      "Content-Type": "application/json",
+      "X-Real-IP": "203.0.113.7",
+    });
+  });
+
   it("returns API error messages and unavailable fallback", async () => {
     vi.stubGlobal(
       "fetch",

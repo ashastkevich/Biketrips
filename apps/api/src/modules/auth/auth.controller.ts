@@ -6,6 +6,7 @@ import type { UserRole } from "@biketrips/domain";
 
 import { AuthService } from "./auth.service.js";
 import type { TokenPayload } from "./auth.service.js";
+import { getClientIp, type ClientIpRequest } from "./client-ip.js";
 import { JwtAuthGuard } from "./jwt-auth.guard.js";
 
 class TelegramLoginStatusDto {
@@ -98,8 +99,8 @@ export class AuthController {
   }
 
   @Post("email/request")
-  async requestEmailCode(@Body() dto: EmailCodeRequestDto) {
-    return this.authService.requestEmailCode(dto);
+  async requestEmailCode(@Body() dto: EmailCodeRequestDto, @Req() request: ClientIpRequest) {
+    return this.authService.requestEmailCode(dto, getClientIp(request));
   }
 
   @Post("email/verify")

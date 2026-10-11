@@ -83,7 +83,12 @@ describe("AuthController", () => {
     });
     const controller = new AuthController(authService);
 
-    await expect(controller.requestEmailCode({ email: "rider@example.com" })).resolves.toEqual({
+    await expect(
+      controller.requestEmailCode(
+        { email: "rider@example.com" },
+        { headers: { "x-real-ip": "203.0.113.7" }, socket: { remoteAddress: "127.0.0.1" } },
+      ),
+    ).resolves.toEqual({
       ok: true,
     });
     await expect(
@@ -99,7 +104,10 @@ describe("AuthController", () => {
       tokenType: "Bearer",
     });
 
-    expect(authService.requestEmailCode).toHaveBeenCalledWith({ email: "rider@example.com" });
+    expect(authService.requestEmailCode).toHaveBeenCalledWith(
+      { email: "rider@example.com" },
+      "203.0.113.7",
+    );
     expect(authService.verifyEmailCode).toHaveBeenCalledWith(
       {
         email: "rider@example.com",

@@ -11,9 +11,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Укажите адрес электронной почты" }, { status: 400 });
   }
 
+  // nginx sets X-Real-IP to the visitor's address; the API uses it for per-address limits.
+  const realIp = request.headers.get("x-real-ip");
   const apiResponse = await fetch(`${apiUrl}/auth/email/request`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(realIp ? { "X-Real-IP": realIp } : {}),
+    },
     body: JSON.stringify(payload),
     cache: "no-store",
   }).catch(() => null);
