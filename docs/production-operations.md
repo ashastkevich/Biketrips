@@ -132,6 +132,15 @@ pre-change file is kept at `/root/biketrips.nginx.bak-2026-10-11`):
 gzip_vary on;
 gzip_types text/css application/javascript application/json image/svg+xml;
 
+# Module workers (e.g. MapLibre) must be served as JavaScript; mime.types has no .mjs.
+location ~ ^/_next/static/(.+\.mjs)$ {
+    alias /srv/biketrips/app/apps/web/.next/static/$1;
+    default_type application/javascript;
+    types { }
+    add_header Cache-Control "public, max-age=31536000, immutable";
+    access_log off;
+}
+
 location /_next/static/ {
     alias /srv/biketrips/app/apps/web/.next/static/;
     add_header Cache-Control "public, max-age=31536000, immutable";
@@ -147,6 +156,11 @@ location /img/ {
 listen [::]:443 ssl http2 ipv6only=on; # managed by Certbot
 listen 443 ssl http2; # managed by Certbot
 ```
+
+The `.mjs` rule was added later the same day for the MapLibre 6 worker (the
+file before it is at `/root/biketrips.nginx.bak-2026-10-11-mjs`). Without it
+nginx serves `.mjs` as `application/octet-stream` and browsers refuse to start
+the map worker.
 
 After editing nginx, always run `nginx -t` before `systemctl reload nginx`.
 
