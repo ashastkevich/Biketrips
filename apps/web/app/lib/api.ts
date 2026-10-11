@@ -6,6 +6,7 @@ import type {
   AuthenticatedUser,
   City,
   CreateTripInput,
+  OrganizerProfile,
   ParticipantStatus,
   TripDetail,
   TripFilters,
@@ -290,6 +291,38 @@ export async function updateParticipantStatus(
 ): Promise<TripParticipant> {
   const client = await createClient({ requireUserSession: true });
   return client.updateParticipantStatus(tripId, participantId, status);
+}
+
+// Anonymous and cached per request so generateMetadata and the page share one API call.
+export const getOrganizerProfile = cache(
+  async (organizerId: string): Promise<DataResult<OrganizerProfile | null>> => {
+    try {
+      const client = new BikeTripsApiClient({
+        baseUrl: apiUrl,
+        fetcher: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+      });
+      return { data: await client.getOrganizerProfile(organizerId), source: "api" };
+    } catch (error) {
+      return { data: null, source: "unavailable", error: getErrorMessage(error) };
+    }
+  },
+);
+
+/** Null when signed out or when the user has not created a trip yet (no organizer profile). */
+export async function getMyOrganizerProfile(): Promise<OrganizerProfile | null> {
+  if (!(await getSessionAuthToken())) return null;
+
+  try {
+    const client = await createClient({ requireUserSession: true });
+    return await client.getMyOrganizerProfile();
+  } catch {
+    return null;
+  }
+}
+
+export async function updateMyOrganizerBio(bio: string): Promise<OrganizerProfile> {
+  const client = await createClient({ requireUserSession: true });
+  return client.updateMyOrganizerProfile({ bio });
 }
 
 export async function getOrganizerAuthState(): Promise<"allowed" | "telegram-required" | "missing"> {

@@ -177,6 +177,29 @@ describe("BikeTripsApiClient", () => {
       "https://api.example.test/trips/trip%201/participants/participant%201",
     ]);
   });
+
+  it("loads organizer profiles anonymously and edits only the caller's own profile", async () => {
+    const fetcher = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse({ id: "organizer-1" })));
+    const client = new BikeTripsApiClient({
+      baseUrl: "https://api.example.test",
+      authToken: "secret-token",
+      fetcher,
+    });
+
+    await client.getOrganizerProfile("organizer 1");
+    await client.getMyOrganizerProfile();
+    await client.updateMyOrganizerProfile({ bio: "Gravel on weekends" });
+
+    const calls = fetcher.mock.calls as Array<[string, RequestInit]>;
+    const authorizations = calls.map(([, init]) => new Headers(init.headers).get("Authorization"));
+    expect(calls.map(([url]) => url)).toEqual([
+      "https://api.example.test/organizers/organizer%201",
+      "https://api.example.test/organizers/me",
+      "https://api.example.test/organizers/me",
+    ]);
+    expect(authorizations).toEqual([null, "Bearer secret-token", "Bearer secret-token"]);
+    expect(calls[2]?.[1]).toMatchObject({ method: "PATCH", body: JSON.stringify({ bio: "Gravel on weekends" }) });
+  });
 });
 
 function jsonResponse(body: unknown): Response {

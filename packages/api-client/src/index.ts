@@ -2,11 +2,13 @@ import type {
   CreateParticipantInput,
   CreateTripInput,
   City,
+  OrganizerProfile,
   ParticipantStatus,
   TripDetail,
   TripFilters,
   TripParticipant,
   TripSummary,
+  UpdateOrganizerProfileInput,
   UpdateTripInput,
 } from "@biketrips/domain";
 
@@ -175,6 +177,19 @@ export class BikeTripsApiClient {
       { status },
       true
     );
+  }
+
+  /** Public organizer page: always anonymous, it never depends on who is looking. */
+  async getOrganizerProfile(id: string): Promise<OrganizerProfile> {
+    return this.get<OrganizerProfile>(`/organizers/${encodeURIComponent(id)}`);
+  }
+
+  async getMyOrganizerProfile(): Promise<OrganizerProfile> {
+    return this.get<OrganizerProfile>("/organizers/me", true);
+  }
+
+  async updateMyOrganizerProfile(input: UpdateOrganizerProfileInput): Promise<OrganizerProfile> {
+    return this.patch<OrganizerProfile>("/organizers/me", input, true);
   }
 
   private async get<TResponse>(path: string, authenticated = false): Promise<TResponse> {

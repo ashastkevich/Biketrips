@@ -277,10 +277,20 @@
 }
 
 .organizer {
+  width: fit-content;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-top: 22px;
+  margin-top: 22px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.organizer:hover strong,
+.organizer:focus-visible strong {
+  color: var(--green-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .organizerAvatar {

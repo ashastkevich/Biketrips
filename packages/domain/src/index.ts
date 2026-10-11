@@ -138,6 +138,7 @@ export interface TripSummary {
   title: string;
   cityId: string;
   city: string;
+  organizerId: string;
   startDateTime: string;
   distanceKm: number;
   difficulty: DifficultyLevel;
@@ -190,6 +191,31 @@ export interface TripOrganizer {
   userId: string;
   displayName: string;
   isVerified: boolean;
+}
+
+export const organizerBioMaxLength = 500;
+
+/**
+ * The organizer page anyone can open, signed in or not. It deliberately carries no
+ * contacts: riders reach the organizer by joining one of the trips.
+ */
+export interface OrganizerProfile {
+  id: string;
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  city: string | null;
+  bio: string | null;
+  isVerified: boolean;
+  organizingSince: string;
+  completedTripsCount: number;
+  upcomingTrips: TripSummary[];
+  /** The latest completed trips; their pages are not public, so they are listed without links. */
+  pastTrips: TripSummary[];
+}
+
+export interface UpdateOrganizerProfileInput {
+  bio: string;
 }
 
 export interface TripDetail extends TripSummary {

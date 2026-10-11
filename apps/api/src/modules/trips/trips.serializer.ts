@@ -1,3 +1,5 @@
+import type { TripSummary } from "@biketrips/domain";
+
 import type { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
 import type { TripParticipantEntity } from "../../infrastructure/database/entities/trip-participant.entity.js";
 import { normalizeRouteFileName } from "./route-file-names.js";
@@ -46,12 +48,13 @@ export function serializeTripSummary(
   trip: TripEntity,
   options: { includePendingRevision?: boolean } = {},
 ) {
-  const summary = {
+  const summary: TripSummary = {
     id: trip.id,
     slug: trip.publicSlug,
     title: trip.title,
     cityId: trip.cityId,
     city: trip.city.name,
+    organizerId: trip.organizerId,
     startDateTime: trip.startAt.toISOString(),
     distanceKm: Number(trip.distanceKm),
     difficulty: trip.difficulty,

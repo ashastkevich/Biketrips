@@ -5,15 +5,21 @@ import { UpcomingTrips } from "./upcoming-trips";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
+import { organizerBioMaxLength } from "@biketrips/domain";
+
 import {
   getCities,
   getCurrentUser,
+  getMyOrganizerProfile,
   getMyTrips,
   submitTripForReview,
+  updateMyOrganizerBio,
   withdrawTripReview,
 } from "../lib/api";
 import { fallbackCities } from "../lib/cities";
+import { getOrganizerHref } from "../lib/organizer-links";
 import { Badge } from "../ui/components";
+import { OrganizerBio, type OrganizerBioState } from "./organizer-bio";
 import { getOrganizerTripState } from "./organizer-trip-state";
 import { ProfileAccount } from "./profile-account";
 import styles from "./profile.module.css";
@@ -37,16 +43,36 @@ async function submitDraftAction(formData: FormData) {
   redirect("/profile?submitted=1");
 }
 
+async function updateOrganizerBioAction(
+  _state: OrganizerBioState,
+  formData: FormData,
+): Promise<OrganizerBioState> {
+  "use server";
+  const bio = formData.get("bio");
+  const value = typeof bio === "string" ? bio.trim() : "";
+  if (value.length > organizerBioMaxLength) {
+    return { bio: value, error: `Описание не длиннее ${organizerBioMaxLength} символов` };
+  }
+
+  try {
+    const profile = await updateMyOrganizerBio(value);
+    return { bio: profile.bio ?? "" };
+  } catch {
+    return { bio: value, error: "Не удалось сохранить описание. Попробуйте ещё раз." };
+  }
+}
+
 interface ProfilePageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const query = await searchParams;
-  const [user, tripsResult, citiesResult] = await Promise.all([
+  const [user, tripsResult, citiesResult, organizerProfile] = await Promise.all([
     getCurrentUser(),
     getMyTrips(),
     getCities(),
+    getMyOrganizerProfile(),
   ]);
   const cities = citiesResult.data.length > 0 ? citiesResult.data : fallbackCities;
   const isAuthenticated = user !== null;
@@ -159,6 +185,14 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                 emptyMessage="У вас пока нет предстоящих поездок, на которые вы записаны."
               />
             </section>
+
+            {organizerProfile ? (
+              <OrganizerBio
+                organizerHref={getOrganizerHref(organizerProfile.id)}
+                initialBio={organizerProfile.bio ?? ""}
+                action={updateOrganizerBioAction}
+              />
+            ) : null}
 
             <section className={styles.card} aria-labelledby="created-trips-title">
               <div className={styles.cardHeading}>

@@ -207,23 +207,18 @@
   margin: 0;
   color: #4f4b46;
   line-height: 1.65;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
-.preferences {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 20px;
+.organizerPageHint {
+  max-width: 680px;
+  margin: 12px 0 18px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
 }
 
-.preferences span {
-  padding: 8px 11px;
-  color: #465022;
-  background: rgba(79, 104, 20, 0.09);
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 740;
-}
 
 .formGrid {
   display: grid;
@@ -241,7 +236,8 @@
 }
 
 .formWide small {
-  justify-self: end;
+  display: block;
+  text-align: right;
   color: var(--muted);
   font-weight: 600;
 }
@@ -258,24 +254,6 @@
 .form input[aria-invalid="true"] {
   border-color: #b8493f;
   box-shadow: 0 0 0 3px rgba(184, 73, 63, 0.12);
-}
-
-.usernameField {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  min-height: 46px;
-  padding-left: 13px;
-  color: var(--muted);
-  background: #fff;
-  border: 1px solid var(--dark-line);
-  border-radius: 12px;
-}
-
-.usernameField input {
-  min-height: 44px;
-  border: 0;
-  box-shadow: none !important;
 }
 
 .formActions {

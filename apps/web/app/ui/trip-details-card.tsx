@@ -1,5 +1,6 @@
 import { forwardRef, type ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { TripDetail } from "@biketrips/domain";
 
 import {
@@ -7,6 +8,7 @@ import {
   formatSurfaceComposition,
   unpavedSurfaceDetailLabels,
 } from "../lib/labels";
+import { getOrganizerHref } from "../lib/organizer-links";
 import { DEFAULT_TRIP_TIME_ZONE } from "../lib/trip-time";
 import { RouteMapToggle } from "./route-map-toggle";
 import { tripHeroImageSizes } from "./trip-hero-image";
@@ -168,7 +170,7 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
               </details>
             ) : null}
 
-            <div className={styles.organizer}>
+            <Link className={styles.organizer} href={getOrganizerHref(trip.organizer.id)}>
               <span className={styles.organizerAvatar} aria-hidden="true">
                 {trip.organizer.displayName.slice(0, 1)}
               </span>
@@ -179,7 +181,7 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
                   {trip.organizer.isVerified ? <i title="Проверенный организатор">✓</i> : null}
                 </strong>
               </span>
-            </div>
+            </Link>
           </div>
 
           {aside}

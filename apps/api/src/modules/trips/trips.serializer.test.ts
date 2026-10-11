@@ -27,6 +27,7 @@ describe("trip serializers", () => {
       title: "Forest route",
       cityId: "city-1",
       city: "Москва",
+      organizerId: "organizer-1",
       startDateTime: "2099-08-16T08:00:00.000Z",
       distanceKm: 42.5,
       difficulty: "medium",
