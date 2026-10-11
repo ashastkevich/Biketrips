@@ -1,6 +1,7 @@
 import type { TripDetail } from "@biketrips/domain";
 
 import { tripStatusLabels } from "../lib/labels";
+import { countPendingRequests } from "../lib/participant-groups";
 
 export type OrganizerTripTone = "neutral" | "success" | "warning" | "danger" | "info";
 
@@ -14,6 +15,8 @@ export interface OrganizerTripState {
   canSubmit: boolean;
   canWithdraw: boolean;
   needsAttention: boolean;
+  /** Participant requests awaiting the organizer's decision on an upcoming published trip. */
+  pendingRequests: number;
   /** Lower values are listed first among upcoming created trips. */
   priority: number;
 }
@@ -21,9 +24,28 @@ export interface OrganizerTripState {
 type OrganizerTrip = Pick<
   TripDetail,
   "status" | "moderationStatus" | "moderationComment" | "startDateTime"
->;
+> &
+  Partial<Pick<TripDetail, "participants">>;
 
 export function getOrganizerTripState(trip: OrganizerTrip, now: number): OrganizerTripState {
+  const state = getModerationState(trip, now);
+  const isUpcoming = new Date(trip.startDateTime).getTime() > now;
+  const pendingRequests =
+    isUpcoming && trip.status === "published" && trip.participants
+      ? countPendingRequests({ participants: trip.participants })
+      : 0;
+
+  if (pendingRequests === 0) return state;
+
+  return {
+    ...state,
+    pendingRequests,
+    needsAttention: true,
+    priority: Math.min(state.priority, 0),
+  };
+}
+
+function getModerationState(trip: OrganizerTrip, now: number): OrganizerTripState {
   const isUpcoming = new Date(trip.startDateTime).getTime() > now;
   const isPublished = trip.status === "published";
   const comment = trip.moderationComment?.trim() || null;
@@ -36,6 +58,7 @@ export function getOrganizerTripState(trip: OrganizerTrip, now: number): Organiz
     canSubmit: false,
     canWithdraw: false,
     needsAttention: false,
+    pendingRequests: 0,
     priority: 3,
   };
 

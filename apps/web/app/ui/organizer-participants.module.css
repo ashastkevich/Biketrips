@@ -1,0 +1,152 @@
+.root {
+  display: grid;
+  gap: 18px;
+  margin: 20px 0 24px;
+  scroll-margin-top: 110px;
+}
+
+.noticeSuccess,
+.noticeDanger {
+  margin: 0;
+  padding: 9px 12px;
+  border: 1px solid;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.noticeSuccess {
+  color: #075c43;
+  background: #e6f6ef;
+  border-color: #b9e3d1;
+}
+
+.noticeDanger {
+  color: #8f2f26;
+  background: #fcefed;
+  border-color: #ebc6c1;
+}
+
+.empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.group {
+  display: grid;
+  gap: 8px;
+}
+
+.groupTitle,
+.groupTitleWarning {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.groupTitle span,
+.groupTitleWarning span {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.groupTitleWarning {
+  color: #8a5a00;
+}
+
+.list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid #e0ded3;
+}
+
+.item:last-child {
+  border-bottom: 0;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: #075c43;
+  background: #dff6ed;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.person {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.person strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.contacts a {
+  overflow: hidden;
+  color: var(--green-dark);
+  text-decoration: none;
+  text-overflow: ellipsis;
+}
+
+.contacts a:hover {
+  text-decoration: underline;
+}
+
+.actions {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.actions form {
+  display: contents;
+}
+
+.actions button {
+  flex: 1;
+}
+
+.cancelled summary {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.cancelled .list {
+  margin-top: 6px;
+  opacity: 0.7;
+}
+
+.copyButton {
+  width: 100%;
+}

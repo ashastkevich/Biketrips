@@ -40,7 +40,7 @@ export class ParticipantsService {
       throw new NotFoundException("Trip not found");
     }
 
-    return this.dataSource.transaction(async (manager) => {
+    const savedParticipant = await this.dataSource.transaction(async (manager) => {
       let user = await manager.findOne(UserEntity, { where: { id: dto.userId } });
       if (!user) {
         user = await manager.save(
@@ -114,6 +114,26 @@ export class ParticipantsService {
 
       return savedParticipant;
     });
+
+    await this.notifyOrganizerAboutJoin(tripId, savedParticipant);
+
+    return savedParticipant;
+  }
+
+  private async notifyOrganizerAboutJoin(
+    tripId: string,
+    participant: TripParticipantEntity,
+  ): Promise<void> {
+    const trip = await this.tripsRepository.findOne({
+      where: { id: tripId },
+      relations: { organizer: true },
+    });
+
+    if (!trip?.organizer || trip.organizer.userId === participant.userId) {
+      return;
+    }
+
+    await this.notificationsService.enqueueParticipantJoined(trip, participant);
   }
 
   async getForUser(
@@ -166,10 +186,27 @@ export class ParticipantsService {
       throw new NotFoundException("Participant not found");
     }
 
+    const previousStatus = participant.status;
+
+    if (status === "confirmed" && previousStatus !== "confirmed") {
+      const capacity = participant.trip?.maxParticipants ?? null;
+      const confirmedParticipants = await this.participantsRepository.count({
+        where: { tripId, status: "confirmed" },
+      });
+
+      if (capacity !== null && confirmedParticipants >= capacity) {
+        throw new BadRequestException("Trip has no free places");
+      }
+    }
+
     participant.status = status;
     const savedParticipant = await this.participantsRepository.save(participant);
 
-    if (status === "cancelled") {
+    if (previousStatus === "waitlisted" && status !== "waitlisted") {
+      await this.waitlistRepository.delete({ tripId, userId: participant.userId });
+    }
+
+    if (status === "cancelled" && previousStatus === "confirmed") {
       await this.promoteNextWaitlistParticipant(tripId);
     }
 
@@ -206,6 +243,6 @@ export class ParticipantsService {
     );
     waitlistEntry.promotedAt = new Date();
     await this.waitlistRepository.save(waitlistEntry);
-    await this.notificationsService.enqueueParticipantPromoted(waitlistEntry);
+    await this.notificationsService.enqueueParticipantPromoted(waitlistEntry, trip);
   }
 }

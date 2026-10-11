@@ -54,6 +54,8 @@ interface NotificationJob {
   id: string;
   channel: "telegram" | "email";
   type:
+    | "participant_joined"
+    | "participant_promoted"
     | "moderation_submitted"
     | "trip_approved"
     | "trip_changes_requested"
@@ -154,6 +156,32 @@ function notificationText(job: NotificationJob): { subject: string; text: string
   const comment = typeof job.payload.comment === "string" ? job.payload.comment : "";
   const tripUrl = slug ? `${publicWebUrl}/trips/${encodeURIComponent(slug)}` : publicWebUrl;
 
+  if (job.type === "participant_joined") {
+    const name = typeof job.payload.participantName === "string" ? job.payload.participantName : "Участник";
+    const status = job.payload.participantStatus;
+    if (status === "pending") {
+      return {
+        subject: "Новая заявка на поездку",
+        text: `Новая заявка на поездку «${title}»: ${name}. Подтвердите или отклоните её.\n${tripUrl}#participants`,
+      };
+    }
+    if (status === "waitlisted") {
+      return {
+        subject: "Новый участник в листе ожидания",
+        text: `В лист ожидания поездки «${title}» добавлен участник: ${name}.\n${tripUrl}#participants`,
+      };
+    }
+    return {
+      subject: "Новый участник поездки",
+      text: `Новый участник поездки «${title}»: ${name}.\n${tripUrl}#participants`,
+    };
+  }
+  if (job.type === "participant_promoted") {
+    return {
+      subject: "Освободилось место в поездке",
+      text: `Освободилось место — вы переведены из листа ожидания в участники поездки «${title}».\n${tripUrl}`,
+    };
+  }
   if (job.type === "moderation_submitted") {
     return {
       subject: "Новая поездка на модерации",

@@ -1,22 +1,46 @@
 import type { Metadata } from "next";
-import type { TripDetail } from "@biketrips/domain";
+import type { ParticipantStatus, TripDetail } from "@biketrips/domain";
 import { notFound, redirect } from "next/navigation";
 
 import { AppTopbar } from "../../lib/app-topbar";
 import { DataNotice, getTripCardProps } from "../../lib/components";
-import { getCurrentUser, getTrip, joinTrip, updateTripStatus } from "../../lib/api";
+import {
+  getCurrentUser,
+  getTrip,
+  joinTrip,
+  updateParticipantStatus,
+  updateTripStatus,
+} from "../../lib/api";
 import { readParticipantInput } from "../../lib/form-data";
 import { difficultyLabels } from "../../lib/labels";
 import { baseOpenGraph, noIndexMetadata } from "../../lib/site";
 import { DEFAULT_TRIP_TIME_ZONE } from "../../lib/trip-time";
 import { getTripEditHref, getTripHref } from "../../lib/trip-links";
 import { Alert, Button, CapacityIndicator, LinkButton, TextField } from "../../ui/components";
+import { OrganizerParticipants } from "../../ui/organizer-participants";
 import { TripDetailsCard } from "../../ui/trip-details-card";
 import tripDetailsStyles from "../../ui/trip-details.module.css";
 
 interface TripPageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+const participantUpdateNotices: Partial<Record<ParticipantStatus, string>> = {
+  confirmed: "Участник подтверждён.",
+  cancelled: "Заявка отклонена.",
+};
+
+function readQueryValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function describeParticipantUpdateError(error: unknown): string {
+  const message = error instanceof Error ? error.message : "";
+  if (message.includes("no free places")) {
+    return "Свободных мест нет. Увеличьте лимит участников в настройках поездки.";
+  }
+  return "Не удалось изменить статус участника. Попробуйте ещё раз.";
 }
 
 function hasFlag(value: string | string[] | undefined): boolean {
@@ -97,6 +121,15 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
     new Date(trip.startDateTime).getTime() > Date.now() &&
     trip.status !== "cancelled" &&
     trip.status !== "finished";
+  const participantError = readQueryValue(query.participantError);
+  const participantSuccess =
+    participantUpdateNotices[readQueryValue(query.participantUpdated) as ParticipantStatus];
+  const participantNotice = participantError
+    ? { tone: "danger" as const, text: participantError }
+    : participantSuccess
+      ? { tone: "success" as const, text: participantSuccess }
+      : undefined;
+
   async function joinAction(formData: FormData) {
     "use server";
 
@@ -107,6 +140,29 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
     } catch (error) {
       const message = error instanceof Error ? error.message : "Не удалось записаться";
       destination = `/trips/${slug}?joinError=${encodeURIComponent(message)}`;
+    }
+
+    redirect(destination);
+  }
+
+  async function updateParticipantAction(formData: FormData) {
+    "use server";
+
+    const participantId = formData.get("participantId");
+    const status = formData.get("status");
+
+    if (typeof participantId !== "string" || (status !== "confirmed" && status !== "cancelled")) {
+      redirect(`/trips/${slug}`);
+    }
+
+    let destination = `/trips/${slug}?participantUpdated=${status}`;
+
+    try {
+      await updateParticipantStatus(trip.id, participantId, status);
+    } catch (error) {
+      destination = `/trips/${slug}?participantError=${encodeURIComponent(
+        describeParticipantUpdateError(error),
+      )}`;
     }
 
     redirect(destination);
@@ -180,6 +236,11 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
                       confirmed={trip.confirmedParticipants}
                     />
                   ) : null}
+                  <OrganizerParticipants
+                    trip={trip}
+                    updateAction={canCancelTrip ? updateParticipantAction : undefined}
+                    notice={participantNotice}
+                  />
                   <LinkButton
                     className={tripDetailsStyles.joinButton}
                     href={getTripEditHref(trip, { returnTo: "/", scope: "feed" })}

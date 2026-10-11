@@ -14,6 +14,7 @@ export class NotificationJobEntity {
     | "trip_updated"
     | "trip_cancelled"
     | "participant_promoted"
+    | "participant_joined"
     | "moderation_submitted"
     | "trip_approved"
     | "trip_changes_requested"

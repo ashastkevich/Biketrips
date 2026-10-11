@@ -98,4 +98,27 @@ describe("getOrganizerTripState", () => {
 
     expect(state).toMatchObject({ canEdit: false, canSubmit: false, needsAttention: false });
   });
+
+  it("flags upcoming published trips with pending participant requests", () => {
+    const participants = [
+      { id: "p1", userId: "u1", name: "Анна", status: "pending" as const },
+      { id: "p2", userId: "u2", name: "Иван", status: "confirmed" as const },
+    ];
+    const trip = {
+      status: "published" as const,
+      moderationStatus: "approved" as const,
+      moderationComment: null,
+      participants,
+    };
+
+    expect(getOrganizerTripState({ ...trip, startDateTime: future }, now)).toMatchObject({
+      pendingRequests: 1,
+      needsAttention: true,
+      priority: 0,
+    });
+    expect(getOrganizerTripState({ ...trip, startDateTime: past }, now)).toMatchObject({
+      pendingRequests: 0,
+      needsAttention: false,
+    });
+  });
 });

@@ -59,6 +59,38 @@ describe("ParticipantsService", () => {
     expect(context.waitlistEntries).toHaveLength(0);
   });
 
+  it("notifies the organizer about a new participant", async () => {
+    const organizerUserId = "44444444-4444-4444-8444-444444444444";
+    const context = createParticipantsService({
+      trips: [createTrip({ registrationMode: "manual", organizer: { userId: organizerUserId } })],
+    });
+
+    const participant = await context.service.joinTrip(tripId, {
+      userId: firstUserId,
+      name: "Alex",
+    });
+
+    expect(participant.status).toBe("pending");
+    expect(context.notifications.enqueueParticipantJoined).toHaveBeenCalledWith(
+      context.trips[0],
+      participant
+    );
+    expect(context.repositories.trips.findOne).toHaveBeenCalledWith({
+      where: { id: tripId },
+      relations: { organizer: true },
+    });
+  });
+
+  it("does not notify the organizer about joining their own trip", async () => {
+    const context = createParticipantsService({
+      trips: [createTrip({ organizer: { userId: firstUserId } })],
+    });
+
+    await context.service.joinTrip(tripId, { userId: firstUserId, name: "Alex" });
+
+    expect(context.notifications.enqueueParticipantJoined).not.toHaveBeenCalled();
+  });
+
   it("rejects registration for trips that are not published", async () => {
     const context = createParticipantsService({
       trips: [createTrip({ status: "draft" })],
@@ -182,7 +214,8 @@ describe("ParticipantsService", () => {
     ).toBe("confirmed");
     expect(context.waitlistEntries[0]?.promotedAt).toBeInstanceOf(Date);
     expect(context.notifications.enqueueParticipantPromoted).toHaveBeenCalledWith(
-      context.waitlistEntries[0]
+      context.waitlistEntries[0],
+      context.trips[0]
     );
   });
 
@@ -242,7 +275,7 @@ describe("ParticipantsService", () => {
     expect(
       context.participants.find((participant) => participant.userId === secondUserId)?.status
     ).toBe("cancelled");
-    expect(context.waitlistEntries[0]?.promotedAt).toBeNull();
+    expect(context.waitlistEntries).toHaveLength(0);
     expect(context.notifications.enqueueParticipantPromoted).not.toHaveBeenCalled();
   });
 
@@ -292,6 +325,52 @@ describe("ParticipantsService", () => {
     expect(
       context.participants.find((participant) => participant.userId === thirdUserId)?.status
     ).toBe("waitlisted");
+  });
+
+  it("removes the waitlist entry when the organizer confirms a waitlisted participant", async () => {
+    const trip = createTrip({ maxParticipants: 2 });
+    const context = createParticipantsService({
+      trips: [trip],
+      participants: [
+        createParticipant({
+          id: "waitlisted-participant",
+          userId: secondUserId,
+          status: "waitlisted",
+          trip,
+        }),
+      ],
+      waitlistEntries: [createWaitlistEntry({ tripId, userId: secondUserId })],
+    });
+
+    const participant = await context.service.updateStatus(
+      tripId,
+      "waitlisted-participant",
+      "confirmed"
+    );
+
+    expect(participant.status).toBe("confirmed");
+    expect(context.waitlistEntries).toHaveLength(0);
+  });
+
+  it("refuses to confirm a participant when the trip has no free places", async () => {
+    const trip = createTrip({ maxParticipants: 1, registrationMode: "manual" });
+    const context = createParticipantsService({
+      trips: [trip],
+      participants: [
+        createParticipant({ id: "confirmed-participant", userId: firstUserId, status: "confirmed" }),
+        createParticipant({
+          id: "pending-participant",
+          userId: secondUserId,
+          status: "pending",
+          trip,
+        }),
+      ],
+    });
+
+    await expect(
+      context.service.updateStatus(tripId, "pending-participant", "confirmed")
+    ).rejects.toThrow(BadRequestException);
+    expect(context.participants[1]?.status).toBe("pending");
   });
 
   it("returns not found when cancelling missing or already cancelled registrations", async () => {
@@ -347,6 +426,7 @@ function createParticipantsService(
   const waitlistEntries = input.waitlistEntries ?? [];
   const notifications = {
     enqueueParticipantPromoted: vi.fn().mockResolvedValue(undefined),
+    enqueueParticipantJoined: vi.fn().mockResolvedValue(undefined),
   };
   const manager = createEntityManager({ trips, users, participants, waitlistEntries });
   const dataSource = {
@@ -604,7 +684,9 @@ function deleteMatching<T>(items: T[], predicate: (item: T) => boolean): void {
 type EntityClass =
   typeof UserEntity | typeof TripEntity | typeof TripParticipantEntity | typeof WaitlistEntryEntity;
 
-type TestTrip = Pick<TripEntity, "id" | "status" | "maxParticipants" | "registrationMode">;
+type TestTrip = Pick<TripEntity, "id" | "status" | "maxParticipants" | "registrationMode"> & {
+  organizer?: { userId: string };
+};
 type TestUser = Pick<
   UserEntity,
   "id" | "name" | "email" | "avatarUrl" | "role" | "phoneNumber" | "phoneVerifiedAt"
@@ -620,7 +702,7 @@ type TestParticipant = Pick<
   | "comment"
   | "status"
   | "createdAt"
->;
+> & { trip?: TestTrip };
 type TestWaitlistEntry = Pick<
   WaitlistEntryEntity,
   "id" | "tripId" | "userId" | "position" | "promotedAt"

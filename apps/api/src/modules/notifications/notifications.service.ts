@@ -5,6 +5,7 @@ import { LessThanOrEqual, Not, IsNull, Repository } from "typeorm";
 import { NotificationJobEntity } from "../../infrastructure/database/entities/notification-job.entity.js";
 import { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
 import type { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
+import type { TripParticipantEntity } from "../../infrastructure/database/entities/trip-participant.entity.js";
 import type { WaitlistEntryEntity } from "../../infrastructure/database/entities/waitlist-entry.entity.js";
 
 @Injectable()
@@ -45,7 +46,7 @@ export class NotificationsService {
     );
   }
 
-  async enqueueParticipantPromoted(waitlistEntry: WaitlistEntryEntity): Promise<void> {
+  async enqueueParticipantPromoted(waitlistEntry: WaitlistEntryEntity, trip: TripEntity): Promise<void> {
     await this.jobsRepository.save(
       this.jobsRepository.create({
         channel: "telegram",
@@ -55,8 +56,30 @@ export class NotificationsService {
         payload: {
           waitlistEntryId: waitlistEntry.id,
           position: waitlistEntry.position,
+          title: trip.title,
+          publicSlug: trip.publicSlug,
         },
       })
+    );
+  }
+
+  async enqueueParticipantJoined(
+    trip: TripEntity,
+    participant: TripParticipantEntity,
+  ): Promise<void> {
+    await this.jobsRepository.save(
+      this.jobsRepository.create({
+        channel: "telegram",
+        type: "participant_joined",
+        tripId: trip.id,
+        recipientUserId: trip.organizer.userId,
+        payload: {
+          title: trip.title,
+          publicSlug: trip.publicSlug,
+          participantName: participant.name,
+          participantStatus: participant.status,
+        },
+      }),
     );
   }
 

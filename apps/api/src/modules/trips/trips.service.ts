@@ -199,6 +199,7 @@ export class TripsService {
         routeFiles: true,
       },
       order: {
+        participants: { createdAt: "ASC" },
         updates: { createdAt: "DESC" },
         waitlistEntries: { position: "ASC" },
       },

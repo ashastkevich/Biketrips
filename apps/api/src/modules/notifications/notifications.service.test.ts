@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { NotificationJobEntity } from "../../infrastructure/database/entities/notification-job.entity.js";
 import type { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
+import type { TripParticipantEntity } from "../../infrastructure/database/entities/trip-participant.entity.js";
 import type { WaitlistEntryEntity } from "../../infrastructure/database/entities/waitlist-entry.entity.js";
 import { NotificationsService } from "./notifications.service.js";
 
@@ -84,12 +85,15 @@ describe("NotificationsService", () => {
   it("queues targeted Telegram notifications for promoted waitlist participants", async () => {
     const context = createNotificationsService();
 
-    await context.service.enqueueParticipantPromoted({
-      id: "waitlist-entry-1",
-      tripId,
-      userId,
-      position: 2,
-    } as WaitlistEntryEntity);
+    await context.service.enqueueParticipantPromoted(
+      {
+        id: "waitlist-entry-1",
+        tripId,
+        userId,
+        position: 2,
+      } as WaitlistEntryEntity,
+      createTrip({ title: "Лесной маршрут", publicSlug: "lesnoy-marshrut" }),
+    );
 
     expect(context.jobs).toMatchObject([
       {
@@ -100,6 +104,37 @@ describe("NotificationsService", () => {
         payload: {
           waitlistEntryId: "waitlist-entry-1",
           position: 2,
+          title: "Лесной маршрут",
+          publicSlug: "lesnoy-marshrut",
+        },
+      },
+    ]);
+  });
+
+  it("queues a Telegram notification to the organizer about a new participant", async () => {
+    const context = createNotificationsService();
+    const organizerUserId = "44444444-4444-4444-8444-444444444444";
+    const trip = {
+      ...createTrip({ title: "Лесной маршрут", publicSlug: "lesnoy-marshrut" }),
+      organizer: { userId: organizerUserId },
+    } as TripEntity;
+
+    await context.service.enqueueParticipantJoined(trip, {
+      name: "Мария",
+      status: "pending",
+    } as TripParticipantEntity);
+
+    expect(context.jobs).toMatchObject([
+      {
+        channel: "telegram",
+        type: "participant_joined",
+        tripId,
+        recipientUserId: organizerUserId,
+        payload: {
+          title: "Лесной маршрут",
+          publicSlug: "lesnoy-marshrut",
+          participantName: "Мария",
+          participantStatus: "pending",
         },
       },
     ]);

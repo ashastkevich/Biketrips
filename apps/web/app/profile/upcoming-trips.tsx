@@ -9,6 +9,7 @@ import type { TripDetail } from "@biketrips/domain";
 import { ClockIcon, getTripCardProps, PinIcon } from "../lib/components";
 import { getTripEditHref, getTripHref } from "../lib/trip-links";
 import { difficultyLabels, formatShortDate } from "../lib/labels";
+import { formatPendingRequests } from "../lib/participant-groups";
 import { Badge, Button, LinkButton } from "../ui/components";
 import { TripDetailsModal } from "../ui/trip-details-modal";
 import { useTripModal } from "../ui/use-trip-modal";
@@ -89,6 +90,21 @@ function OrganizerTripPanel({
           ) : null}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function PendingRequestsPanel({ trip, count }: { trip: TripDetail; count: number }) {
+  return (
+    <div className={classes(styles.tripPanel, styles.tripPanelWarning)}>
+      <div className={styles.tripPanelCopy}>
+        <p>{formatPendingRequests(count)}</p>
+      </div>
+      <div className={styles.tripPanelActions}>
+        <LinkButton href={`${getTripHref(trip)}#participants`} size="small" tone="primary">
+          Открыть участников
+        </LinkButton>
+      </div>
     </div>
   );
 }
@@ -203,6 +219,9 @@ export function UpcomingTrips({
                   submitAction={submitAction}
                   withdrawAction={withdrawAction}
                 />
+              ) : null}
+              {organizerState && organizerState.pendingRequests > 0 ? (
+                <PendingRequestsPanel trip={trip} count={organizerState.pendingRequests} />
               ) : null}
             </article>
           );

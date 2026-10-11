@@ -360,6 +360,17 @@
   width: 100%;
 }
 
+.pendingRequests {
+  margin: 16px 0 12px;
+  padding: 9px 12px;
+  color: #8a5a00;
+  background: #fff8e8;
+  border: 1px solid #ead7a5;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .join > form {
   margin-top: 10px;
 }

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import type { FormEvent, MouseEvent } from "react";
 import type { ParticipantStatus, TripDetail } from "@biketrips/domain";
 
-import { getTripEditHref } from "../lib/trip-links";
+import { countPendingRequests, formatPendingRequests } from "../lib/participant-groups";
+import { getTripEditHref, getTripHref } from "../lib/trip-links";
 import { Button, CapacityIndicator, CloseButton, TextField } from "./components";
 import { TripDetailsCard } from "./trip-details-card";
 import styles from "./trip-details.module.css";
@@ -59,6 +60,7 @@ export function TripDetailsModal({
     trip.status !== "finished" &&
     !tripCancelled;
   const hasParticipantLimit = trip.capacity !== null;
+  const pendingRequests = isOrganizer ? countPendingRequests(trip) : 0;
   const placesLeft = Math.max((trip.capacity ?? 0) - trip.confirmedParticipants, 0);
   const waitlist = hasParticipantLimit && placesLeft === 0;
   const editTripHref = getTripEditHref(trip, {
@@ -263,6 +265,19 @@ export function TripDetailsModal({
                     confirmed={trip.confirmedParticipants}
                   />
                 ) : null}
+                {pendingRequests > 0 ? (
+                  <p className={styles.pendingRequests}>{formatPendingRequests(pendingRequests)}</p>
+                ) : null}
+                <Button
+                  className={styles.joinButton}
+                  tone={pendingRequests > 0 ? "primary" : "secondary"}
+                  onClick={() => {
+                    // The modal already shows the trip URL, so a plain link would only change the hash.
+                    window.location.assign(`${getTripHref(trip)}?view=participants#participants`);
+                  }}
+                >
+                  Все участники →
+                </Button>
                 {canCancelTrip ? (
                   <Button
                     className={styles.joinButton}
