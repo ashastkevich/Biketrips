@@ -349,6 +349,11 @@
   padding-top: 28px;
 }
 
+.submitActions {
+  display: flex;
+  gap: 12px;
+}
+
 .preview {
   position: sticky;
   top: 24px;
@@ -385,7 +390,8 @@
     padding: 22px 18px;
   }
 
-  .actions {
+  .actions,
+  .submitActions {
     flex-direction: column-reverse;
   }
 

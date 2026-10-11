@@ -3,8 +3,17 @@
 import { Button } from "../../../ui/components";
 import tripDetailsStyles from "../../../ui/trip-details.module.css";
 
+export type SavedTripResult = "saved" | "submitted" | "draft";
+
+const resultMessages: Record<SavedTripResult, string> = {
+  saved: "Изменения сохранены.",
+  submitted: "Изменения сохранены, поездка отправлена на проверку администратору.",
+  draft: "Черновик сохранён. Поездку пока не видят другие участники.",
+};
+
 interface SavedTripConfirmationProps {
   changes: string[];
+  result: SavedTripResult;
   returnPath: "/" | "/profile";
   returnScope: "feed" | "created" | "participating";
   tripSlug: string;
@@ -12,6 +21,7 @@ interface SavedTripConfirmationProps {
 
 export function SavedTripConfirmation({
   changes,
+  result,
   returnPath,
   returnScope,
   tripSlug,
@@ -31,7 +41,7 @@ export function SavedTripConfirmation({
         aria-labelledby="trip-edit-saved-title"
       >
         <h2 id="trip-edit-saved-title">Успешно</h2>
-        <p>Изменения сохранения</p>
+        <p>{resultMessages[result]}</p>
         {changes.length > 0 ? (
           <>
             <p><strong>Что изменилось:</strong></p>

@@ -4,8 +4,15 @@ import { AppTopbar } from "../lib/app-topbar";
 import { UpcomingTrips } from "./upcoming-trips";
 import { redirect } from "next/navigation";
 
-import { getCities, getCurrentUser, getMyTrips, withdrawTripReview } from "../lib/api";
+import {
+  getCities,
+  getCurrentUser,
+  getMyTrips,
+  submitTripForReview,
+  withdrawTripReview,
+} from "../lib/api";
 import { fallbackCities } from "../lib/cities";
+import { getTripEditHref } from "../lib/trip-links";
 import { ProfileAccount } from "./profile-account";
 import styles from "./profile.module.css";
 
@@ -19,6 +26,13 @@ async function withdrawReviewAction(formData: FormData) {
   const tripId = formData.get("tripId");
   if (typeof tripId === "string" && tripId) await withdrawTripReview(tripId);
   redirect("/profile?withdrawn=1");
+}
+
+async function submitDraftAction(formData: FormData) {
+  "use server";
+  const tripId = formData.get("tripId");
+  if (typeof tripId === "string" && tripId) await submitTripForReview(tripId);
+  redirect("/profile?submitted=1");
 }
 
 interface ProfilePageProps {
@@ -82,7 +96,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           <div className={styles.pageNotice}>Поездка отправлена администратору на модерацию.</div>
         ) : null}
         {query.withdrawn === "1" ? (
-          <div className={styles.pageNotice}>Заявка отозвана и снова сохранена как черновик.</div>
+          <div className={styles.pageNotice}>Заявка отозвана, поездка сохранена как черновик. Внесите правки и отправьте её на
+            модерацию снова.</div>
         ) : null}
         <header className={styles.hero}>
           <div className={styles.avatar} aria-hidden="true">
@@ -156,7 +171,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                                 ? "Администратор вернул поездку на исправление."
                                 : trip.moderationStatus === "rejected"
                                   ? "Администратор окончательно отклонил поездку."
-                                  : "Поездка сохранена как черновик."}
+                                  : "Поездка сохранена как черновик. Её пока не видят другие участники."}
                           </p>
                           {trip.moderationComment ? <blockquote>{trip.moderationComment}</blockquote> : null}
                         </div>
@@ -165,6 +180,14 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                             <input name="tripId" type="hidden" value={trip.id} />
                             <button type="submit">Отозвать заявку</button>
                           </form>
+                        ) : trip.status === "draft" && new Date(trip.startDateTime).getTime() > now ? (
+                          <div className={styles.moderationNoticeActions}>
+                            <a href={getTripEditHref(trip)}>Редактировать</a>
+                            <form action={submitDraftAction}>
+                              <input name="tripId" type="hidden" value={trip.id} />
+                              <button type="submit">Отправить на модерацию</button>
+                            </form>
+                          </div>
                         ) : null}
                       </article>
                     ))}

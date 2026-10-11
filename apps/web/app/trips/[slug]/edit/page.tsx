@@ -152,6 +152,9 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
   const error = Array.isArray(query.error) ? query.error[0] : query.error;
   const saved = Array.isArray(query.saved) ? query.saved[0] : query.saved;
   const savedTripSlug = Array.isArray(query.trip) ? query.trip[0] : query.trip;
+  const requestedResult = Array.isArray(query.result) ? query.result[0] : query.result;
+  const savedResult =
+    requestedResult === "submitted" || requestedResult === "draft" ? requestedResult : "saved";
   const savedChanges = Array.isArray(query.change)
     ? query.change
     : query.change
@@ -168,6 +171,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
         : "created";
   const cancelHref = getTripHref(trip);
   const tripId = trip.id;
+  const isDraft = trip.status === "draft";
   const originalTrip: TripDetail = trip;
   const originalLocalStart = `${start.date}T${start.time}`;
   const initialValues: Partial<TripDraft> = {
@@ -220,15 +224,22 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
               removeRouteFile,
             })
           : await updateTrip(tripId, input);
-      const finalTrip = updatedTrip.status === "changes_requested"
-        ? await submitTripForReview(updatedTrip.id)
-        : updatedTrip;
+      const shouldSubmit =
+        updatedTrip.status === "changes_requested" ||
+        (updatedTrip.status === "draft" && readString(formData, "intent") === "submit");
+      const finalTrip = shouldSubmit ? await submitTripForReview(updatedTrip.id) : updatedTrip;
       const updatedTripReference = getTripReference(finalTrip) ?? tripReference;
       const resultQuery = new URLSearchParams({
         trip: updatedTripReference,
         returnTo,
         saved: "1",
         scope: returnScope,
+        result:
+          finalTrip.moderationStatus === "pending_review"
+            ? "submitted"
+            : finalTrip.status === "draft"
+              ? "draft"
+              : "saved",
       });
       changes.forEach((change) => resultQuery.append("change", change));
       destination = `${getTripHref(updatedTrip)}/edit?${resultQuery.toString()}`;
@@ -252,6 +263,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
         {saved === "1" && savedTripSlug ? (
           <SavedTripConfirmation
             changes={savedChanges}
+            result={savedResult}
             returnPath={returnTo}
             returnScope={returnScope}
             tripSlug={savedTripSlug}
@@ -267,10 +279,17 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
           </Alert>
         ) : (
           <>
-            <Alert title="Свободный текст проверит администратор" tone="warning">
-              Изменения обложки и текстовых полей появятся после модерации. До этого публичной
-              останется последняя одобренная версия поездки.
-            </Alert>
+            {isDraft ? (
+              <Alert title="Поездка сохранена как черновик" tone="warning">
+                Её пока не видят другие участники. Внесите правки и отправьте поездку на
+                модерацию или сохраните черновик, чтобы вернуться к нему позже.
+              </Alert>
+            ) : (
+              <Alert title="Свободный текст проверит администратор" tone="warning">
+                Изменения обложки и текстовых полей появятся после модерации. До этого публичной
+                останется последняя одобренная версия поездки.
+              </Alert>
+            )}
             {error ? (
               <Alert title="Не удалось сохранить поездку" tone="danger">
                 {error}
@@ -282,6 +301,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
               cancelHref={cancelHref}
               cities={cities}
               initialValues={initialValues}
+              isDraft={isDraft}
               isRegistered
               mode="edit"
               persistDraft={false}

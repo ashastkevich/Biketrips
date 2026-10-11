@@ -40,13 +40,26 @@
   font-style: normal;
 }
 
-.moderationNotice button {
+.moderationNoticeActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.moderationNotice button,
+.moderationNoticeActions a {
   padding: 8px 12px;
   color: #713d20;
   background: #fff;
   border: 1px solid #d8b28c;
   border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
   font-weight: 750;
+  line-height: 1.2;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -566,6 +579,15 @@
 @media (max-width: 680px) {
   .page {
     padding-top: 18px;
+  }
+
+  .moderationNotice {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .moderationNoticeActions {
+    justify-content: flex-start;
   }
 
   .hero {

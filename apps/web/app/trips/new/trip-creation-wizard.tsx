@@ -120,6 +120,8 @@ interface TripCreationWizardProps {
   action: (formData: FormData) => void | Promise<void>;
   canPublish: boolean;
   mode?: "create" | "edit";
+  /** Edit mode for an unpublished draft: offer both "save draft" and "submit for review". */
+  isDraft?: boolean;
   cancelHref?: string;
   isRegistered?: boolean;
   initialStep?: 1 | 2 | 3;
@@ -132,6 +134,7 @@ export function TripCreationWizard({
   action,
   canPublish,
   mode = "create",
+  isDraft = false,
   cancelHref = "/",
   isRegistered = false,
   initialStep = 1,
@@ -827,6 +830,28 @@ export function TripCreationWizard({
               >
                 Продолжить
               </Button>
+            ) : mode === "edit" && isDraft ? (
+              <div className={styles.submitActions}>
+                <Button
+                  className={styles.actionButton}
+                  key="save-draft"
+                  name="intent"
+                  tone="secondary"
+                  type="submit"
+                  value="draft"
+                >
+                  Сохранить черновик
+                </Button>
+                <Button
+                  className={styles.actionButton}
+                  key="submit-trip"
+                  name="intent"
+                  type="submit"
+                  value="submit"
+                >
+                  Отправить на модерацию
+                </Button>
+              </div>
             ) : (
               <Button className={styles.actionButton} key="submit-trip" type="submit">
                 {mode === "edit" ? "Сохранить изменения" : "Отправить на модерацию"}
