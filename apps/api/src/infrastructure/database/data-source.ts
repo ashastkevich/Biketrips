@@ -28,6 +28,7 @@ import { AddTelegramLoginNonces1738400000000 } from "./migrations/1738400000000-
 import { AddTripModeration1738500000000 } from "./migrations/1738500000000-AddTripModeration.js";
 import { AddUserTelegramUsername1738600000000 } from "./migrations/1738600000000-AddUserTelegramUsername.js";
 import { AddLookupIndexes1738700000000 } from "./migrations/1738700000000-AddLookupIndexes.js";
+import { DisableJit1738800000000 } from "./migrations/1738800000000-DisableJit.js";
 
 export const appDataSource = new DataSource({
   type: "postgres",
@@ -61,6 +62,7 @@ export const appDataSource = new DataSource({
     AddTripModeration1738500000000,
     AddUserTelegramUsername1738600000000,
     AddLookupIndexes1738700000000,
+    DisableJit1738800000000,
   ],
   synchronize: false,
 });
