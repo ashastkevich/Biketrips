@@ -9,9 +9,11 @@
     "build": "tsc -p tsconfig.json",
     "migration:run": "tsx src/infrastructure/database/run-migrations.ts",
     "migration:revert": "tsx src/infrastructure/database/revert-migration.ts",
+    "import:telegram-prototype": "tsx src/modules/trip-imports/telegram-import-prototype.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@biketrips/config": "0.1.0",
     "@biketrips/domain": "0.1.0",
     "@nestjs/common": "^11.1.27",
@@ -26,6 +28,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "jsonwebtoken": "^9.0.3",
+    "node-html-parser": "^9.0.4",
     "nodemailer": "^10.1.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -33,7 +36,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "sharp": "^0.35.5",
-    "typeorm": "^1.0.0"
+    "typeorm": "^1.0.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
