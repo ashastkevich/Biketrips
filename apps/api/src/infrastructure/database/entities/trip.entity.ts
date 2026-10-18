@@ -11,9 +11,7 @@ import {
   type Relation,
 } from "typeorm";
 import type {
-  BikeType,
   DifficultyLevel,
-  DropPolicy,
   RegistrationMode,
   TripModerationStatus,
   UnpavedSurfaceDetail,
@@ -62,9 +60,6 @@ export class TripEntity {
   @Column({ type: "text" })
   difficulty!: DifficultyLevel;
 
-  @Column({ name: "bike_type", type: "text" })
-  bikeType!: BikeType;
-
   @Column({ name: "asphalt_percent", type: "integer" })
   asphaltPercent!: number;
 
@@ -73,9 +68,6 @@ export class TripEntity {
 
   @Column({ name: "unpaved_surface_details", type: "text", array: true, default: "{}" })
   unpavedSurfaceDetails!: UnpavedSurfaceDetail[];
-
-  @Column({ name: "drop_policy", type: "text" })
-  dropPolicy!: DropPolicy;
 
   @Column({ name: "route_description", type: "text", nullable: true })
   routeDescription!: string | null;

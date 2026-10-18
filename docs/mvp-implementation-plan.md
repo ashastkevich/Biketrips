@@ -14,7 +14,7 @@ MVP должен закрывать два ключевых сценария:
 В первую версию входят:
 
 - лента ближайших поездок;
-- фильтры по городу, дате, уровню, темпу, типу велосипеда и формату поездки;
+- фильтры по городу, дате, уровню и темпу;
 - публичная карточка поездки;
 - форма создания поездки;
 - запись участника;
@@ -154,11 +154,9 @@ distance_km
 pace_min
 pace_max
 difficulty
-bike_type
 asphalt_percent
 unpaved_percent
 unpaved_surface_details
-drop_policy
 route_description
 equipment_requirements
 rules

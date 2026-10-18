@@ -14,13 +14,12 @@ describe("BikeTripsApiClient", () => {
     await client.listTrips({
       city: "moscow",
       difficulty: "medium",
-      bikeType: "gravel",
       dateFrom: "2099-08-01",
       dateTo: "2099-08-31",
     });
 
     expect(fetcher).toHaveBeenCalledWith(
-      "https://api.example.test/trips?city=moscow&difficulty=medium&bikeType=gravel&dateFrom=2099-08-01&dateTo=2099-08-31",
+      "https://api.example.test/trips?city=moscow&difficulty=medium&dateFrom=2099-08-01&dateTo=2099-08-31",
       expect.objectContaining({
         method: "GET",
         headers: expect.any(Headers),
@@ -217,10 +216,8 @@ function createTripInput(): CreateTripInput {
     startLocationName: "Park",
     distanceKm: 42,
     difficulty: "medium",
-    bikeType: "gravel",
     asphaltPercent: 70,
     unpavedPercent: 30,
-    dropPolicy: "no_drop",
     organizerId: "organizer-1",
     cityId: "city-1",
   };

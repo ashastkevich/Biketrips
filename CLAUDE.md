@@ -30,7 +30,7 @@ npx vitest run -t "applies public filters"                        # single test 
 
 Three runtime apps share code through workspace packages that export TypeScript source directly (`exports: "./src/index.ts"`, no build step needed for consumers).
 
-- `packages/domain`: the shared contract. Enum-like `as const` arrays (trip/participant/moderation statuses, difficulty, bike types, etc.), DTO-shaped interfaces (`TripSummary`, `TripDetail`, `CreateTripInput`...), and business rules such as `canJoinTrips` / `canCreateTrips` and slug generation. Changes to API shapes usually start here.
+- `packages/domain`: the shared contract. Enum-like `as const` arrays (trip/participant/moderation statuses, difficulty, surface details, etc.), DTO-shaped interfaces (`TripSummary`, `TripDetail`, `CreateTripInput`...), and business rules such as `canJoinTrips` / `canCreateTrips` and slug generation. Changes to API shapes usually start here.
 - `packages/api-client`: `BikeTripsApiClient`, a typed fetch wrapper over the REST API, used by web and bot. New endpoints need a method here.
 - `packages/config`: env helpers (`readPortEnv`, `readOptionalEnv`) and shared tsconfig presets.
 

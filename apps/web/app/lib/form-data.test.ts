@@ -45,11 +45,9 @@ describe("form-data helpers", () => {
       paceMin: 18,
       paceMax: 22,
       difficulty: "medium",
-      bikeType: "gravel",
       asphaltPercent: 70,
       unpavedPercent: 30,
       unpavedSurfaceDetails: ["hardpack", "gravel"],
-      dropPolicy: "no_drop",
       routeDescription: "Loop route",
       equipmentRequirements: "Helmet",
       rules: "Ride safely",
@@ -100,12 +98,10 @@ function createTripFormData(): FormData {
   formData.set("paceMin", "18");
   formData.set("paceMax", "22");
   formData.set("difficulty", "medium");
-  formData.set("bikeType", "gravel");
   formData.set("asphaltPercent", "70");
   formData.set("unpavedPercent", "30");
   formData.append("unpavedSurfaceDetails", "hardpack");
   formData.append("unpavedSurfaceDetails", "gravel");
-  formData.set("dropPolicy", "no_drop");
   formData.set("routeDescription", "Loop route");
   formData.set("equipmentRequirements", "Helmet");
   formData.set("rules", "Ride safely");

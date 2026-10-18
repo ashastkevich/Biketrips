@@ -38,7 +38,6 @@ const filledTrip = {
   asphaltPercent: "60",
   unpavedPercent: "40",
   unpavedSurfaceDetails: ["hardpack" as const, "gravel" as const],
-  dropPolicy: "no_drop",
   hasParticipantLimit: true,
   maxParticipants: "12",
   registrationMode: "automatic",

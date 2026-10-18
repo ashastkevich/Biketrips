@@ -33,7 +33,6 @@ describe("TripsService", () => {
     await context.service.list({
       city: "moscow",
       difficulty: "medium",
-      bikeType: "gravel",
       dateFrom: "2099-08-01T00:00:00.000Z",
       dateTo: "2099-08-31T23:59:59.999Z",
     });
@@ -46,9 +45,6 @@ describe("TripsService", () => {
     });
     expect(context.queryBuilder.andWhere).toHaveBeenCalledWith("trip.difficulty = :difficulty", {
       difficulty: "medium",
-    });
-    expect(context.queryBuilder.andWhere).toHaveBeenCalledWith("trip.bikeType = :bikeType", {
-      bikeType: "gravel",
     });
     expect(context.queryBuilder.andWhere).toHaveBeenCalledWith("trip.startAt >= :dateFrom", {
       dateFrom: new Date("2099-08-01T00:00:00.000Z"),
@@ -863,11 +859,9 @@ function createTripDto(input: Partial<CreateTripDto> = {}): CreateTripDto {
     paceMin: 18,
     paceMax: 22,
     difficulty: "medium",
-    bikeType: "gravel",
     asphaltPercent: 70,
     unpavedPercent: 30,
     unpavedSurfaceDetails: ["hardpack"],
-    dropPolicy: "no_drop",
     routeDescription: "Круговой маршрут",
     equipmentRequirements: "Шлем",
     rules: "Безопасно едем группой",
@@ -903,11 +897,9 @@ function createTrip(input: Partial<TestTrip> = {}): TestTrip {
     paceMin: 18,
     paceMax: 22,
     difficulty: "medium",
-    bikeType: "gravel",
     asphaltPercent: 70,
     unpavedPercent: 30,
     unpavedSurfaceDetails: ["hardpack"],
-    dropPolicy: "no_drop",
     routeDescription: "Круговой маршрут",
     equipmentRequirements: "Шлем",
     rules: "Безопасно едем группой",

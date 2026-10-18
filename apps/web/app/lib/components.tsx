@@ -4,7 +4,6 @@ import type { TripDetail, TripSummary } from "@biketrips/domain";
 
 import {
   difficultyLabels,
-  dropPolicyLabels,
   formatDateTime,
   paceLabels,
   registrationModeLabels,
@@ -261,7 +260,6 @@ export function TripFacts({ trip }: { trip: TripDetail }) {
         label="Покрытие"
         value={formatSurfaceComposition(trip.asphaltPercent, trip.unpavedPercent)}
       />
-      <Metric label="Формат" value={dropPolicyLabels[trip.dropPolicy]} />
       <Metric label="Запись" value={registrationModeLabels[trip.registrationMode]} />
       <Metric label="Статус" value={tripStatusLabels[trip.status]} />
     </dl>

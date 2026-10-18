@@ -31,6 +31,7 @@ import { AddLookupIndexes1738700000000 } from "./migrations/1738700000000-AddLoo
 import { DisableJit1738800000000 } from "./migrations/1738800000000-DisableJit.js";
 import { AddEmailCodeRequestIp1738900000000 } from "./migrations/1738900000000-AddEmailCodeRequestIp.js";
 import { AddNotificationJobAttempts1739000000000 } from "./migrations/1739000000000-AddNotificationJobAttempts.js";
+import { DropTripBikeTypeAndDropPolicy1739100000000 } from "./migrations/1739100000000-DropTripBikeTypeAndDropPolicy.js";
 
 export const appDataSource = new DataSource({
   type: "postgres",
@@ -67,6 +68,7 @@ export const appDataSource = new DataSource({
     DisableJit1738800000000,
     AddEmailCodeRequestIp1738900000000,
     AddNotificationJobAttempts1739000000000,
+    DropTripBikeTypeAndDropPolicy1739100000000,
   ],
   synchronize: false,
 });

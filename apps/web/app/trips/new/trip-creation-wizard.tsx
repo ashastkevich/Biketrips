@@ -47,7 +47,6 @@ export interface TripDraft {
   asphaltPercent: string;
   unpavedPercent: string;
   unpavedSurfaceDetails: UnpavedSurfaceDetail[];
-  dropPolicy: string;
   hasParticipantLimit: boolean;
   maxParticipants: string;
   registrationMode: string;
@@ -76,7 +75,6 @@ const initialDraft: TripDraft = {
   asphaltPercent: "100",
   unpavedPercent: "0",
   unpavedSurfaceDetails: [],
-  dropPolicy: "no_drop",
   hasParticipantLimit: false,
   maxParticipants: "12",
   registrationMode: "automatic",
@@ -381,13 +379,11 @@ export function TripCreationWizard({
       <input name="paceMin" type="hidden" value={draft.paceMin} />
       <input name="paceMax" type="hidden" value={draft.paceMax} />
       <input name="difficulty" type="hidden" value={draft.difficulty} />
-      <input name="bikeType" type="hidden" value="any" />
       <input name="asphaltPercent" type="hidden" value={draft.asphaltPercent} />
       <input name="unpavedPercent" type="hidden" value={draft.unpavedPercent} />
       {draft.unpavedSurfaceDetails.map((detail) => (
         <input name="unpavedSurfaceDetails" type="hidden" value={detail} key={detail} />
       ))}
-      <input name="dropPolicy" type="hidden" value={draft.dropPolicy} />
       <input
         name="hasParticipantLimit"
         type="hidden"
@@ -517,7 +513,6 @@ export function TripCreationWizard({
                 <p>Темп и покрытие помогут собрать совместимую группу.</p>
               </div>
               <div className={`${styles.formGrid} ${styles.conditionsForm}`}>
-                <input name="bikeType" type="hidden" value="any" />
                 <div className={styles.conditionField}>
                   <span>Сложность маршрута</span>
                   <DifficultySelect

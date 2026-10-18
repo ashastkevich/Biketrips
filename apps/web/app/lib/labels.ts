@@ -1,6 +1,5 @@
 import type {
   DifficultyLevel,
-  DropPolicy,
   ParticipantStatus,
   PaceType,
   RegistrationMode,
@@ -48,11 +47,6 @@ export function formatSurfaceComposition(asphaltPercent: number, unpavedPercent:
   if (asphaltPercent === 0) return "100% грунт";
   return `${asphaltPercent}% асфальт · ${unpavedPercent}% грунт`;
 }
-
-export const dropPolicyLabels: Record<DropPolicy, string> = {
-  no_drop: "No-drop",
-  drop: "Drop",
-};
 
 export const tripStatusLabels: Record<TripStatus, string> = {
   draft: "Черновик",

@@ -76,7 +76,6 @@ function getChangedFields(
   ) {
     changes.push("Покрытие");
   }
-  if (differs(trip.dropPolicy, input.dropPolicy)) changes.push("Формат движения");
   if (differs(trip.capacity, input.maxParticipants ?? null)) changes.push("Лимит мест");
   if (differs(trip.registrationMode, input.registrationMode)) changes.push("Режим регистрации");
   const coverImageChanged =
@@ -189,7 +188,6 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
     asphaltPercent: String(trip.asphaltPercent),
     unpavedPercent: String(trip.unpavedPercent),
     unpavedSurfaceDetails: trip.unpavedSurfaceDetails,
-    dropPolicy: trip.dropPolicy,
     hasParticipantLimit: trip.capacity !== null,
     maxParticipants: String(trip.capacity ?? 12),
     registrationMode: trip.registrationMode,
@@ -208,10 +206,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
     let destination = `/trips/${tripReference}/edit?error=${encodeURIComponent("Не удалось сохранить изменения")}`;
 
     try {
-      const input = {
-        ...readTripUpdateInput(formData),
-        bikeType: originalTrip.bikeType,
-      };
+      const input = readTripUpdateInput(formData);
       const routeFile = readOptionalFile(formData, "routeGpxFile");
       const coverImageFile = readOptionalFile(formData, "coverImageFile");
       const removeRouteFile = readString(formData, "removeRouteGpx") === "true";

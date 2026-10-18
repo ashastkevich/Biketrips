@@ -309,7 +309,6 @@ export class BikeTripsApiClient {
 
     if (filters.city) query.set("city", filters.city);
     if (filters.difficulty) query.set("difficulty", filters.difficulty);
-    if (filters.bikeType) query.set("bikeType", filters.bikeType);
     if (filters.dateFrom) query.set("dateFrom", filters.dateFrom);
     if (filters.dateTo) query.set("dateTo", filters.dateTo);
 

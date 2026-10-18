@@ -49,9 +49,6 @@ export function canCreateTrips(user: AuthenticatedUser | null): boolean {
   return user?.role === "admin" || user?.telegramVerified === true;
 }
 
-export const bikeTypes = ["city", "road", "gravel", "mtb", "hybrid", "any"] as const;
-export type BikeType = (typeof bikeTypes)[number];
-
 export const unpavedSurfaceDetails = [
   "hardpack",
   "gravel",
@@ -62,12 +59,6 @@ export const unpavedSurfaceDetails = [
   "concrete_slabs",
 ] as const;
 export type UnpavedSurfaceDetail = (typeof unpavedSurfaceDetails)[number];
-
-export const dropPolicies = ["no_drop", "drop"] as const;
-export type DropPolicy = (typeof dropPolicies)[number];
-
-export const tripFormats = ["no_drop", "drop", "training", "social", "family"] as const;
-export type TripFormat = (typeof tripFormats)[number];
 
 export const registrationModes = ["automatic", "manual"] as const;
 export type RegistrationMode = (typeof registrationModes)[number];
@@ -143,11 +134,9 @@ export interface TripSummary {
   distanceKm: number;
   difficulty: DifficultyLevel;
   pace: PaceType;
-  bikeType: BikeType;
   asphaltPercent: number;
   unpavedPercent: number;
   unpavedSurfaceDetails: UnpavedSurfaceDetail[];
-  dropPolicy: DropPolicy;
   status: TripStatus;
   moderationStatus: TripModerationStatus;
   moderationComment: string | null;
@@ -248,11 +237,9 @@ export interface CreateTripInput {
   paceMin?: number;
   paceMax?: number;
   difficulty: DifficultyLevel;
-  bikeType: BikeType;
   asphaltPercent: number;
   unpavedPercent: number;
   unpavedSurfaceDetails?: UnpavedSurfaceDetail[];
-  dropPolicy: DropPolicy;
   routeDescription?: string;
   equipmentRequirements?: string;
   rules?: string;
@@ -268,7 +255,6 @@ export type UpdateTripInput = Omit<CreateTripInput, "organizerId">;
 export interface TripFilters {
   city?: string;
   difficulty?: DifficultyLevel;
-  bikeType?: BikeType;
   dateFrom?: string;
   dateTo?: string;
 }

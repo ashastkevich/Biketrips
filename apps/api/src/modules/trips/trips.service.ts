@@ -155,10 +155,6 @@ export class TripsService {
       query.andWhere("trip.difficulty = :difficulty", { difficulty: filters.difficulty });
     }
 
-    if (filters.bikeType) {
-      query.andWhere("trip.bikeType = :bikeType", { bikeType: filters.bikeType });
-    }
-
     // The public feed only shows upcoming trips, even when dateFrom points to the past.
     const now = new Date();
     const requestedFrom = filters.dateFrom ? new Date(filters.dateFrom) : null;
@@ -659,11 +655,9 @@ export class TripsService {
       paceMin: dto.paceMin ?? null,
       paceMax: dto.paceMax ?? null,
       difficulty: dto.difficulty,
-      bikeType: dto.bikeType,
       asphaltPercent: dto.asphaltPercent,
       unpavedPercent: dto.unpavedPercent,
       unpavedSurfaceDetails: dto.unpavedSurfaceDetails ?? [],
-      dropPolicy: dto.dropPolicy,
       routeDescription: dto.routeDescription ?? null,
       equipmentRequirements: dto.equipmentRequirements ?? null,
       rules: dto.rules ?? null,
@@ -960,12 +954,10 @@ export class TripsService {
     if (dto.paceMin !== undefined) update.paceMin = dto.paceMin;
     if (dto.paceMax !== undefined) update.paceMax = dto.paceMax;
     if (dto.difficulty !== undefined) update.difficulty = dto.difficulty;
-    if (dto.bikeType !== undefined) update.bikeType = dto.bikeType;
     if (dto.asphaltPercent !== undefined) update.asphaltPercent = dto.asphaltPercent;
     if (dto.unpavedPercent !== undefined) update.unpavedPercent = dto.unpavedPercent;
     if (dto.unpavedSurfaceDetails !== undefined)
       update.unpavedSurfaceDetails = dto.unpavedSurfaceDetails;
-    if (dto.dropPolicy !== undefined) update.dropPolicy = dto.dropPolicy;
     if (dto.routeDescription !== undefined) update.routeDescription = dto.routeDescription;
     if (dto.equipmentRequirements !== undefined)
       update.equipmentRequirements = dto.equipmentRequirements;

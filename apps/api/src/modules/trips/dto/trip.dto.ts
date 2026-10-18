@@ -11,14 +11,10 @@ import {
   Min,
 } from "class-validator";
 import {
-  bikeTypes,
   difficultyLevels,
-  dropPolicies,
   registrationModes,
   unpavedSurfaceDetails,
-  type BikeType,
   type DifficultyLevel,
-  type DropPolicy,
   type RegistrationMode,
   type UnpavedSurfaceDetail,
 } from "@biketrips/domain";
@@ -75,10 +71,6 @@ export class CreateTripDto {
   @IsIn(difficultyLevels)
   difficulty!: DifficultyLevel;
 
-  @ApiProperty({ enum: bikeTypes })
-  @IsIn(bikeTypes)
-  bikeType!: BikeType;
-
   @ApiProperty({ minimum: 0, maximum: 100, example: 70 })
   @IsInt()
   @Min(0)
@@ -96,10 +88,6 @@ export class CreateTripDto {
   @IsArray()
   @IsIn(unpavedSurfaceDetails, { each: true })
   unpavedSurfaceDetails?: UnpavedSurfaceDetail[];
-
-  @ApiProperty({ enum: dropPolicies })
-  @IsIn(dropPolicies)
-  dropPolicy!: DropPolicy;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -156,11 +144,6 @@ export class TripFiltersDto {
   @IsOptional()
   @IsIn(difficultyLevels)
   difficulty?: DifficultyLevel;
-
-  @ApiPropertyOptional({ enum: bikeTypes })
-  @IsOptional()
-  @IsIn(bikeTypes)
-  bikeType?: BikeType;
 
   @ApiPropertyOptional()
   @IsOptional()
