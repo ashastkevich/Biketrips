@@ -177,6 +177,15 @@ describe("TripsService", () => {
     expect(context.trips).toHaveLength(0);
   });
 
+  it("rejects creation with a start in the past", async () => {
+    const context = createTripsService();
+
+    await expect(
+      context.service.create(createTripDto({ startAt: "2020-01-01T08:00:00.000Z" }), createActor())
+    ).rejects.toThrow(BadRequestException);
+    expect(context.trips).toHaveLength(0);
+  });
+
   it("rejects creation for unknown cities", async () => {
     const context = createTripsService({ cities: [] });
 
@@ -266,6 +275,23 @@ describe("TripsService", () => {
       expect(context.tripUpdates).toHaveLength(0);
       expect(context.notifications.enqueueTripKeyChanges).not.toHaveBeenCalled();
     }
+  });
+
+  it("rejects updates that move the start into the past", async () => {
+    const context = createTripsService({
+      trips: [createTrip()],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+
+    await expect(
+      context.service.update(
+        tripId,
+        { startAt: "2020-01-01T08:00:00.000Z" },
+        { id: actorId, role: "user" }
+      )
+    ).rejects.toThrow(BadRequestException);
+    expect(context.tripUpdates).toHaveLength(0);
   });
 
   it("rejects updates that break surface composition", async () => {

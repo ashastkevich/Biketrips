@@ -275,6 +275,7 @@ export class TripsService {
       phoneVerified: boolean;
     },
   ): Promise<TripEntity> {
+    this.validateStartAtInFuture(dto.startAt);
     this.validateSurfaceComposition(dto.asphaltPercent, dto.unpavedPercent);
     const cityExists = await this.citiesRepository.existsBy({ id: dto.cityId });
     if (!cityExists) {
@@ -390,6 +391,7 @@ export class TripsService {
     ) {
       throw new BadRequestException("Only an upcoming active trip can be edited");
     }
+    if (dto.startAt !== undefined) this.validateStartAtInFuture(dto.startAt);
     this.validateSurfaceComposition(
       dto.asphaltPercent ?? trip.asphaltPercent,
       dto.unpavedPercent ?? trip.unpavedPercent
@@ -933,6 +935,12 @@ export class TripsService {
     }
 
     return `${tripId}/${fileName}`;
+  }
+
+  private validateStartAtInFuture(startAt: string): void {
+    if (new Date(startAt).getTime() <= Date.now()) {
+      throw new BadRequestException("Trip start must be in the future");
+    }
   }
 
   private validateSurfaceComposition(asphaltPercent: number, unpavedPercent: number): void {

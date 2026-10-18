@@ -13,7 +13,7 @@ import { AuthOptionsDialog } from "../../ui/auth-options-dialog";
 import componentStyles from "../../ui/components.module.css";
 import { getMapTilerApiKey } from "../../maps/map-config";
 import { GpxRouteMapLoader } from "../../maps/gpx-route-map-loader";
-import { DEFAULT_TRIP_TIME_ZONE, toTripStartAt } from "../../lib/trip-time";
+import { DEFAULT_TRIP_TIME_ZONE, getTodayInTimeZone, toTripStartAt } from "../../lib/trip-time";
 import { StartLocationPicker } from "./start-location-picker";
 import { NEW_TRIP_DRAFT_KEY } from "./draft-storage";
 import styles from "./trip-creation-wizard.module.css";
@@ -314,6 +314,11 @@ export function TripCreationWizard({
       return false;
     }
 
+    if (currentStep === 1 && new Date(startAt).getTime() <= Date.now()) {
+      setStepError("Дата и время старта должны быть в будущем.");
+      return false;
+    }
+
     if (currentStep === 1 && Number(draft.averageSpeed) <= 0) {
       setStepError("Средняя скорость должна быть больше нуля.");
       return false;
@@ -346,6 +351,7 @@ export function TripCreationWizard({
     draft.date && draft.time
       ? toTripStartAt(draft.date, draft.time, selectedCity?.timezone ?? DEFAULT_TRIP_TIME_ZONE)
       : "";
+  const todayInCity = getTodayInTimeZone(selectedCity?.timezone ?? DEFAULT_TRIP_TIME_ZONE);
   const localStartAt = draft.date && draft.time ? `${draft.date}T${draft.time}` : "";
   const selectedCover = customCoverUrl || draft.coverImage || defaultCoverImage;
   const previewCover = customCoverUrl || getDisplayCoverImage(draft.coverImage || defaultCoverImage);
@@ -450,6 +456,7 @@ export function TripCreationWizard({
                   <TextField
                     type="date"
                     required
+                    min={todayInCity}
                     value={draft.date}
                     onChange={(event) => update("date", event.target.value)}
                   />

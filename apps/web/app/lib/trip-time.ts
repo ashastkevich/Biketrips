@@ -85,3 +85,10 @@ export function getLocalStartValues(
     time: `${value("hour")}:${value("minute")}`,
   };
 }
+
+export function getTodayInTimeZone(
+  timeZone: string = DEFAULT_TRIP_TIME_ZONE,
+  now: Date = new Date(),
+): string {
+  return getLocalStartValues(now.toISOString(), timeZone).date;
+}

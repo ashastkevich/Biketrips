@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getLocalStartValues, toTripStartAt } from "./trip-time";
+import { getLocalStartValues, getTodayInTimeZone, toTripStartAt } from "./trip-time";
 
 describe("trip time helpers", () => {
   it("keeps Moscow trip clock time when serializing local form values", () => {
@@ -14,5 +14,11 @@ describe("trip time helpers", () => {
       date: "2099-08-16",
       time: "10:30",
     });
+  });
+
+  it("returns today's date in the trip time zone", () => {
+    const lateEveningUtc = new Date("2099-08-16T22:30:00.000Z");
+    expect(getTodayInTimeZone("Europe/Moscow", lateEveningUtc)).toBe("2099-08-17");
+    expect(getTodayInTimeZone("UTC", lateEveningUtc)).toBe("2099-08-16");
   });
 });
