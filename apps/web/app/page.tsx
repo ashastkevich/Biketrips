@@ -11,6 +11,7 @@ import { ArrowIcon } from "./lib/components";
 import { CreateTripLauncher } from "./lib/create-trip-launcher";
 import { legalLinks } from "./legal/legal-documents";
 import { LinkButton } from "./ui/components";
+import { ScrollToHash } from "./ui/scroll-to-hash";
 import { baseOpenGraph, DEFAULT_DESCRIPTION, SITE_NAME } from "./lib/site";
 import styles from "./home.module.css";
 
@@ -90,6 +91,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       <main>
         <div className={`page ${styles.section} ${styles.searchSection}`} id="rides">
+      <ScrollToHash id="rides" />
       <FindTripSection
         trips={trips}
         isAuthenticated={isAuthorized}

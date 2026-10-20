@@ -65,13 +65,16 @@ export function LinkButton({
   children: ReactNode;
   className?: string;
 }) {
+  // In-page anchors stay plain links: the Next.js router does not scroll again when the hash is unchanged.
+  const ButtonLink = href.startsWith("#") ? "a" : Link;
+
   return (
-    <Link
+    <ButtonLink
       className={classes(styles.button, buttonToneClasses[tone], buttonSizeClasses[size], className)}
       href={href}
     >
       <span className={styles.buttonLabel} data-button-label>{children}</span>
-    </Link>
+    </ButtonLink>
   );
 }
 
