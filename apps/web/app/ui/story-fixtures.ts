@@ -169,7 +169,6 @@ export const storyTrips: TripDetail[] = [
 export function toTripSummary(trip: TripDetail): TripSummary {
   const {
     description: _description,
-    startLocationName: _startLocationName,
     startLat: _startLat,
     startLng: _startLng,
     paceMin: _paceMin,

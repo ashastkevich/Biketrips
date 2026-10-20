@@ -12,7 +12,10 @@ import type { AuthProvider } from "../../ui/auth-options";
 import { AuthOptionsDialog } from "../../ui/auth-options-dialog";
 import componentStyles from "../../ui/components.module.css";
 import { getMapTilerApiKey } from "../../maps/map-config";
-import { GpxRouteMapLoader } from "../../maps/gpx-route-map-loader";
+import { parseGpxRoute } from "../../maps/gpx";
+import { isValidMapPoint } from "../../maps/map-types";
+import { RouteMapLoader } from "../../maps/route-map-loader";
+import { formatDistance, getRouteStartDistance, isFarRouteStart } from "../../maps/route-start";
 import { DEFAULT_TRIP_TIME_ZONE, getTodayInTimeZone, toTripStartAt } from "../../lib/trip-time";
 import { StartLocationPicker } from "./start-location-picker";
 import { NEW_TRIP_DRAFT_KEY } from "./draft-storage";
@@ -95,6 +98,10 @@ function getPersistableDraft(draft: TripDraft): TripDraft {
   };
 }
 
+function getDisplayRouteGpxUrl(url: string): string {
+  return url.startsWith("/trips/") ? `/api${url}` : url;
+}
+
 function getDisplayCoverImage(coverImage: string): string {
   return coverImage.startsWith("/trips/") &&
     (coverImage.includes("/cover-image") || coverImage.includes("/pending-cover-image"))
@@ -149,6 +156,21 @@ export function TripCreationWizard({
   const [routeGpxError, setRouteGpxError] = useState("");
   const [showRouteMap, setShowRouteMap] = useState(false);
   const [routeGpxPreviewContent, setRouteGpxPreviewContent] = useState("");
+  const routeGpxPreview = useMemo(
+    () => (routeGpxPreviewContent ? parseGpxRoute(routeGpxPreviewContent) : null),
+    [routeGpxPreviewContent],
+  );
+  // When editing, the already saved GPX is loaded too, so the distance check covers it.
+  const [savedRouteGpx, setSavedRouteGpx] = useState<{ url: string; content: string } | null>(null);
+  const savedRoute = useMemo(
+    () =>
+      savedRouteGpx && savedRouteGpx.url === draft.routeGpxDownloadUrl
+        ? parseGpxRoute(savedRouteGpx.content)
+        : null,
+    [draft.routeGpxDownloadUrl, savedRouteGpx],
+  );
+  const [confirmedFarStartKey, setConfirmedFarStartKey] = useState("");
+  const farStartConfirmationRef = useRef<HTMLInputElement>(null);
   const [removeRouteGpx, setRemoveRouteGpx] = useState(false);
   const coverFileRef = useRef<HTMLInputElement>(null);
   const routeGpxFileRef = useRef<HTMLInputElement>(null);
@@ -208,6 +230,22 @@ export function TripCreationWizard({
     },
     [customCoverUrl]
   );
+
+  useEffect(() => {
+    const url = draft.routeGpxDownloadUrl;
+    if (!url || routeGpxPreviewContent || savedRouteGpx?.url === url) return;
+
+    let cancelled = false;
+    fetch(getDisplayRouteGpxUrl(url))
+      .then((response) => (response.ok ? response.text() : Promise.reject(new Error("GPX"))))
+      .then((content) => {
+        if (!cancelled) setSavedRouteGpx({ url, content });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.routeGpxDownloadUrl, routeGpxPreviewContent, savedRouteGpx?.url]);
 
   const suggestedTitle = useMemo(() => {
     const distance = draft.distanceKm ? ` · ${draft.distanceKm} км` : "";
@@ -356,12 +394,33 @@ export function TripCreationWizard({
   const selectedCover = customCoverUrl || draft.coverImage || defaultCoverImage;
   const previewCover = customCoverUrl || getDisplayCoverImage(draft.coverImage || defaultCoverImage);
   const mapTilerApiKey = getMapTilerApiKey();
+  const draftStartPoint = { lat: Number(draft.startLat), lng: Number(draft.startLng) };
+  const routeMapStart =
+    draft.startLat && draft.startLng && isValidMapPoint(draftStartPoint) ? draftStartPoint : null;
+  const checkedRoute = routeGpxPreview ?? savedRoute;
+  const routeStartDistance = getRouteStartDistance(routeMapStart, checkedRoute);
+  const isFarStart = isFarRouteStart(routeStartDistance);
+  // A new meeting point or GPX file needs a new confirmation.
+  const farStartKey =
+    isFarStart && checkedRoute
+      ? `${draft.startLat},${draft.startLng}|${checkedRoute.points[0]!.lat},${checkedRoute.points[0]!.lng}`
+      : "";
+  const isFarStartConfirmed = farStartKey !== "" && confirmedFarStartKey === farStartKey;
 
   return (
     <form
       action={action}
       className={styles.layout}
       onSubmit={(event) => {
+        // Saving a draft is not publishing, so it does not need the confirmation yet.
+        const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+        if (isFarStart && !isFarStartConfirmed && submitter?.value !== "draft") {
+          event.preventDefault();
+          setStep(3);
+          setStepError("Подтвердите расстояние от места сбора до начала маршрута.");
+          farStartConfirmationRef.current?.focus();
+          return;
+        }
         if (!canPublish) {
           event.preventDefault();
           if (isRegistered) {
@@ -711,7 +770,7 @@ export function TripCreationWizard({
                 />
                 {draft.routeGpxFileName ? (
                   <div className={styles.routeGpxActions}>
-                    {routeGpxPreviewContent ? (
+                    {routeGpxPreviewContent || savedRoute ? (
                       <Button tone="secondary" type="button" onClick={() => setShowRouteMap((open) => !open)}>
                         {showRouteMap ? "Скрыть карту" : "Открыть карту"}
                       </Button>
@@ -724,13 +783,51 @@ export function TripCreationWizard({
                 {routeGpxError ? (
                   <p className={styles.routeGpxError} role="alert">{routeGpxError}</p>
                 ) : null}
-                {showRouteMap && routeGpxPreviewContent ? (
+                {isFarStart && routeStartDistance !== null ? (
+                  <div className={styles.farStartWarning} role="alert">
+                    <p>
+                      <strong>
+                        Место сбора в {formatDistance(routeStartDistance)} от начала маршрута.
+                      </strong>{" "}
+                      Проверьте место старта на шаге 1 и GPX-файл: возможно, выбран не тот
+                      адрес или маршрут.
+                    </p>
+                    <p>
+                      Если всё верно, подтвердите это и опишите в кратком описании, почему старт
+                      так далеко и как участники доберутся до начала маршрута.
+                    </p>
+                    <label className={styles.farStartConfirm}>
+                      <input
+                        ref={farStartConfirmationRef}
+                        type="checkbox"
+                        checked={isFarStartConfirmed}
+                        onChange={(event) => {
+                          setConfirmedFarStartKey(event.target.checked ? farStartKey : "");
+                          setStepError("");
+                        }}
+                      />
+                      <span>
+                        Это не ошибка: место сбора в {formatDistance(routeStartDistance)} от начала
+                        маршрута, я объясню это в описании
+                      </span>
+                    </label>
+                    <Button tone="ghost" type="button" onClick={() => setStep(1)}>
+                      Изменить место старта
+                    </Button>
+                  </div>
+                ) : null}
+                {showRouteMap && routeGpxPreviewContent && !routeGpxPreview ? (
+                  <p className={styles.routeGpxError} role="alert">
+                    Не удалось прочитать координаты из GPX.
+                  </p>
+                ) : showRouteMap && checkedRoute ? (
                   mapTilerApiKey ? (
                     <div className={styles.routeGpxMap}>
-                      <GpxRouteMapLoader
+                      <RouteMapLoader
                         apiKey={mapTilerApiKey}
-                        fileName={draft.routeGpxFileName}
-                        gpxContent={routeGpxPreviewContent}
+                        start={routeMapStart}
+                        route={checkedRoute}
+                        label={`Карта маршрута из файла ${draft.routeGpxFileName}`}
                       />
                     </div>
                   ) : (

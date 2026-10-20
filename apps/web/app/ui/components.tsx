@@ -295,7 +295,10 @@ export function TripCard({
           {date || "Выберите дату"} · {time || "—:—"}
         </p>
         <h2>{titleContent}</h2>
-        <p>{startLocationName || "Укажите место старта"}</p>
+        <p title={startLocationName || undefined}>
+          {startLocationName ? <span aria-hidden="true">⌖ </span> : null}
+          {startLocationName || "Укажите место старта"}
+        </p>
         <div className={tripCardStyles.tags}>
           <DifficultyBadge difficulty={difficulty} />
           <span className={tripCardStyles.tagText}>{averageSpeed || "—"} км/ч</span>

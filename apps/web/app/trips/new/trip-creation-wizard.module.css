@@ -332,6 +332,44 @@
   font-size: 13px;
 }
 
+.farStartWarning {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 14px 16px;
+  color: #6b4a12;
+  background: #fff7e6;
+  border: 1px solid #ecd6a6;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.farStartWarning p {
+  margin: 0;
+}
+
+.farStartWarning strong {
+  color: #5a3d0c;
+}
+
+.farStartConfirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--text);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.farStartConfirm input {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--green-dark);
+}
+
 .inlineError {
   margin-top: 16px;
   padding: 12px 14px;

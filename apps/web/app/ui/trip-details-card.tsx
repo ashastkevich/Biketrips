@@ -10,8 +10,8 @@ import {
 } from "../lib/labels";
 import { getOrganizerHref } from "../lib/organizer-links";
 import { DEFAULT_TRIP_TIME_ZONE } from "../lib/trip-time";
-import { RouteMapToggle } from "./route-map-toggle";
 import { tripHeroImageSizes } from "./trip-hero-image";
+import { TripStartRoute } from "./trip-start-route";
 import styles from "./trip-details.module.css";
 
 interface TripDetailsCardProps {
@@ -132,16 +132,14 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
               <p>{trip.description}</p>
             </section>
 
-            {trip.routeGpxDownloadUrl ? (
-              <section className={styles.section}>
-                <h3>Карта маршрута</h3>
-                <p>{trip.routeGpxFileName ?? "GPX-файл маршрута"} загружен организатором.</p>
-                <RouteMapToggle
-                  fileName={trip.routeGpxFileName}
-                  downloadUrl={trip.routeGpxDownloadUrl}
-                />
-              </section>
-            ) : null}
+            <TripStartRoute
+              startLocationName={trip.startLocationName}
+              startTime={time}
+              startLat={trip.startLat}
+              startLng={trip.startLng}
+              gpxFileName={trip.routeGpxFileName}
+              gpxDownloadUrl={trip.routeGpxDownloadUrl}
+            />
 
             {hasRouteConditions ? (
               <details className={styles.disclosure} open>

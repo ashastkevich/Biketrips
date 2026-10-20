@@ -92,8 +92,11 @@
 
 .body > p:not(.date) {
   margin-bottom: 14px;
+  overflow: hidden;
   color: var(--muted);
   font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tags {

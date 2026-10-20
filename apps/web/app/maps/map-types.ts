@@ -41,3 +41,16 @@ export function formatCoordinate(value: number): string {
 export function formatPoint(point: MapPoint): string {
   return `${formatCoordinate(point.lat)}, ${formatCoordinate(point.lng)}`;
 }
+
+const EARTH_RADIUS_METERS = 6_371_000;
+
+/** Great-circle distance; accurate enough to tell whether two points are the same place. */
+export function distanceMeters(from: MapPoint, to: MapPoint): number {
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const latDelta = toRadians(to.lat - from.lat);
+  const lngDelta = toRadians(to.lng - from.lng);
+  const a =
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(toRadians(from.lat)) * Math.cos(toRadians(to.lat)) * Math.sin(lngDelta / 2) ** 2;
+  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(a));
+}

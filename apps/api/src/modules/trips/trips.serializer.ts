@@ -56,6 +56,7 @@ export function serializeTripSummary(
     city: trip.city.name,
     organizerId: trip.organizerId,
     startDateTime: trip.startAt.toISOString(),
+    startLocationName: trip.startLocationName,
     distanceKm: Number(trip.distanceKm),
     difficulty: trip.difficulty,
     pace: trip.paceMax && trip.paceMax >= 28 ? "fast" : "steady",
@@ -74,6 +75,9 @@ export function serializeTripSummary(
   if (options.includePendingRevision && trip.pendingRevision) {
     const pending = trip.pendingRevision;
     if (typeof pending.title === "string") summary.title = pending.title;
+    if (typeof pending.startLocationName === "string") {
+      summary.startLocationName = pending.startLocationName;
+    }
     if (typeof pending.coverImage === "string" || pending.coverImage === null) {
       summary.coverImage = pending.coverImage;
     }
@@ -93,7 +97,6 @@ export function serializeTripDetail(
   const detail = {
     ...serializeTripSummary(trip, options),
     description: trip.description,
-    startLocationName: trip.startLocationName,
     startLat: trip.startLat === null ? null : Number(trip.startLat),
     startLng: trip.startLng === null ? null : Number(trip.startLng),
     paceMin: trip.paceMin,
@@ -141,9 +144,6 @@ export function serializeTripDetail(
   if (options.includePendingRevision && trip.pendingRevision) {
     const pending = trip.pendingRevision;
     if (typeof pending.description === "string") detail.description = pending.description;
-    if (typeof pending.startLocationName === "string") {
-      detail.startLocationName = pending.startLocationName;
-    }
     if (typeof pending.routeDescription === "string" || pending.routeDescription === null) {
       detail.routeDescription = pending.routeDescription;
     }

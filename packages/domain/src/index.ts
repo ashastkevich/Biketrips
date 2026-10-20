@@ -131,6 +131,7 @@ export interface TripSummary {
   city: string;
   organizerId: string;
   startDateTime: string;
+  startLocationName: string;
   distanceKm: number;
   difficulty: DifficultyLevel;
   pace: PaceType;
@@ -209,7 +210,6 @@ export interface UpdateOrganizerProfileInput {
 
 export interface TripDetail extends TripSummary {
   description: string;
-  startLocationName: string;
   startLat: number | null;
   startLng: number | null;
   paceMin: number | null;

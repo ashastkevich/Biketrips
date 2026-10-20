@@ -29,6 +29,7 @@ describe("trip serializers", () => {
       city: "Москва",
       organizerId: "organizer-1",
       startDateTime: "2099-08-16T08:00:00.000Z",
+      startLocationName: "Park",
       distanceKm: 42.5,
       difficulty: "medium",
       pace: "fast",

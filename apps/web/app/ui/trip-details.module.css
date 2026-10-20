@@ -186,25 +186,148 @@
   margin: 0;
 }
 
-.routeMap {
+.startPlaceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 14px;
+}
+
+.section .startPlace {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.copyCoordinates {
+  flex: 0 0 auto;
+}
+
+.startPlaceIcon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
   display: grid;
-  gap: 12px;
-  margin-top: 14px;
+  place-items: center;
+  color: var(--green-dark);
+  background: #edf0e2;
+  border-radius: 10px;
+  font-weight: 900;
+}
+
+.startPlace strong,
+.startPlace small {
+  display: block;
+}
+
+.startPlace strong {
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.startPlace small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.section .routeStartNote {
+  margin: -6px 0 14px 44px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.section .routeStartWarning {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  color: #6b4a12;
+  background: #fff7e6;
+  border: 1px solid #ecd6a6;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.routeStartWarning strong {
+  color: #5a3d0c;
+}
+
+.routeMapLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 10px 0 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+  list-style: none;
+}
+
+.routeMapLegend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendMeeting,
+.legendRouteStart,
+.legendFinish {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #c9cdbb;
+}
+
+.legendMeeting {
+  background: var(--green-dark);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+}
+
+.legendRouteStart {
+  background: #7fa35f;
+}
+
+.legendFinish {
+  background: #1f2a22;
 }
 
 .routeMapActions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  margin-top: 12px;
 }
 
 .routeMapCanvas {
   position: relative;
-  min-height: 340px;
+  height: 340px;
   overflow: hidden;
   background: #e7eadf;
   border: 1px solid #d8dbc7;
   border-radius: 8px;
+}
+
+.routeMapPlaceholder {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.section .routeMapHint {
+  margin: -6px 0 14px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .routeMapDownload {
@@ -222,7 +345,8 @@
   text-decoration: none;
 }
 
-.routeMapNotice {
+.section .routeMapNotice {
+  margin-top: 12px;
   padding: 12px 14px;
   color: #7c3328;
   background: #fff4f0;
@@ -570,6 +694,10 @@
   .facts {
     grid-template-columns: 1fr 1fr;
     gap: 18px 10px;
+  }
+
+  .routeMapCanvas {
+    height: 260px;
   }
 
   .disclosure dl {

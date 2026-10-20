@@ -14,6 +14,11 @@
   cursor: crosshair;
 }
 
+/* View-only maps are dragged, not clicked to pick a point. */
+.viewCanvas :global(.maplibregl-canvas) {
+  cursor: inherit;
+}
+
 .marker {
   position: absolute;
   width: 34px;
@@ -34,6 +39,23 @@
   height: 8px;
   background: #fff;
   border-radius: 50%;
+}
+
+.routeStartMarker,
+.finishMarker {
+  width: 16px;
+  height: 16px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 6px 14px rgba(18, 32, 24, 0.24);
+}
+
+.routeStartMarker {
+  background: #7fa35f;
+}
+
+.finishMarker {
+  background: #1f2a22;
 }
 
 .state {

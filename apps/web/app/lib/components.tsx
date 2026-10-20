@@ -207,7 +207,7 @@ export function PageHeader({ eyebrow, title, children, actions }: PageHeaderProp
 }
 
 export function getTripCardProps(
-  trip: TripSummary & Partial<Pick<TripDetail, "startLocationName" | "paceMin" | "paceMax">>,
+  trip: TripSummary & Partial<Pick<TripDetail, "paceMin" | "paceMax">>,
 ): TripCardProps {
   const startDate = new Date(trip.startDateTime);
   const date = startDate.toLocaleDateString("ru-RU", {
@@ -235,7 +235,7 @@ export function getTripCardProps(
     title: trip.title,
     date,
     time,
-    startLocationName: trip.startLocationName ?? trip.city,
+    startLocationName: trip.startLocationName,
     distanceKm: trip.distanceKm,
     difficulty: trip.difficulty,
     averageSpeed,
