@@ -62,7 +62,10 @@ Telegram Bot API traffic from the production server is routed through a
 WireGuard tunnel to the foreign gateway at `89.22.235.94`. The tunnel uses
 `wg0` with production server address `10.66.66.2/32` and gateway address
 `10.66.66.1/24`. The production server keeps its normal default route through
-`eth0`; only Telegram IPv4 ranges are routed through `wg0`.
+`eth0`; only Telegram IPv4 ranges and the Anthropic API range
+(`160.79.104.0/23`, used by the Telegram trip import) are routed through `wg0`.
+The production `wg0.conf` uses `Table = off` with one `PostUp`/`PostDown` route
+per range; the server has no global IPv6, so no IPv6 routes are needed.
 
 ### Telegram gateway setup
 
@@ -74,7 +77,8 @@ key. Its WireGuard config lives in `/etc/wireguard/wg0.conf`:
 - `PostUp` rules MASQUERADE `10.66.66.0/24` out of the public interface and
   allow forwarding from `wg0` only to Telegram ranges (`149.154.160.0/20`,
   `91.108.4.0/22`, `91.108.8.0/22`, `91.108.12.0/22`, `91.108.16.0/22`,
-  `91.108.20.0/22`, `91.108.56.0/22`); other forwarded traffic is dropped.
+  `91.108.20.0/22`, `91.108.56.0/22`) and the Anthropic API inbound range
+  (`160.79.104.0/23`, added 2026-10-24); other forwarded traffic is dropped.
 - `net.ipv4.ip_forward = 1` in `/etc/sysctl.d/99-wireguard.conf`.
 - `wg-quick@wg0.service` is enabled.
 
@@ -258,11 +262,13 @@ queue. Admins see the log and can start a run at `/admin/imports`.
 
 - The scheduler runs only with `TRIP_IMPORT_ENABLED=true` and a non-empty
   `ANTHROPIC_API_KEY`.
-- Network: `t.me` is in the Telegram ranges routed through `wg0`, but cover
-  images come from `cdn*.telesco.pe` and the model from `api.anthropic.com`.
-  The Anthropic API does not serve requests from Russian IP addresses, so its
-  traffic must leave through the foreign gateway as well (route its addresses
-  through `wg0` or use an HTTPS proxy) before enabling the import.
+- Network: the Anthropic API does not serve requests from Russian IP
+  addresses, so `160.79.104.0/23` is routed through `wg0` and allowed on the
+  gateway. `t.me` and the cover image CDN `cdn*.telesco.pe` are in
+  `149.154.160.0/20`, already routed through `wg0`. Check from production:
+  `curl -4 -sS -o /dev/null -w "%{http_code}\n" https://api.anthropic.com/v1/models`
+  must return `401` (reachable, no key); `403` means the request left from the
+  Russian IP.
 - Imported trips are organized by a channel organizer (`organizers.kind =
   'channel'`) owned by the system user "Импорт BikeTrips", which has no email or
   Telegram and cannot sign in. Sign-up on the site is disabled for them; the
