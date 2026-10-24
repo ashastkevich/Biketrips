@@ -147,7 +147,7 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
               <details className={styles.disclosure} open>
                 <summary>Маршрут и условия <span aria-hidden="true">⌄</span></summary>
                 <div className={styles.disclosureBody}>
-                  {trip.routeDescription ? <p>{trip.routeDescription}</p> : null}
+                  {trip.routeDescription ? <FormattedText text={trip.routeDescription} /> : null}
                   <dl>
                     {trip.unpavedSurfaceDetails.length > 0 ? (
                       <div>

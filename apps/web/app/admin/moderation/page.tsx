@@ -156,7 +156,13 @@ export default async function ModerationPage({ searchParams }: ModerationPagePro
                     </div>
                     <div>
                       <dt>Маршрут</dt>
-                      <dd>{trip.routeDescription || "Не указан"}</dd>
+                      <dd>
+                        {trip.routeDescription ? (
+                          <FormattedText text={trip.routeDescription} />
+                        ) : (
+                          "Не указан"
+                        )}
+                      </dd>
                     </div>
                     <div>
                       <dt>Снаряжение</dt>

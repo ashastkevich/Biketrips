@@ -78,6 +78,21 @@ describe("buildTripDraft", () => {
     });
     expect(missingRequired).toEqual([]);
     expect(warnings).toEqual([]);
+    expect(draft.routeDescription).toBeNull();
+  });
+
+  it("adds the track link to the route text", () => {
+    expect(
+      buildTripDraft(post, { ...trip, routeUrl: "https://yandex.ru/maps/-/CLbaBA4a" }).draft
+        .routeDescription
+    ).toBe("[Трек](https://yandex.ru/maps/-/CLbaBA4a)");
+    expect(
+      buildTripDraft(post, {
+        ...trip,
+        routeDescription: "Через Воскресенск в Коломну",
+        routeUrl: "https://nakarte.me/#m=10",
+      }).draft.routeDescription
+    ).toBe("Через Воскресенск в Коломну\n[Трек](https://nakarte.me/#m=10)");
   });
 
   it("requires a start date and meeting point", () => {

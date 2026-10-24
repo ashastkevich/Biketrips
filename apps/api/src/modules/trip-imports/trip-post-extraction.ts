@@ -258,7 +258,7 @@ export function buildTripDraft(post: TelegramChannelPost, trip: ExtractedTrip): 
     asphaltPercent: asphaltPercent === null ? null : Math.round(asphaltPercent),
     unpavedPercent: unpavedPercent === null ? null : Math.round(unpavedPercent),
     unpavedSurfaceDetails: trip.unpavedSurfaceDetails,
-    routeDescription: trip.routeDescription,
+    routeDescription: describeRoute(trip.routeDescription, trip.routeUrl),
     equipmentRequirements: trip.equipmentRequirements,
     rules: trip.rules,
     sourceUrl: post.url,
@@ -275,6 +275,16 @@ export function buildTripDraft(post: TelegramChannelPost, trip: ExtractedTrip): 
   const unknownFields = optionalTripFields.filter((field) => draft[field] === null);
 
   return { draft, missingRequired, unknownFields, warnings };
+}
+
+// Trips have no separate track link, so it goes into the route text as a named
+// Markdown link, which the site renders as a link.
+function describeRoute(description: string | null, url: string | null): string | null {
+  const trackUrl = url && /^https?:\/\//i.test(url) ? url.trim() : null;
+  const trackLink = trackUrl
+    ? `[Трек](${trackUrl.replace(/\(/g, "%28").replace(/\)/g, "%29")})`
+    : null;
+  return [description?.trim(), trackLink].filter(Boolean).join("\n") || null;
 }
 
 export function combineMoscowDateTime(date: string | null, time: string | null): string | null {
