@@ -81,10 +81,10 @@ function verifySessionToken(token: string): SessionPayload | null {
   }
 }
 
-// Cheap local check (no API call) for UI that only needs to know whether someone is signed in.
-export async function hasActiveSession(): Promise<boolean> {
+// Cheap local check (no API call) for UI that only needs the signed-in state and role (e.g. admin links).
+export async function getSessionRole(): Promise<AuthenticatedUser["role"] | null> {
   const token = await getSessionAuthToken();
-  return token !== undefined && verifySessionToken(token) !== null;
+  return token === undefined ? null : verifySessionToken(token)?.role ?? null;
 }
 
 // Cached per request: layouts, metadata and pages can all ask without repeating the API call.

@@ -155,10 +155,12 @@ export function Brand({
 
 export function AppTopbarView({
   isAuthorized = false,
+  isAdmin = false,
   showNavigation = true,
   showCreateAction = true,
 }: {
   isAuthorized?: boolean;
+  isAdmin?: boolean;
   showNavigation?: boolean;
   showCreateAction?: boolean;
 }) {
@@ -179,9 +181,9 @@ export function AppTopbarView({
                 tone="secondary"
               />
             ) : null}
-            <HomeAuthControl isAuthorized={isAuthorized} tone="dark" />
+            <HomeAuthControl isAuthorized={isAuthorized} isAdmin={isAdmin} tone="dark" />
           </nav>
-        ) : <HomeAuthControl isAuthorized={isAuthorized} tone="dark" />}
+        ) : <HomeAuthControl isAuthorized={isAuthorized} isAdmin={isAdmin} tone="dark" />}
       </div>
     </header>
   );

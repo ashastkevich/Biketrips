@@ -129,7 +129,7 @@ export const Navigation: Story = {
       <div className={storyStyles.row}>
         <BackLink href="/">На главную</BackLink>
         <LinkButton href="/trips/new">Создать поездку</LinkButton>
-        <ProfileMenu tone="dark" />
+        <ProfileMenu tone="dark" isAdmin />
       </div>
     </StorySection>
   ),

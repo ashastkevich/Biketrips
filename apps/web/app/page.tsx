@@ -60,7 +60,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   return (
     <>
-      <HomeHeader isAuthorized={isAuthorized} />
+      <HomeHeader isAuthorized={isAuthorized} isAdmin={currentUser?.role === "admin"} />
 
       <section className={styles.hero} id="hero" data-home-hero aria-labelledby="hero-title">
         <Image

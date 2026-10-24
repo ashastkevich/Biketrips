@@ -6,7 +6,7 @@ import { HomeAuthControl } from "./home-auth-control";
 import { Brand } from "./lib/components";
 import shellStyles from "./lib/app-shell.module.css";
 
-export function HomeHeader({ isAuthorized }: { isAuthorized: boolean }) {
+export function HomeHeader({ isAuthorized, isAdmin = false }: { isAuthorized: boolean; isAdmin?: boolean }) {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export function HomeHeader({ isAuthorized }: { isAuthorized: boolean }) {
           >
             Как это работает
           </a>
-          <HomeAuthControl isAuthorized={isAuthorized} tone={isScrolled ? "dark" : "light"} />
+          <HomeAuthControl isAuthorized={isAuthorized} isAdmin={isAdmin} tone={isScrolled ? "dark" : "light"} />
         </nav>
       </div>
     </header>

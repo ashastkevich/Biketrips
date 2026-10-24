@@ -14,9 +14,10 @@ function classes(...values: Array<string | false | null | undefined>) {
 
 interface ProfileMenuProps {
   tone?: "light" | "dark";
+  isAdmin?: boolean;
 }
 
-export function ProfileMenu({ tone = "light" }: ProfileMenuProps) {
+export function ProfileMenu({ tone = "light", isAdmin = false }: ProfileMenuProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -78,6 +79,24 @@ export function ProfileMenu({ tone = "light" }: ProfileMenuProps) {
             </svg>
             Профиль
           </Link>
+          {isAdmin ? (
+            <>
+              <Link href="/admin/moderation" role="menuitem" onClick={() => setShowProfileMenu(false)}>
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 3.5 5 6.5v5c0 4.2 2.9 7.6 7 9 4.1-1.4 7-4.8 7-9v-5l-7-3Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="2" />
+                  <path d="m9 12 2 2 4-4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                </svg>
+                Модерация
+              </Link>
+              <Link href="/admin/imports" role="menuitem" onClick={() => setShowProfileMenu(false)}>
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                  <path d="M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+                </svg>
+                Импорт
+              </Link>
+            </>
+          ) : null}
           <button type="button" role="menuitem" disabled={loggingOut} onClick={logout}>
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
@@ -93,9 +112,11 @@ export function ProfileMenu({ tone = "light" }: ProfileMenuProps) {
 
 export function HomeAuthControl({
   isAuthorized,
+  isAdmin = false,
   tone = "light",
 }: {
   isAuthorized: boolean;
+  isAdmin?: boolean;
   tone?: "light" | "dark";
 }) {
   const router = useRouter();
@@ -105,7 +126,7 @@ export function HomeAuthControl({
     router.push(`/auth/${provider}?returnTo=/`);
   }
 
-  if (isAuthorized) return <ProfileMenu tone={tone} />;
+  if (isAuthorized) return <ProfileMenu tone={tone} isAdmin={isAdmin} />;
 
   return (
     <>
