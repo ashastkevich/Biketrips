@@ -21,9 +21,12 @@ export function serializeOrganizerProfile(
   return {
     id: organizer.id,
     userId: organizer.userId,
-    displayName: organizer.user?.name ?? organizer.displayName,
-    avatarUrl: organizer.user?.avatarUrl ?? null,
-    city: organizer.user?.city?.name ?? null,
+    displayName:
+      organizer.kind === "channel"
+        ? organizer.displayName
+        : (organizer.user?.name ?? organizer.displayName),
+    avatarUrl: organizer.kind === "channel" ? null : (organizer.user?.avatarUrl ?? null),
+    city: organizer.kind === "channel" ? null : (organizer.user?.city?.name ?? null),
     bio: organizer.bio,
     isVerified: organizer.isVerified,
     organizingSince: organizer.createdAt.toISOString(),

@@ -131,8 +131,40 @@ export class CreateTripDto {
 }
 
 export class UpdateTripDto extends PartialType(
-  OmitType(CreateTripDto, ["organizerId"] as const),
-) {}
+  OmitType(CreateTripDto, [
+    "organizerId",
+    "distanceKm",
+    "difficulty",
+    "asphaltPercent",
+    "unpavedPercent",
+  ] as const),
+) {
+  // null means "Не указано", which only imported trips accept (checked in the service).
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  distanceKm?: number | null;
+
+  @ApiPropertyOptional({ enum: difficultyLevels, nullable: true })
+  @IsOptional()
+  @IsIn(difficultyLevels)
+  difficulty?: DifficultyLevel | null;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 100, nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  asphaltPercent?: number | null;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 100, nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  unpavedPercent?: number | null;
+}
 
 export class TripFiltersDto {
   @ApiPropertyOptional()

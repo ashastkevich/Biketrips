@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import {
   difficultyLevels,
   unpavedSurfaceDetails,
@@ -10,7 +10,8 @@ import { z } from "zod";
 
 import type { TelegramChannelPost } from "./telegram-channel-preview.js";
 
-export const defaultExtractionModel = "claude-opus-5-5";
+// Haiku handled the @MskVelo validation run well and costs a fraction of a cent per post.
+export const defaultExtractionModel = "claude-haiku-5-5";
 
 // Moscow has no DST, so channel times can be pinned to a fixed offset.
 const moscowOffset = "+03:00";
@@ -76,8 +77,8 @@ First classify the post:
 - digest: a list of many rides (often tagged #список) with only a time, title and distance per line.
 - multi_day_tour: a trip spanning several days, usually paid and with lodging.
 - cancellation: the post says a ride is cancelled ("отмена", crossed out). Still fill trip so we can match it to the ride.
-- not_cycling: hikes ("пешка"), running, conferences, sales, park news and other non-ride content.
-- other: anything else.
+- not_cycling: hikes ("пешка", "поход"), walking tours, road trips by car or bus, running, board games, conferences, sales, track racing ads, park news and other non-ride content.
+- other: anything else (trip reports, channel announcements, adverts for paid tours).
 
 For single_trip, multi_day_tour and cancellation fill trip; otherwise set trip to null.
 
@@ -89,9 +90,9 @@ Rules for trip fields:
 - startTime: HH:MM, Moscow time. When the post gives both a meeting time and a start time, use the meeting time and mention the start time in description.
 - startLocationName: the meeting point as written (station, exit, landmark). If there are several pickup points, use the first and keep the rest in description.
 - startLat / startLng: only from coordinates in the text or in a map link (Yandex links put longitude first in "point=" and "ll=" parameters). Otherwise null.
-- distanceKm: the total distance; for "~35" or "±87" use the number.
+- distanceKm: the total distance; for "~35" or "±87" use the number. For "N км в одну сторону" use N and mention it in notes.
 - paceMinKmh / paceMaxKmh: average speed range in km/h ("ССД 15-20" means 15 and 20). One number: put it in both.
-- asphaltPercent / unpavedPercent: integers summing to 100 when the post gives the surface mix. "В основном асфальт" alone is not enough for numbers: leave null and describe it in description.
+- asphaltPercent / unpavedPercent: integers summing to 100 when the post gives the surface mix, even in playful wording ("смесь битумов 85%, такое себе 15%" means 85/15). If the parts add up to slightly more than 100, drop the smallest. "В основном асфальт" alone is not enough for numbers: leave null and describe it in description.
 - unpavedSurfaceDetails: only surfaces the post mentions (hardpack = укатанный грунт, gravel = гравий, crushed_stone = щебень, sand = песок, forest_trails = лесные тропы/трейлы, mud = грязь, concrete_slabs = бетонные плиты).
 - difficulty: beginner (short, easy, newcomers welcome), easy, medium (for regular riders, some climbs), hard (long distance, noticeable climbing), sport (high speed, fitness required). Set difficultyIsGuess to true when you infer it from distance and pace instead of the post naming it.
 - isPaid / priceText: whether participation costs money and the price as written.
@@ -101,7 +102,7 @@ Rules for trip fields:
 - routeUrl: a link to the track or route map (Strava, Komoot, RideWithGPS, Yandex route), if any.
 - routeDescription, equipmentRequirements, rules: short Russian texts if the post has them.
 
-confidence reflects how sure you are about kind and the key fields (date, time, start, distance). Use notes for ambiguities a moderator should check, in Russian.`;
+confidence reflects how sure you are about kind and the key fields (date, time, start, distance). Write kindReason and notes in Russian; use notes for ambiguities a moderator should check. Keep place names exactly as written in the post.`;
 
 export interface PostExtractionResult {
   extraction: PostExtraction | null;
@@ -115,12 +116,11 @@ export async function extractTripFromPost(
   post: TelegramChannelPost,
   model = defaultExtractionModel
 ): Promise<PostExtractionResult> {
-  const response = await client.beta.messages.parse({
+  // Haiku has no server-side refusal fallback; a refused post is recorded as an error.
+  const response = await client.messages.parse({
     model,
     max_tokens: 16000,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    output_config: { effort: "medium", format: betaZodOutputFormat(postExtractionSchema) },
+    output_config: { effort: "medium", format: zodOutputFormat(postExtractionSchema) },
     system: [{ type: "text", text: extractionSystemPrompt, cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: formatPostForPrompt(post) }],
   });
@@ -188,14 +188,21 @@ export interface ImportedTripDraft {
 
 export interface DraftCheck {
   draft: ImportedTripDraft;
+  /** Fields without which no trip is created. */
   missingRequired: string[];
+  /** Fields the trip page shows as "Не указано". */
+  unknownFields: string[];
   warnings: string[];
 }
 
-// Required by CreateTripInput; organizer and city are assigned on import.
+// Organizer and city come from the import source.
 const requiredDraftFields = [
   "startAt",
   "startLocationName",
+] as const satisfies readonly (keyof ImportedTripDraft)[];
+
+// Imported trips may leave these empty; the moderator can fill them in.
+const optionalTripFields = [
   "distanceKm",
   "difficulty",
   "asphaltPercent",
@@ -266,8 +273,9 @@ export function buildTripDraft(post: TelegramChannelPost, trip: ExtractedTrip): 
   };
 
   const missingRequired = requiredDraftFields.filter((field) => draft[field] === null);
+  const unknownFields = optionalTripFields.filter((field) => draft[field] === null);
 
-  return { draft, missingRequired, warnings };
+  return { draft, missingRequired, unknownFields, warnings };
 }
 
 export function combineMoscowDateTime(date: string | null, time: string | null): string | null {

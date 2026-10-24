@@ -238,6 +238,8 @@ export class NotificationsService {
     trip: TripEntity,
     decision: "approve" | "request_changes" | "reject",
   ): Promise<void> {
+    // Imported trips belong to a channel's system user, who has nowhere to receive messages.
+    if (trip.source !== "native") return;
     const type = decision === "approve"
       ? "trip_approved"
       : decision === "request_changes"

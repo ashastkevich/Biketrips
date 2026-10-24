@@ -244,6 +244,29 @@ Important env names:
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_LOGIN_SECRET`
 - `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`
+- `ANTHROPIC_API_KEY`, `TRIP_IMPORT_ENABLED`, `TRIP_IMPORT_INTERVAL_MINUTES`
+  (Telegram channel import, see below)
+
+## Telegram channel import
+
+The API imports ride announcements from public Telegram channels listed in the
+`import_sources` table (seeded with `@MskVelo`). Every
+`TRIP_IMPORT_INTERVAL_MINUTES` (default 120) it reads the channel through the
+`https://t.me/s/<channel>` web preview, extracts trips from new or edited posts
+with Claude Haiku (`ANTHROPIC_API_KEY`) and puts them into the moderation
+queue. Admins see the log and can start a run at `/admin/imports`.
+
+- The scheduler runs only with `TRIP_IMPORT_ENABLED=true` and a non-empty
+  `ANTHROPIC_API_KEY`.
+- Network: `t.me` is in the Telegram ranges routed through `wg0`, but cover
+  images come from `cdn*.telesco.pe` and the model from `api.anthropic.com`.
+  The Anthropic API does not serve requests from Russian IP addresses, so its
+  traffic must leave through the foreign gateway as well (route its addresses
+  through `wg0` or use an HTTPS proxy) before enabling the import.
+- Imported trips are organized by a channel organizer (`organizers.kind =
+  'channel'`) owned by the system user "Импорт BikeTrips", which has no email or
+  Telegram and cannot sign in. Sign-up on the site is disabled for them; the
+  trip page links to the organizer's chat or the post.
 
 Production Telegram login uses bot long polling through WireGuard because
 Telegram webhook delivery to the Russian production server is blocked by

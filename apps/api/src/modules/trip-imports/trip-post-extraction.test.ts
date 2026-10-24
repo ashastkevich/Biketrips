@@ -16,6 +16,7 @@ const post: TelegramChannelPost = {
   edited: false,
   text: "Сб. 17 Октября, старт 9-15",
   hasMedia: false,
+  coverUrl: null,
   authorSignature: "Владимир",
   forwardedFrom: null,
 };
@@ -80,8 +81,18 @@ describe("buildTripDraft", () => {
     expect(warnings).toEqual([]);
   });
 
-  it("reports missing required fields and suspicious values", () => {
-    const { draft, missingRequired, warnings } = buildTripDraft(post, {
+  it("requires a start date and meeting point", () => {
+    const { missingRequired } = buildTripDraft(post, {
+      ...trip,
+      startTime: null,
+      startLocationName: null,
+    });
+
+    expect(missingRequired).toEqual(["startAt", "startLocationName"]);
+  });
+
+  it("reports unknown fields and suspicious values", () => {
+    const { draft, missingRequired, unknownFields, warnings } = buildTripDraft(post, {
       ...trip,
       startDate: "2026-09-01",
       startLat: 155,
@@ -92,7 +103,8 @@ describe("buildTripDraft", () => {
       registrationUrl: "https://t.me/gravelmtb",
     });
 
-    expect(missingRequired).toEqual(["distanceKm", "asphaltPercent"]);
+    expect(missingRequired).toEqual([]);
+    expect(unknownFields).toEqual(["distanceKm", "asphaltPercent"]);
     expect(draft.startLat).toBeNull();
     expect(draft.externalRegistrationUrl).toBe("https://t.me/gravelmtb");
     expect(warnings).toEqual([

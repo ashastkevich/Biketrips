@@ -108,6 +108,17 @@ describe("ParticipantsService", () => {
     expect(context.participants).toHaveLength(0);
   });
 
+  it("sends riders of imported trips to the organizer's own sign-up", async () => {
+    const context = createParticipantsService({
+      trips: [createTrip({ source: "telegram_import" })],
+    });
+
+    await expect(
+      context.service.joinTrip(tripId, { userId: firstUserId, name: "Alex" })
+    ).rejects.toThrow("Запись на эту поездку ведётся у организатора");
+    expect(context.participants).toHaveLength(0);
+  });
+
   it("puts a participant onto the waitlist when the trip is full", async () => {
     const context = createParticipantsService({
       trips: [createTrip({ maxParticipants: 1 })],
@@ -666,6 +677,7 @@ function createTrip(input: Partial<TestTrip> = {}): TestTrip {
   return {
     id: tripId,
     status: "published",
+    source: "native",
     maxParticipants: null,
     registrationMode: "automatic",
     ...input,
@@ -720,7 +732,7 @@ function deleteMatching<T>(items: T[], predicate: (item: T) => boolean): void {
 type EntityClass =
   typeof UserEntity | typeof TripEntity | typeof TripParticipantEntity | typeof WaitlistEntryEntity;
 
-type TestTrip = Pick<TripEntity, "id" | "status" | "maxParticipants" | "registrationMode"> & {
+type TestTrip = Pick<TripEntity, "id" | "status" | "source" | "maxParticipants" | "registrationMode"> & {
   organizer?: { userId: string };
 };
 type TestUser = Pick<

@@ -17,6 +17,10 @@ export class OrganizerEntity {
   @Column({ name: "contact_url", type: "text", nullable: true })
   contactUrl!: string | null;
 
+  // "channel" organizers stand for a Telegram channel that imported trips come from.
+  @Column({ type: "text", default: "person" })
+  kind!: "person" | "channel";
+
   @Column({ name: "is_verified", type: "boolean", default: false })
   isVerified!: boolean;
 

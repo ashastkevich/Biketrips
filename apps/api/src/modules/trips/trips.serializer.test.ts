@@ -43,6 +43,9 @@ describe("trip serializers", () => {
       capacity: 10,
       confirmedParticipants: 1,
       coverImage: "/cover.webp",
+      source: "native",
+      sourceUrl: null,
+      externalRegistrationUrl: null,
     });
   });
 
@@ -175,6 +178,9 @@ function createTrip(input: Partial<TripEntity> = {}): TripEntity {
     maxParticipants: 10,
     registrationMode: "automatic",
     coverImage: "/cover.webp",
+    source: "native",
+    sourceUrl: null,
+    externalRegistrationUrl: null,
     status: "published",
     publicSlug: "forest-route",
     organizer: createOrganizer(),
@@ -212,6 +218,7 @@ function createOrganizer(input: Partial<OrganizerEntity> = {}): OrganizerEntity 
     displayName: "Organizer",
     bio: null,
     contactUrl: null,
+    kind: "person",
     isVerified: true,
     userId: "organizer-user",
     user: createUser({ id: "organizer-user", name: "Organizer" }),

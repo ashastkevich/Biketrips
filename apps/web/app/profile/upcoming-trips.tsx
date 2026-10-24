@@ -210,11 +210,11 @@ export function UpcomingTrips({
                       {organizerState.label}
                     </Badge>
                   </>
-                ) : (
+                ) : trip.difficulty ? (
                   <Badge className={styles.tripBadge} tone={trip.difficulty === "easy" ? "success" : "warning"}>
                     {difficultyLabels[trip.difficulty]}
                   </Badge>
-                )}
+                ) : null}
               </Link>
               {organizerState ? (
                 <OrganizerTripPanel

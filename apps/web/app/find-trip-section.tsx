@@ -9,21 +9,13 @@ import { RouteFilterBar } from "./ui/route-filter-bar";
 import { TripDetailsModal } from "./ui/trip-details-modal";
 import { useTripModal } from "./ui/use-trip-modal";
 import type { RouteFilterValue } from "./ui/route-filter-bar";
+import { initialRouteFilters, matchesRouteFilters } from "./lib/trip-filters";
 import type { City } from "@biketrips/domain";
 import { CitySelector } from "./city-selector";
 import { LinkButton } from "./ui/components";
 import styles from "./find-trip-section.module.css";
 import filterStyles from "./ui/route-filters.module.css";
 
-const initialFilters: RouteFilterValue = {
-  measure: "distance",
-  distanceFromKm: 0,
-  distanceToKm: 200,
-  durationFromHours: 0,
-  durationToHours: 12,
-  difficulty: ["beginner", "easy", "medium", "hard", "sport"],
-  surface: "any",
-};
 
 export function FindTripSection({
   trips,
@@ -38,7 +30,7 @@ export function FindTripSection({
   cities: City[];
   selectedCity: City;
 }) {
-  const [filters, setFilters] = useState<RouteFilterValue>(initialFilters);
+  const [filters, setFilters] = useState<RouteFilterValue>(initialRouteFilters);
   const {
     selectedTrip,
     savedChanges,
@@ -49,29 +41,7 @@ export function FindTripSection({
 
   const filteredTrips = useMemo(
     () =>
-      trips.filter((trip) => {
-        const averageSpeed = ((trip.paceMin ?? 20) + (trip.paceMax ?? 20)) / 2;
-        const durationHours = trip.distanceKm / averageSpeed;
-        const matchesMeasure =
-          filters.measure === "distance"
-            ? trip.distanceKm >= filters.distanceFromKm &&
-              trip.distanceKm <= filters.distanceToKm
-            : durationHours >= filters.durationFromHours &&
-              durationHours <= filters.durationToHours;
-        const matchesDifficulty = filters.difficulty.includes(trip.difficulty);
-        const matchesSurface =
-          filters.surface === "any" ||
-          (filters.surface === "asphalt_only" && trip.unpavedPercent === 0) ||
-          (filters.surface === "mostly_asphalt" &&
-            trip.unpavedPercent > 0 &&
-            trip.unpavedPercent < 30) ||
-          (filters.surface === "mixed" &&
-            trip.unpavedPercent >= 30 &&
-            trip.unpavedPercent <= 70) ||
-          (filters.surface === "mostly_unpaved" && trip.unpavedPercent > 70);
-
-        return matchesMeasure && matchesDifficulty && matchesSurface;
-      }),
+      trips.filter((trip) => matchesRouteFilters(trip, filters)),
     [filters, trips],
   );
 
@@ -119,7 +89,7 @@ export function FindTripSection({
             className={styles.emptyAction}
             tone="secondary"
             type="button"
-            onClick={() => setFilters(initialFilters)}
+            onClick={() => setFilters(initialRouteFilters)}
           >
             Сбросить фильтры
           </Button>

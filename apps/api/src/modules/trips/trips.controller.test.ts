@@ -440,6 +440,9 @@ function createTrip(): TripEntity {
     maxParticipants: null,
     registrationMode: "automatic",
     coverImage: null,
+    source: "native",
+    sourceUrl: null,
+    externalRegistrationUrl: null,
     status: "published",
     moderationStatus: "approved",
     moderationComment: null,
@@ -454,6 +457,7 @@ function createTrip(): TripEntity {
       displayName: "Organizer",
       bio: null,
       contactUrl: null,
+      kind: "person",
       isVerified: false,
       userId: "user-1",
       user: {

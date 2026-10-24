@@ -63,6 +63,15 @@ export type UnpavedSurfaceDetail = (typeof unpavedSurfaceDetails)[number];
 export const registrationModes = ["automatic", "manual"] as const;
 export type RegistrationMode = (typeof registrationModes)[number];
 
+/** Where a trip came from: created on the site or imported from a Telegram channel post. */
+export const tripSources = ["native", "telegram_import"] as const;
+export type TripSource = (typeof tripSources)[number];
+
+/** Imported trips send riders to the organizer's own sign-up instead of the site. */
+export function canRegisterOnSite(trip: Pick<TripSummary, "source">): boolean {
+  return trip.source === "native";
+}
+
 const cyrillicTransliteration: Record<string, string> = {
   а: "a",
   б: "b",
@@ -132,12 +141,18 @@ export interface TripSummary {
   organizerId: string;
   startDateTime: string;
   startLocationName: string;
-  distanceKm: number;
-  difficulty: DifficultyLevel;
+  /** Null only for imported trips whose post did not state it ("Не указано"). */
+  distanceKm: number | null;
+  difficulty: DifficultyLevel | null;
   pace: PaceType;
-  asphaltPercent: number;
-  unpavedPercent: number;
+  asphaltPercent: number | null;
+  unpavedPercent: number | null;
   unpavedSurfaceDetails: UnpavedSurfaceDetail[];
+  source: TripSource;
+  /** The Telegram post an imported trip was created from. */
+  sourceUrl: string | null;
+  /** Where riders sign up for an imported trip (organizer chat, contact or the post). */
+  externalRegistrationUrl: string | null;
   status: TripStatus;
   moderationStatus: TripModerationStatus;
   moderationComment: string | null;
@@ -181,6 +196,9 @@ export interface TripOrganizer {
   userId: string;
   displayName: string;
   isVerified: boolean;
+  /** "channel" is the Telegram channel imported trips came from; contactUrl links to it. */
+  kind: "person" | "channel";
+  contactUrl: string | null;
 }
 
 export const organizerBioMaxLength = 500;
@@ -250,7 +268,16 @@ export interface CreateTripInput {
   cityId: string;
 }
 
-export type UpdateTripInput = Omit<CreateTripInput, "organizerId">;
+/** Imported trips may keep distance, difficulty and surface empty ("Не указано"). */
+export type UpdateTripInput = Omit<
+  CreateTripInput,
+  "organizerId" | "distanceKm" | "difficulty" | "asphaltPercent" | "unpavedPercent"
+> & {
+  distanceKm: number | null;
+  difficulty: DifficultyLevel | null;
+  asphaltPercent: number | null;
+  unpavedPercent: number | null;
+};
 
 export interface TripFilters {
   city?: string;
@@ -267,4 +294,43 @@ export function hasAvailablePlaces(
   trip: Pick<TripSummary, "capacity" | "confirmedParticipants">
 ): boolean {
   return trip.capacity === null || trip.confirmedParticipants < trip.capacity;
+}
+
+export const importedPostStatuses = ["imported", "skipped", "error"] as const;
+export type ImportedPostStatus = (typeof importedPostStatuses)[number];
+
+/** A Telegram post the importer has seen, for the admin import log. */
+export interface ImportedPostSummary {
+  id: string;
+  messageId: number;
+  url: string;
+  postedAt: string;
+  excerpt: string;
+  kind: string | null;
+  status: ImportedPostStatus;
+  skipReason: string | null;
+  tripId: string | null;
+  tripSlug: string | null;
+  tripTitle: string | null;
+  extractedAt: string | null;
+}
+
+export interface ImportSourceSummary {
+  id: string;
+  handle: string;
+  title: string;
+  city: string;
+  enabled: boolean;
+  lastRunAt: string | null;
+  lastError: string | null;
+  recentPosts: ImportedPostSummary[];
+}
+
+export interface ImportRunResult {
+  created: number;
+  updated: number;
+  cancelled: number;
+  skipped: number;
+  unchanged: number;
+  errors: number;
 }

@@ -69,6 +69,10 @@ export class ParticipantsService {
         throw new BadRequestException("Trip is not open for registration");
       }
 
+      if (trip.source !== "native") {
+        throw new BadRequestException("Запись на эту поездку ведётся у организатора");
+      }
+
       const existing = await manager.findOne(TripParticipantEntity, {
         where: { tripId, userId: dto.userId },
       });

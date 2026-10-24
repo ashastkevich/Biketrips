@@ -25,7 +25,7 @@ export function renderReport(
   const complete = trips.filter((entry) => entry.draft!.missingRequired.length === 0);
   const fieldGaps = new Map<string, number>();
   for (const entry of trips) {
-    for (const field of entry.draft!.missingRequired)
+    for (const field of [...entry.draft!.missingRequired, ...entry.draft!.unknownFields])
       fieldGaps.set(field, (fieldGaps.get(field) ?? 0) + 1);
   }
 
@@ -43,8 +43,8 @@ export function renderReport(
     ...[...postKinds, "error", "refusal"]
       .filter((kind) => kindCounts.has(kind))
       .map((kind) => `- ${kind}: ${kindCounts.get(kind)}`),
-    `- Поездок с заполненными обязательными полями: ${complete.length} из ${trips.length}`,
-    `- Чаще всего не хватает: ${
+    `- Поездок с датой и местом старта: ${complete.length} из ${trips.length}`,
+    `- Чаще всего не указано: ${
       [...fieldGaps.entries()]
         .sort((a, b) => b[1] - a[1])
         .map(([field, count]) => `${field} (${count})`)
@@ -84,7 +84,7 @@ function renderEntry({ post, result, error, draft }: ReportEntry): string[] {
   }
 
   if (draft) {
-    const { draft: trip, missingRequired, warnings } = draft;
+    const { draft: trip, missingRequired, unknownFields, warnings } = draft;
     lines.push(
       "",
       "| Поле | Значение |",
@@ -112,6 +112,7 @@ function renderEntry({ post, result, error, draft }: ReportEntry): string[] {
       row("Правила", trip.rules)
     );
     if (missingRequired.length > 0) lines.push("", `**Не хватает:** ${missingRequired.join(", ")}`);
+    if (unknownFields.length > 0) lines.push("", `Не указано: ${unknownFields.join(", ")}`);
     if (warnings.length > 0) lines.push("", ...warnings.map((warning) => `- ⚠️ ${warning}`));
     lines.push(
       "",

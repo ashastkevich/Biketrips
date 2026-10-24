@@ -66,12 +66,15 @@ export function LinkButton({
   className?: string;
 }) {
   // In-page anchors stay plain links: the Next.js router does not scroll again when the hash is unchanged.
-  const ButtonLink = href.startsWith("#") ? "a" : Link;
+  // External links (Telegram sign-up of imported trips) open in a new tab.
+  const isExternal = /^https?:\/\//.test(href);
+  const ButtonLink = href.startsWith("#") || isExternal ? "a" : Link;
 
   return (
     <ButtonLink
       className={classes(styles.button, buttonToneClasses[tone], buttonSizeClasses[size], className)}
       href={href}
+      {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
     >
       <span className={styles.buttonLabel} data-button-label>{children}</span>
     </ButtonLink>
@@ -221,8 +224,9 @@ export interface TripCardProps {
   date: string;
   time: string;
   startLocationName: string;
-  distanceKm: string | number;
-  difficulty: DifficultyLevel;
+  /** null for imported trips that did not state it; the card then leaves it out. */
+  distanceKm: string | number | null;
+  difficulty: DifficultyLevel | null;
   averageSpeed: string | number;
   maxParticipants?: string | number;
   coverImage?: string;
@@ -291,7 +295,7 @@ export function TripCard({
           />
         ) : null}
         <div className={tripCardStyles.coverShade} aria-hidden="true" />
-        <span>{distanceKm || "—"} км</span>
+        {distanceKm === null ? null : <span>{distanceKm || "—"} км</span>}
       </div>
       <div className={tripCardStyles.body}>
         <p className={tripCardStyles.date}>
@@ -303,7 +307,7 @@ export function TripCard({
           {startLocationName || "Укажите место старта"}
         </p>
         <div className={tripCardStyles.tags}>
-          <DifficultyBadge difficulty={difficulty} />
+          {difficulty ? <DifficultyBadge difficulty={difficulty} /> : null}
           <span className={tripCardStyles.tagText}>{averageSpeed || "—"} км/ч</span>
           {maxParticipants ? <span className={tripCardStyles.tagText}>{maxParticipants} мест</span> : null}
         </div>

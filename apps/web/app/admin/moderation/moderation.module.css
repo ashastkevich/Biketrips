@@ -125,3 +125,15 @@
     width: 100%;
   }
 }
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.importNote {
+  white-space: pre-wrap;
+}

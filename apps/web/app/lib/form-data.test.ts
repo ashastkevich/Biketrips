@@ -69,6 +69,25 @@ describe("form-data helpers", () => {
     expect(readTripUpdateInput(formData).maxParticipants).toBe(10);
   });
 
+  it("sends unknown conditions of imported trips as null", () => {
+    const formData = new FormData();
+    formData.set("allowUnknownConditions", "true");
+    formData.set("distanceKm", "30");
+    formData.set("difficulty", "");
+    formData.set("asphaltPercent", "");
+    formData.set("unpavedPercent", "");
+    formData.set("hasParticipantLimit", "true");
+    formData.set("maxParticipants", "12");
+
+    expect(readTripUpdateInput(formData)).toMatchObject({
+      distanceKm: 30,
+      difficulty: null,
+      asphaltPercent: null,
+      unpavedPercent: null,
+      maxParticipants: null,
+    });
+  });
+
   it("reads participant status", () => {
     const formData = new FormData();
     formData.set("status", "confirmed");

@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import type {
+  ImportRunResult,
+  ImportSourceSummary,
   AuthenticatedUser,
   City,
   CreateTripInput,
@@ -271,6 +273,20 @@ export async function getTripsForModeration(): Promise<DataResult<TripDetail[]>>
   } catch (error) {
     return { data: [], source: "unavailable", error: getErrorMessage(error) };
   }
+}
+
+export async function getImportSources(): Promise<DataResult<ImportSourceSummary[]>> {
+  try {
+    const client = await createClient({ requireUserSession: true });
+    return { data: await client.listImportSources(), source: "api" };
+  } catch (error) {
+    return { data: [], source: "unavailable", error: getErrorMessage(error) };
+  }
+}
+
+export async function runImport(sourceId: string): Promise<ImportRunResult> {
+  const client = await createClient({ requireUserSession: true });
+  return client.runImport(sourceId);
 }
 
 export async function moderateTrip(

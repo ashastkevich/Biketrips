@@ -11,7 +11,7 @@ import type { TripEntity } from "../../infrastructure/database/entities/trip.ent
 import type { TripUpdateEntity } from "../../infrastructure/database/entities/trip-update.entity.js";
 import type { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
 import type { CreateTripDto } from "./dto/trip.dto.js";
-import { TripsService } from "./trips.service.js";
+import { TripsService, type ImportedTripFields } from "./trips.service.js";
 
 const tripId = "11111111-1111-4111-8111-111111111111";
 const actorId = "22222222-2222-4222-8222-222222222222";
@@ -342,6 +342,101 @@ describe("TripsService", () => {
       { title: "Админская правка" },
       { id: "admin-user", role: "admin" }
     )).rejects.toThrow(ForbiddenException);
+  });
+
+  it("lets administrators fill in imported trips under review, including unknown fields", async () => {
+    const context = createTripsService({
+      trips: [createTrip({ source: "telegram_import", status: "pending_review", moderationStatus: "pending_review" })],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+
+    const trip = await context.service.update(
+      tripId,
+      { difficulty: null, asphaltPercent: null, unpavedPercent: null, distanceKm: 55 },
+      { id: "admin-user", role: "admin" }
+    );
+
+    expect(trip).toMatchObject({
+      difficulty: null,
+      asphaltPercent: null,
+      unpavedPercent: null,
+      distanceKm: "55",
+      moderationStatus: "pending_review",
+    });
+  });
+
+  it("keeps distance, difficulty and surface required on native trips", async () => {
+    const context = createTripsService({
+      trips: [createTrip()],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+
+    await expect(
+      context.service.update(tripId, { difficulty: null }, { id: actorId, role: "user" })
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      context.service.update(tripId, { asphaltPercent: null }, { id: actorId, role: "user" })
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it("creates imported trips straight in the moderation queue", async () => {
+    const context = createTripsService();
+
+    const trip = await context.service.createImported(createImportedFields(), {
+      organizerId,
+      cityId,
+      moderationComment: "Импорт из @MskVelo",
+    });
+
+    expect(trip).toMatchObject({
+      source: "telegram_import",
+      status: "pending_review",
+      moderationStatus: "pending_review",
+      moderationComment: "Импорт из @MskVelo",
+      distanceKm: null,
+      difficulty: null,
+      sourceUrl: "https://t.me/MskVelo/19663",
+      externalRegistrationUrl: "https://t.me/AndreyEP",
+      publicSlug: "dokatista",
+    });
+    expect(trip.submittedForReviewAt).toBeInstanceOf(Date);
+  });
+
+  it("turns an edited post of a published imported trip into a revision", async () => {
+    const context = createTripsService({
+      trips: [createTrip({ source: "telegram_import", status: "published" })],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+    const fields = createImportedFields({ title: "Лесной маршрут", startAt: new Date("2099-08-16T09:00:00.000Z") });
+
+    await expect(context.service.updateImported(tripId, fields, "Пост изменён")).resolves.toBe("revision");
+    expect(context.trips[0]).toMatchObject({
+      startAt: new Date(futureStart),
+      moderationStatus: "pending_review",
+      moderationComment: expect.stringMatching(/^Изменено: .*дата и время.*\nПост изменён$/),
+      pendingRevision: expect.objectContaining({ startAt: "2099-08-16T09:00:00.000Z" }),
+    });
+
+    const approved = await context.service.moderate(tripId, "approve", undefined, {
+      id: "admin-user",
+      role: "admin",
+    });
+    expect(approved.startAt).toEqual(new Date("2099-08-16T09:00:00.000Z"));
+  });
+
+  it("cancels an imported trip still under review and drops it from the queue", async () => {
+    const context = createTripsService({
+      trips: [createTrip({ source: "telegram_import", status: "pending_review", moderationStatus: "pending_review" })],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+
+    await expect(context.service.cancelImported(tripId)).resolves.toBe(true);
+    expect(context.trips[0]).toMatchObject({ status: "cancelled", moderationStatus: "rejected" });
+    expect(context.tripUpdates).toEqual([]);
   });
 
   it("publishes a trip and records a status update", async () => {
@@ -688,6 +783,9 @@ describe("TripsService", () => {
       trips: [
         createTrip({
           coverImage: `/trips/${tripId}/cover-image?v=123`,
+          source: "native",
+          sourceUrl: null,
+          externalRegistrationUrl: null,
         }),
       ],
       organizers: [createOrganizer()],
@@ -855,6 +953,30 @@ function createTripsService(
   };
 }
 
+function createImportedFields(input: Partial<ImportedTripFields> = {}): ImportedTripFields {
+  return {
+    title: "Докатиста",
+    description: "Вечерняя катушка",
+    startAt: new Date(futureStart),
+    startLocationName: "МЦК Коптево",
+    startLat: null,
+    startLng: null,
+    distanceKm: null,
+    paceMin: 16,
+    paceMax: 16,
+    difficulty: null,
+    asphaltPercent: null,
+    unpavedPercent: null,
+    unpavedSurfaceDetails: [],
+    routeDescription: null,
+    equipmentRequirements: null,
+    rules: null,
+    sourceUrl: "https://t.me/MskVelo/19663",
+    externalRegistrationUrl: "https://t.me/AndreyEP",
+    ...input,
+  };
+}
+
 function createQueryBuilder() {
   const queryBuilder = {
     leftJoinAndSelect: vi.fn(() => queryBuilder),
@@ -932,6 +1054,9 @@ function createTrip(input: Partial<TestTrip> = {}): TestTrip {
     maxParticipants: 10,
     registrationMode: "automatic",
     coverImage: null,
+    source: "native",
+    sourceUrl: null,
+    externalRegistrationUrl: null,
     status: "published",
     publicSlug: "lesnoy-marshrut",
     organizer,
@@ -961,6 +1086,7 @@ function createOrganizer(input: Partial<TestOrganizer> = {}): TestOrganizer {
     displayName: "Alex",
     bio: null,
     contactUrl: null,
+    kind: "person",
     isVerified: false,
     userId: actorId,
     user: createUser(),

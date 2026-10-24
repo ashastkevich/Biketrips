@@ -2,6 +2,8 @@ import type {
   CreateParticipantInput,
   CreateTripInput,
   City,
+  ImportRunResult,
+  ImportSourceSummary,
   OrganizerProfile,
   ParticipantStatus,
   TripDetail,
@@ -115,6 +117,14 @@ export class BikeTripsApiClient {
 
   async listTripsForModeration(): Promise<TripDetail[]> {
     return this.get<TripDetail[]>("/admin/trips/moderation", true);
+  }
+
+  async listImportSources(): Promise<ImportSourceSummary[]> {
+    return this.get<ImportSourceSummary[]>("/admin/imports", true);
+  }
+
+  async runImport(sourceId: string): Promise<ImportRunResult> {
+    return this.post<ImportRunResult>(`/admin/imports/${encodeURIComponent(sourceId)}/run`, {}, true);
   }
 
   async approveTrip(id: string): Promise<TripDetail> {

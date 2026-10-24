@@ -7,7 +7,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { savePostAuthReturnTo } from "../../auth/post-auth-return";
 import { unpavedSurfaceDetailLabels } from "../../lib/labels";
 import { Button, Card, LinkButton, TripCard } from "../../ui/components";
-import { Chip, DifficultySelect, FileField, FormField, Stepper, Switch, TextareaField, TextField, type StepperSaveStatus } from "../../ui/form-controls";
+import {
+  Chip,
+  DifficultySelect,
+  FileField,
+  FormField,
+  Stepper,
+  Switch,
+  TextareaField,
+  TextField,
+  type StepperSaveStatus,
+} from "../../ui/form-controls";
 import type { AuthProvider } from "../../ui/auth-options";
 import { AuthOptionsDialog } from "../../ui/auth-options-dialog";
 import componentStyles from "../../ui/components.module.css";
@@ -121,6 +131,11 @@ interface TripCreationWizardProps {
   initialValues?: Partial<TripDraft>;
   persistDraft?: boolean;
   cities: City[];
+  /**
+   * Imported trips: distance, difficulty, surface and coordinates may stay "Не указано",
+   * and sign-up happens outside the site, so there is no participant limit.
+   */
+  allowUnknownConditions?: boolean;
 }
 
 export function TripCreationWizard({
@@ -134,6 +149,7 @@ export function TripCreationWizard({
   initialValues,
   persistDraft = true,
   cities,
+  allowUnknownConditions = false,
 }: TripCreationWizardProps) {
   const defaultDraft = useMemo(() => ({ ...initialDraft, ...initialValues }), [initialValues]);
   const router = useRouter();
@@ -145,8 +161,8 @@ export function TripCreationWizard({
       initialValues?.routeDescription ||
       initialValues?.routeGpxFileName ||
       initialValues?.equipmentRequirements ||
-      initialValues?.rules,
-    ),
+      initialValues?.rules
+    )
   );
   const [stepError, setStepError] = useState("");
   const [showAuth, setShowAuth] = useState(false);
@@ -158,7 +174,7 @@ export function TripCreationWizard({
   const [routeGpxPreviewContent, setRouteGpxPreviewContent] = useState("");
   const routeGpxPreview = useMemo(
     () => (routeGpxPreviewContent ? parseGpxRoute(routeGpxPreviewContent) : null),
-    [routeGpxPreviewContent],
+    [routeGpxPreviewContent]
   );
   // When editing, the already saved GPX is loaded too, so the distance check covers it.
   const [savedRouteGpx, setSavedRouteGpx] = useState<{ url: string; content: string } | null>(null);
@@ -167,7 +183,7 @@ export function TripCreationWizard({
       savedRouteGpx && savedRouteGpx.url === draft.routeGpxDownloadUrl
         ? parseGpxRoute(savedRouteGpx.content)
         : null,
-    [draft.routeGpxDownloadUrl, savedRouteGpx],
+    [draft.routeGpxDownloadUrl, savedRouteGpx]
   );
   const [confirmedFarStartKey, setConfirmedFarStartKey] = useState("");
   const farStartConfirmationRef = useRef<HTMLInputElement>(null);
@@ -339,6 +355,16 @@ export function TripCreationWizard({
 
     if (
       currentStep === 1 &&
+      allowUnknownConditions &&
+      (!effectiveTitle.trim() || !draft.date || !draft.time || !draft.startLocationName)
+    ) {
+      setStepError("Заполните название, дату, время и место старта.");
+      return false;
+    }
+
+    if (
+      currentStep === 1 &&
+      !allowUnknownConditions &&
       (!effectiveTitle.trim() ||
         !draft.date ||
         !draft.time ||
@@ -357,7 +383,7 @@ export function TripCreationWizard({
       return false;
     }
 
-    if (currentStep === 1 && Number(draft.averageSpeed) <= 0) {
+    if (currentStep === 1 && draft.averageSpeed && Number(draft.averageSpeed) <= 0) {
       setStepError("Средняя скорость должна быть больше нуля.");
       return false;
     }
@@ -392,7 +418,8 @@ export function TripCreationWizard({
   const todayInCity = getTodayInTimeZone(selectedCity?.timezone ?? DEFAULT_TRIP_TIME_ZONE);
   const localStartAt = draft.date && draft.time ? `${draft.date}T${draft.time}` : "";
   const selectedCover = customCoverUrl || draft.coverImage || defaultCoverImage;
-  const previewCover = customCoverUrl || getDisplayCoverImage(draft.coverImage || defaultCoverImage);
+  const previewCover =
+    customCoverUrl || getDisplayCoverImage(draft.coverImage || defaultCoverImage);
   const mapTilerApiKey = getMapTilerApiKey();
   const draftStartPoint = { lat: Number(draft.startLat), lng: Number(draft.startLng) };
   const routeMapStart =
@@ -433,6 +460,9 @@ export function TripCreationWizard({
       }}
     >
       <input name="organizerId" type="hidden" value="30000000-0000-4000-8000-000000000001" />
+      {allowUnknownConditions ? (
+        <input name="allowUnknownConditions" type="hidden" value="true" />
+      ) : null}
       <input name="cityId" type="hidden" value={draft.cityId} />
       <input name="title" type="hidden" value={title} />
       <input name="startAt" type="hidden" value={startAt} />
@@ -449,11 +479,7 @@ export function TripCreationWizard({
       {draft.unpavedSurfaceDetails.map((detail) => (
         <input name="unpavedSurfaceDetails" type="hidden" value={detail} key={detail} />
       ))}
-      <input
-        name="hasParticipantLimit"
-        type="hidden"
-        value={String(draft.hasParticipantLimit)}
-      />
+      <input name="hasParticipantLimit" type="hidden" value={String(draft.hasParticipantLimit)} />
       {draft.hasParticipantLimit ? (
         <input name="maxParticipants" type="hidden" value={draft.maxParticipants} />
       ) : null}
@@ -477,7 +503,9 @@ export function TripCreationWizard({
           {step === 1 ? (
             <>
               <div className={styles.heading}>
-                <p className={styles.eyebrow}>{mode === "edit" ? "Редактирование · шаг 1 из 3" : "Шаг 1 из 3"}</p>
+                <p className={styles.eyebrow}>
+                  {mode === "edit" ? "Редактирование · шаг 1 из 3" : "Шаг 1 из 3"}
+                </p>
                 <h1>Когда и где встречаемся?</h1>
                 <p>Начните с главного — участники сразу поймут, подходит ли им поездка.</p>
               </div>
@@ -490,7 +518,9 @@ export function TripCreationWizard({
                     onChange={(event) => update("cityId", event.target.value)}
                   >
                     {cities.map((city) => (
-                      <option value={city.id} key={city.id}>{city.name}</option>
+                      <option value={city.id} key={city.id}>
+                        {city.name}
+                      </option>
                     ))}
                   </select>
                 </FormField>
@@ -547,22 +577,28 @@ export function TripCreationWizard({
                     }}
                   />
                 </div>
-                <FormField label="Дистанция, км" required>
+                <FormField
+                  label="Дистанция, км"
+                  hint={
+                    allowUnknownConditions ? "Оставьте пустым, если в анонсе не указана" : undefined
+                  }
+                  required={!allowUnknownConditions}
+                >
                   <TextField
                     name="distanceKm"
                     type="number"
                     min="1"
                     step="0.1"
-                    required
+                    required={!allowUnknownConditions}
                     value={draft.distanceKm}
                     onChange={(event) => update("distanceKm", event.target.value)}
                   />
                 </FormField>
-                <FormField label="Средняя скорость, км/ч" required>
+                <FormField label="Средняя скорость, км/ч" required={!allowUnknownConditions}>
                   <TextField
                     type="number"
                     min="1"
-                    required
+                    required={!allowUnknownConditions}
                     value={draft.averageSpeed}
                     onChange={(event) => updateAverageSpeed(event.target.value)}
                   />
@@ -574,71 +610,98 @@ export function TripCreationWizard({
           {step === 2 ? (
             <>
               <div className={styles.heading}>
-                <p className={styles.eyebrow}>{mode === "edit" ? "Редактирование · шаг 2 из 3" : "Шаг 2 из 3"}</p>
+                <p className={styles.eyebrow}>
+                  {mode === "edit" ? "Редактирование · шаг 2 из 3" : "Шаг 2 из 3"}
+                </p>
                 <h1>Кому подойдёт поездка?</h1>
                 <p>Темп и покрытие помогут собрать совместимую группу.</p>
               </div>
               <div className={`${styles.formGrid} ${styles.conditionsForm}`}>
                 <div className={styles.conditionField}>
                   <span>Сложность маршрута</span>
-                  <DifficultySelect
-                    name="difficulty"
-                    value={draft.difficulty as DifficultyLevel}
-                    onChange={(value) => update("difficulty", value)}
-                  />
+                  {allowUnknownConditions ? (
+                    <Switch
+                      label="Не указано"
+                      checked={!draft.difficulty}
+                      onChange={(checked) => update("difficulty", checked ? "" : "medium")}
+                    />
+                  ) : null}
+                  {draft.difficulty ? (
+                    <DifficultySelect
+                      name="difficulty"
+                      value={draft.difficulty as DifficultyLevel}
+                      onChange={(value) => update("difficulty", value)}
+                    />
+                  ) : null}
                 </div>
                 <div className={`${styles.conditionField} ${styles.surfaceConditionField}`}>
                   <span>Покрытие</span>
-                  <div className={styles.surfaceComposition}>
-                    <div className={styles.surfaceFields}>
-                      <FormField label="Грунт">
-                        <div className={styles.surfacePercentField}>
-                          <TextField
-                            className={styles.surfaceInput}
-                            name="unpavedPercent"
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={draft.unpavedPercent}
-                            onChange={(event) =>
-                              updateAsphaltPercent(String(100 - Number(event.target.value)))
-                            }
-                          />
-                          <span>%</span>
-                        </div>
-                      </FormField>
-                      <FormField label="Асфальт">
-                        <div className={styles.surfacePercentField}>
-                          <TextField
-                            className={styles.surfaceInput}
-                            name="asphaltPercent"
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={draft.asphaltPercent}
-                            onChange={(event) => updateAsphaltPercent(event.target.value)}
-                          />
-                          <span>%</span>
-                        </div>
-                      </FormField>
+                  {allowUnknownConditions ? (
+                    <Switch
+                      label="Не указано"
+                      checked={!draft.asphaltPercent}
+                      onChange={(checked) =>
+                        setDraft((current) => ({
+                          ...current,
+                          asphaltPercent: checked ? "" : "100",
+                          unpavedPercent: checked ? "" : "0",
+                          unpavedSurfaceDetails: checked ? [] : current.unpavedSurfaceDetails,
+                        }))
+                      }
+                    />
+                  ) : null}
+                  {draft.asphaltPercent ? (
+                    <div className={styles.surfaceComposition}>
+                      <div className={styles.surfaceFields}>
+                        <FormField label="Грунт">
+                          <div className={styles.surfacePercentField}>
+                            <TextField
+                              className={styles.surfaceInput}
+                              name="unpavedPercent"
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={draft.unpavedPercent}
+                              onChange={(event) =>
+                                updateAsphaltPercent(String(100 - Number(event.target.value)))
+                              }
+                            />
+                            <span>%</span>
+                          </div>
+                        </FormField>
+                        <FormField label="Асфальт">
+                          <div className={styles.surfacePercentField}>
+                            <TextField
+                              className={styles.surfaceInput}
+                              name="asphaltPercent"
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={draft.asphaltPercent}
+                              onChange={(event) => updateAsphaltPercent(event.target.value)}
+                            />
+                            <span>%</span>
+                          </div>
+                        </FormField>
+                      </div>
+                      <div className={styles.surfaceRangeWrap}>
+                        <span className={styles.surfaceRangeTrack} aria-hidden="true">
+                          <span style={{ width: `${draft.asphaltPercent}%` }} />
+                        </span>
+                        <input
+                          className={styles.surfaceRange}
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="10"
+                          aria-label="Доля асфальта на маршруте"
+                          aria-valuetext={`${draft.asphaltPercent}% асфальта, ${draft.unpavedPercent}% грунта`}
+                          value={draft.asphaltPercent}
+                          onChange={(event) => updateAsphaltPercent(event.target.value)}
+                        />
+                      </div>
                     </div>
-                    <div className={styles.surfaceRangeWrap}>
-                      <span className={styles.surfaceRangeTrack} aria-hidden="true">
-                        <span style={{ width: `${draft.asphaltPercent}%` }} />
-                      </span>
-                      <input
-                        className={styles.surfaceRange}
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="10"
-                        aria-label="Доля асфальта на маршруте"
-                        aria-valuetext={`${draft.asphaltPercent}% асфальта, ${draft.unpavedPercent}% грунта`}
-                        value={draft.asphaltPercent}
-                        onChange={(event) => updateAsphaltPercent(event.target.value)}
-                      />
-                    </div>
-                  </div>
+                  ) : null}
                   {Number(draft.unpavedPercent) > 0 ? (
                     <div className={styles.unpavedDetails}>
                       <span>
@@ -674,26 +737,28 @@ export function TripCreationWizard({
                     </div>
                   ) : null}
                 </div>
-                <div className={styles.participantLimitField}>
-                  <Switch
-                    label="Лимит мест"
-                    checked={draft.hasParticipantLimit}
-                    onChange={(checked) => update("hasParticipantLimit", checked)}
-                  />
-                  {draft.hasParticipantLimit ? (
-                    <FormField className={styles.conditionField} label="Количество мест" required>
-                      <TextField
-                        name="maxParticipants"
-                        type="number"
-                        min="1"
-                        max="500"
-                        required
-                        value={draft.maxParticipants}
-                        onChange={(event) => update("maxParticipants", event.target.value)}
-                      />
-                    </FormField>
-                  ) : null}
-                </div>
+                {allowUnknownConditions ? null : (
+                  <div className={styles.participantLimitField}>
+                    <Switch
+                      label="Лимит мест"
+                      checked={draft.hasParticipantLimit}
+                      onChange={(checked) => update("hasParticipantLimit", checked)}
+                    />
+                    {draft.hasParticipantLimit ? (
+                      <FormField className={styles.conditionField} label="Количество мест" required>
+                        <TextField
+                          name="maxParticipants"
+                          type="number"
+                          min="1"
+                          max="500"
+                          required
+                          value={draft.maxParticipants}
+                          onChange={(event) => update("maxParticipants", event.target.value)}
+                        />
+                      </FormField>
+                    ) : null}
+                  </div>
+                )}
                 <input name="registrationMode" type="hidden" value={draft.registrationMode} />
               </div>
             </>
@@ -702,7 +767,9 @@ export function TripCreationWizard({
           {step === 3 ? (
             <>
               <div className={styles.heading}>
-                <p className={styles.eyebrow}>{mode === "edit" ? "Редактирование · шаг 3 из 3" : "Шаг 3 из 3"}</p>
+                <p className={styles.eyebrow}>
+                  {mode === "edit" ? "Редактирование · шаг 3 из 3" : "Шаг 3 из 3"}
+                </p>
                 <h1>Расскажите о поездке</h1>
                 <p>
                   Короткого описания достаточно. Остальные детали можно добавить сейчас или позже.
@@ -714,7 +781,7 @@ export function TripCreationWizard({
                   {coverTemplates.map((cover) => (
                     <button
                       className={classes(
-                        selectedCover === cover.src && !customCoverUrl && styles.coverSelected,
+                        selectedCover === cover.src && !customCoverUrl && styles.coverSelected
                       )}
                       type="button"
                       key={cover.src}
@@ -771,7 +838,11 @@ export function TripCreationWizard({
                 {draft.routeGpxFileName ? (
                   <div className={styles.routeGpxActions}>
                     {routeGpxPreviewContent || savedRoute ? (
-                      <Button tone="secondary" type="button" onClick={() => setShowRouteMap((open) => !open)}>
+                      <Button
+                        tone="secondary"
+                        type="button"
+                        onClick={() => setShowRouteMap((open) => !open)}
+                      >
                         {showRouteMap ? "Скрыть карту" : "Открыть карту"}
                       </Button>
                     ) : null}
@@ -781,7 +852,9 @@ export function TripCreationWizard({
                   </div>
                 ) : null}
                 {routeGpxError ? (
-                  <p className={styles.routeGpxError} role="alert">{routeGpxError}</p>
+                  <p className={styles.routeGpxError} role="alert">
+                    {routeGpxError}
+                  </p>
                 ) : null}
                 {isFarStart && routeStartDistance !== null ? (
                   <div className={styles.farStartWarning} role="alert">
@@ -789,12 +862,12 @@ export function TripCreationWizard({
                       <strong>
                         Место сбора в {formatDistance(routeStartDistance)} от начала маршрута.
                       </strong>{" "}
-                      Проверьте место старта на шаге 1 и GPX-файл: возможно, выбран не тот
-                      адрес или маршрут.
+                      Проверьте место старта на шаге 1 и GPX-файл: возможно, выбран не тот адрес или
+                      маршрут.
                     </p>
                     <p>
-                      Если всё верно, подтвердите это и опишите в кратком описании, почему старт
-                      так далеко и как участники доберутся до начала маршрута.
+                      Если всё верно, подтвердите это и опишите в кратком описании, почему старт так
+                      далеко и как участники доберутся до начала маршрута.
                     </p>
                     <label className={styles.farStartConfirm}>
                       <input
@@ -898,7 +971,12 @@ export function TripCreationWizard({
 
           <div className={styles.actions}>
             {step > 1 ? (
-              <Button className={styles.actionButton} tone="secondary" type="button" onClick={goBack}>
+              <Button
+                className={styles.actionButton}
+                tone="secondary"
+                type="button"
+                onClick={goBack}
+              >
                 Назад
               </Button>
             ) : (
@@ -958,14 +1036,16 @@ export function TripCreationWizard({
           date={draft.date}
           time={draft.time}
           startLocationName={draft.startLocationName}
-          distanceKm={draft.distanceKm}
-          difficulty={draft.difficulty as DifficultyLevel}
+          distanceKm={allowUnknownConditions && !draft.distanceKm ? null : draft.distanceKm}
+          difficulty={(draft.difficulty || null) as DifficultyLevel | null}
           averageSpeed={draft.averageSpeed}
           maxParticipants={draft.hasParticipantLimit ? draft.maxParticipants : undefined}
           coverImage={previewCover}
         />
       </aside>
-      {showAuth ? <AuthOptionsDialog onClose={() => setShowAuth(false)} onSelect={startAuthorization} /> : null}
+      {showAuth ? (
+        <AuthOptionsDialog onClose={() => setShowAuth(false)} onSelect={startAuthorization} />
+      ) : null}
     </form>
   );
 }

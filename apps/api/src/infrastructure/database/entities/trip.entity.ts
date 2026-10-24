@@ -14,6 +14,7 @@ import type {
   DifficultyLevel,
   RegistrationMode,
   TripModerationStatus,
+  TripSource,
   UnpavedSurfaceDetail,
   TripStatus,
 } from "@biketrips/domain";
@@ -48,8 +49,9 @@ export class TripEntity {
   @Column({ name: "start_lng", type: "numeric", precision: 9, scale: 6, nullable: true })
   startLng!: string | null;
 
-  @Column({ name: "distance_km", type: "numeric", precision: 6, scale: 1 })
-  distanceKm!: string;
+  // Distance, difficulty and surface are empty only on imported trips ("Не указано").
+  @Column({ name: "distance_km", type: "numeric", precision: 6, scale: 1, nullable: true })
+  distanceKm!: string | null;
 
   @Column({ name: "pace_min", type: "integer", nullable: true })
   paceMin!: number | null;
@@ -57,14 +59,14 @@ export class TripEntity {
   @Column({ name: "pace_max", type: "integer", nullable: true })
   paceMax!: number | null;
 
-  @Column({ type: "text" })
-  difficulty!: DifficultyLevel;
+  @Column({ type: "text", nullable: true })
+  difficulty!: DifficultyLevel | null;
 
-  @Column({ name: "asphalt_percent", type: "integer" })
-  asphaltPercent!: number;
+  @Column({ name: "asphalt_percent", type: "integer", nullable: true })
+  asphaltPercent!: number | null;
 
-  @Column({ name: "unpaved_percent", type: "integer" })
-  unpavedPercent!: number;
+  @Column({ name: "unpaved_percent", type: "integer", nullable: true })
+  unpavedPercent!: number | null;
 
   @Column({ name: "unpaved_surface_details", type: "text", array: true, default: "{}" })
   unpavedSurfaceDetails!: UnpavedSurfaceDetail[];
@@ -86,6 +88,15 @@ export class TripEntity {
 
   @Column({ name: "cover_image", type: "text", nullable: true })
   coverImage!: string | null;
+
+  @Column({ type: "text", default: "native" })
+  source!: TripSource;
+
+  @Column({ name: "source_url", type: "text", nullable: true })
+  sourceUrl!: string | null;
+
+  @Column({ name: "external_registration_url", type: "text", nullable: true })
+  externalRegistrationUrl!: string | null;
 
   @Column({ type: "text", default: "draft" })
   status!: TripStatus;

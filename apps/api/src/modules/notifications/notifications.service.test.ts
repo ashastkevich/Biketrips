@@ -114,6 +114,21 @@ describe("NotificationsService", () => {
     );
   });
 
+  it("tells the organizer about a moderation decision, except for imported trips", async () => {
+    const context = createContext();
+
+    await context.service.enqueueModerationDecision(createTrip({ source: "native" }), "approve");
+    await context.service.enqueueModerationDecision(
+      createTrip({ source: "telegram_import" }),
+      "approve",
+    );
+
+    expect(context.jobs.map((job) => [job.type, job.recipientUserId, job.channel])).toEqual([
+      ["trip_approved", organizerUserId, "telegram"],
+      ["trip_approved", organizerUserId, "email"],
+    ]);
+  });
+
   it("queues key changes after a debounce window and merges later edits", async () => {
     vi.useFakeTimers({ now: new Date("2099-08-01T10:00:00.000Z") });
     const context = createContext();

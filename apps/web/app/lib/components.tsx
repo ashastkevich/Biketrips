@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import type { TripDetail, TripSummary } from "@biketrips/domain";
+import { canRegisterOnSite, type TripDetail, type TripSummary } from "@biketrips/domain";
 
 import {
-  difficultyLabels,
   formatDateTime,
+  formatDifficulty,
+  formatDistance,
   paceLabels,
   registrationModeLabels,
   formatSurfaceComposition,
@@ -250,17 +251,20 @@ export function TripFacts({ trip }: { trip: TripDetail }) {
     <dl className={styles.factsGrid}>
       <Metric label="Старт" value={formatDateTime(trip.startDateTime)} />
       <Metric label="Место" value={trip.startLocationName} />
-      <Metric label="Дистанция" value={`${trip.distanceKm} км`} />
+      <Metric label="Дистанция" value={formatDistance(trip.distanceKm)} />
       <Metric
         label="Темп"
         value={trip.paceMin && trip.paceMax ? `${trip.paceMin}-${trip.paceMax} км/ч` : paceLabels[trip.pace]}
       />
-      <Metric label="Сложность маршрута" value={difficultyLabels[trip.difficulty]} />
+      <Metric label="Сложность маршрута" value={formatDifficulty(trip.difficulty)} />
       <Metric
         label="Покрытие"
         value={formatSurfaceComposition(trip.asphaltPercent, trip.unpavedPercent)}
       />
-      <Metric label="Запись" value={registrationModeLabels[trip.registrationMode]} />
+      <Metric
+        label="Запись"
+        value={canRegisterOnSite(trip) ? registrationModeLabels[trip.registrationMode] : "У организатора"}
+      />
       <Metric label="Статус" value={tripStatusLabels[trip.status]} />
     </dl>
   );

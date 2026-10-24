@@ -8,10 +8,13 @@ import { CitiesModule } from "./modules/cities/cities.module.js";
 import { NotificationsModule } from "./modules/notifications/notifications.module.js";
 import { OrganizersModule } from "./modules/organizers/organizers.module.js";
 import { ParticipantsModule } from "./modules/participants/participants.module.js";
+import { TripImportsModule } from "./modules/trip-imports/trip-imports.module.js";
 import { TripsModule } from "./modules/trips/trips.module.js";
 import { UsersModule } from "./modules/users/users.module.js";
 import { CityEntity } from "./infrastructure/database/entities/city.entity.js";
 import { EmailAuthCodeEntity } from "./infrastructure/database/entities/email-auth-code.entity.js";
+import { ImportSourceEntity } from "./infrastructure/database/entities/import-source.entity.js";
+import { ImportedPostEntity } from "./infrastructure/database/entities/imported-post.entity.js";
 import { NotificationJobEntity } from "./infrastructure/database/entities/notification-job.entity.js";
 import { OrganizerEntity } from "./infrastructure/database/entities/organizer.entity.js";
 import { RouteFileEntity } from "./infrastructure/database/entities/route-file.entity.js";
@@ -35,6 +38,8 @@ import { WaitlistEntryEntity } from "./infrastructure/database/entities/waitlist
       entities: [
         CityEntity,
         EmailAuthCodeEntity,
+        ImportedPostEntity,
+        ImportSourceEntity,
         NotificationJobEntity,
         OrganizerEntity,
         RouteFileEntity,
@@ -55,6 +60,7 @@ import { WaitlistEntryEntity } from "./infrastructure/database/entities/waitlist
     NotificationsModule,
     OrganizersModule,
     ParticipantsModule,
+    TripImportsModule,
     TripsModule,
     UsersModule,
   ],

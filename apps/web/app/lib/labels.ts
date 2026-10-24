@@ -17,6 +17,17 @@ export const difficultyLabels: Record<DifficultyLevel, string> = {
   sport: "Спортивный",
 };
 
+/** Imported trips may lack distance, difficulty or surface; they show this instead. */
+export const unknownValueLabel = "Не указано";
+
+export function formatDifficulty(difficulty: DifficultyLevel | null): string {
+  return difficulty ? difficultyLabels[difficulty] : unknownValueLabel;
+}
+
+export function formatDistance(distanceKm: number | null): string {
+  return distanceKm === null ? unknownValueLabel : `${distanceKm} км`;
+}
+
 export const difficultyDescriptions: Record<DifficultyLevel, string> = {
   beginner: "Короткий простой маршрут, спокойный темп и частые остановки",
   easy: "Небольшая нагрузка и минимум подъемов",
@@ -42,7 +53,11 @@ export const unpavedSurfaceDetailLabels: Record<UnpavedSurfaceDetail, string> = 
   concrete_slabs: "Бетонные плиты",
 };
 
-export function formatSurfaceComposition(asphaltPercent: number, unpavedPercent: number): string {
+export function formatSurfaceComposition(
+  asphaltPercent: number | null,
+  unpavedPercent: number | null,
+): string {
+  if (asphaltPercent === null || unpavedPercent === null) return unknownValueLabel;
   if (unpavedPercent === 0) return "100% асфальт";
   if (asphaltPercent === 0) return "100% грунт";
   return `${asphaltPercent}% асфальт · ${unpavedPercent}% грунт`;

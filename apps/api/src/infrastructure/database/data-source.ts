@@ -4,6 +4,8 @@ import { DataSource } from "typeorm";
 
 import { CityEntity } from "./entities/city.entity.js";
 import { EmailAuthCodeEntity } from "./entities/email-auth-code.entity.js";
+import { ImportSourceEntity } from "./entities/import-source.entity.js";
+import { ImportedPostEntity } from "./entities/imported-post.entity.js";
 import { NotificationJobEntity } from "./entities/notification-job.entity.js";
 import { OrganizerEntity } from "./entities/organizer.entity.js";
 import { RouteFileEntity } from "./entities/route-file.entity.js";
@@ -32,6 +34,7 @@ import { DisableJit1738800000000 } from "./migrations/1738800000000-DisableJit.j
 import { AddEmailCodeRequestIp1738900000000 } from "./migrations/1738900000000-AddEmailCodeRequestIp.js";
 import { AddNotificationJobAttempts1739000000000 } from "./migrations/1739000000000-AddNotificationJobAttempts.js";
 import { DropTripBikeTypeAndDropPolicy1739100000000 } from "./migrations/1739100000000-DropTripBikeTypeAndDropPolicy.js";
+import { AddTelegramTripImport1739200000000 } from "./migrations/1739200000000-AddTelegramTripImport.js";
 
 export const appDataSource = new DataSource({
   type: "postgres",
@@ -39,6 +42,8 @@ export const appDataSource = new DataSource({
   entities: [
     CityEntity,
     EmailAuthCodeEntity,
+    ImportedPostEntity,
+    ImportSourceEntity,
     NotificationJobEntity,
     OrganizerEntity,
     RouteFileEntity,
@@ -69,6 +74,7 @@ export const appDataSource = new DataSource({
     AddEmailCodeRequestIp1738900000000,
     AddNotificationJobAttempts1739000000000,
     DropTripBikeTypeAndDropPolicy1739100000000,
+    AddTelegramTripImport1739200000000,
   ],
   synchronize: false,
 });

@@ -12,6 +12,8 @@ export interface TelegramChannelPost {
   edited: boolean;
   text: string;
   hasMedia: boolean;
+  /** The first photo of the post (CDN URL from the preview), used as the trip cover. */
+  coverUrl: string | null;
   authorSignature: string | null;
   forwardedFrom: { name: string; url: string | null } | null;
 }
@@ -86,11 +88,18 @@ function parseMessage(message: HTMLElement): TelegramChannelPost | null {
       message.querySelector(
         ".tgme_widget_message_photo_wrap, .tgme_widget_message_video_player, .tgme_widget_message_document"
       ) !== null,
+    coverUrl: readBackgroundImageUrl(message.querySelector(".tgme_widget_message_photo_wrap")),
     authorSignature: signature && /\p{L}/u.test(signature) ? signature : null,
     forwardedFrom: forwardedLink
       ? { name: forwardedLink.text.trim(), url: forwardedLink.getAttribute("href") ?? null }
       : null,
   };
+}
+
+function readBackgroundImageUrl(element: HTMLElement | null): string | null {
+  const style = element?.getAttribute("style") ?? "";
+  const url = /background-image:\s*url\(['"]?(https:\/\/[^'")]+)['"]?\)/.exec(style)?.[1];
+  return url ?? null;
 }
 
 // Keeps line breaks and link targets: announcements often hide the chat or

@@ -8,6 +8,7 @@ import { getTripCardProps } from "./lib/components";
 import { TripCard } from "./ui/components";
 import { RouteFilterBar } from "./ui/route-filter-bar";
 import type { RouteFilterValue } from "./ui/route-filter-bar";
+import { initialRouteFilters, matchesRouteFilters } from "./lib/trip-filters";
 import styles from "./find-trip-section.module.css";
 
 const meta = {
@@ -20,15 +21,6 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const initialFilters: RouteFilterValue = {
-  measure: "distance",
-  distanceFromKm: 0,
-  distanceToKm: 200,
-  durationFromHours: 0,
-  durationToHours: 12,
-  difficulty: ["beginner", "easy", "medium", "hard", "sport"],
-  surface: "any",
-};
 
 export const SearchAndResults: Story = {
   name: "Фильтры и карточки",
@@ -36,33 +28,11 @@ export const SearchAndResults: Story = {
 };
 
 function FindTripPattern() {
-  const [filters, setFilters] = useState<RouteFilterValue>(initialFilters);
+  const [filters, setFilters] = useState<RouteFilterValue>(initialRouteFilters);
 
   const filteredTrips = useMemo(
     () =>
-      storyTrips.filter((trip) => {
-        const averageSpeed = ((trip.paceMin ?? 20) + (trip.paceMax ?? 20)) / 2;
-        const durationHours = trip.distanceKm / averageSpeed;
-        const matchesMeasure =
-          filters.measure === "distance"
-            ? trip.distanceKm >= filters.distanceFromKm &&
-              trip.distanceKm <= filters.distanceToKm
-            : durationHours >= filters.durationFromHours &&
-              durationHours <= filters.durationToHours;
-        const matchesDifficulty = filters.difficulty.includes(trip.difficulty);
-        const matchesSurface =
-          filters.surface === "any" ||
-          (filters.surface === "asphalt_only" && trip.unpavedPercent === 0) ||
-          (filters.surface === "mostly_asphalt" &&
-            trip.unpavedPercent > 0 &&
-            trip.unpavedPercent < 30) ||
-          (filters.surface === "mixed" &&
-            trip.unpavedPercent >= 30 &&
-            trip.unpavedPercent <= 70) ||
-          (filters.surface === "mostly_unpaved" && trip.unpavedPercent > 70);
-
-        return matchesMeasure && matchesDifficulty && matchesSurface;
-      }),
+      storyTrips.filter((trip) => matchesRouteFilters(trip, filters)),
     [filters],
   );
 

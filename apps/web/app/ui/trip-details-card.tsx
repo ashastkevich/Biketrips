@@ -5,6 +5,7 @@ import type { TripDetail } from "@biketrips/domain";
 
 import {
   difficultyLabels,
+  formatDistance,
   formatSurfaceComposition,
   unpavedSurfaceDetailLabels,
 } from "../lib/labels";
@@ -103,7 +104,7 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
           <div className={styles.heroCopy}>
             <div className={styles.eyebrow}>
               <span>{trip.city}</span>
-              <span>{difficultyLabels[trip.difficulty]}</span>
+              {trip.difficulty ? <span>{difficultyLabels[trip.difficulty]}</span> : null}
             </div>
             <p>{date} · {time}</p>
             <Heading id={titleId}>{trip.title}</Heading>
@@ -114,7 +115,7 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
         <div className={styles.layout}>
           <div className={styles.content}>
             <div className={styles.facts} aria-label="Параметры поездки">
-              <Fact icon="↔" label="Дистанция" value={`${trip.distanceKm} км`} />
+              <Fact icon="↔" label="Дистанция" value={formatDistance(trip.distanceKm)} />
               <Fact
                 icon="◷"
                 label="Темп"

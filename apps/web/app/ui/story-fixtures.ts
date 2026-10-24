@@ -22,6 +22,9 @@ export const storyTrips: TripDetail[] = [
     capacity: 14,
     confirmedParticipants: 8,
     coverImage: "/img/trip-cover-group-ride.webp",
+    source: "native",
+    sourceUrl: null,
+    externalRegistrationUrl: null,
     description:
       "Ровный вечерний маршрут через парки и спокойные набережные. Подойдет тем, кто уверенно держит 22-24 км/ч и хочет прокатиться без гонки.",
     startLocationName: "Парк Победы, главный вход",
@@ -40,6 +43,8 @@ export const storyTrips: TripDetail[] = [
       userId: "demo-user-1",
       displayName: "RideMate Moscow",
       isVerified: true,
+      kind: "person",
+      contactUrl: null,
     },
     participants: [
       {
@@ -90,6 +95,9 @@ export const storyTrips: TripDetail[] = [
     capacity: 18,
     confirmedParticipants: 18,
     coverImage: "/img/trip-cover-route.webp",
+    source: "native",
+    sourceUrl: null,
+    externalRegistrationUrl: null,
     description:
       "Дневная поездка в разговорном темпе с остановкой на кофе. Хороший вариант для первой длинной групповой покатушки.",
     startLocationName: "Финляндский вокзал",
@@ -108,6 +116,8 @@ export const storyTrips: TripDetail[] = [
       userId: "demo-user-2",
       displayName: "Северный велоклуб",
       isVerified: false,
+      kind: "person",
+      contactUrl: null,
     },
     participants: [],
     waitlist: [
@@ -142,6 +152,9 @@ export const storyTrips: TripDetail[] = [
     capacity: 10,
     confirmedParticipants: 4,
     coverImage: "/img/trip-cover-forest-road.webp",
+    source: "native",
+    sourceUrl: null,
+    externalRegistrationUrl: null,
     description: "Утренняя тренировка с ровными сменами и коротким разбором после финиша.",
     startLocationName: "Компрессорный, парковка",
     startLat: null,
@@ -159,6 +172,8 @@ export const storyTrips: TripDetail[] = [
       userId: "demo-user-1",
       displayName: "RideMate Moscow",
       isVerified: true,
+      kind: "person",
+      contactUrl: null,
     },
     participants: [],
     waitlist: [],

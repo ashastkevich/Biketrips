@@ -48,6 +48,7 @@ function createOrganizer(input: Partial<OrganizerEntity> = {}): OrganizerEntity 
     displayName: "Организатор",
     bio: "Гравийные маршруты по выходным",
     contactUrl: "https://t.me/alex",
+    kind: "person",
     isVerified: true,
     userId: "user-1",
     user: {
@@ -88,5 +89,8 @@ function createTrip(): TripEntity {
     maxParticipants: 10,
     participants: [],
     coverImage: null,
+    source: "native",
+    sourceUrl: null,
+    externalRegistrationUrl: null,
   } as unknown as TripEntity;
 }

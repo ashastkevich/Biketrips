@@ -57,12 +57,15 @@ export function serializeTripSummary(
     organizerId: trip.organizerId,
     startDateTime: trip.startAt.toISOString(),
     startLocationName: trip.startLocationName,
-    distanceKm: Number(trip.distanceKm),
+    distanceKm: trip.distanceKm === null ? null : Number(trip.distanceKm),
     difficulty: trip.difficulty,
     pace: trip.paceMax && trip.paceMax >= 28 ? "fast" : "steady",
     asphaltPercent: trip.asphaltPercent,
     unpavedPercent: trip.unpavedPercent,
     unpavedSurfaceDetails: trip.unpavedSurfaceDetails,
+    source: trip.source,
+    sourceUrl: trip.sourceUrl,
+    externalRegistrationUrl: trip.externalRegistrationUrl,
     status: trip.status,
     moderationStatus: trip.moderationStatus,
     moderationComment: trip.moderationComment,
@@ -110,8 +113,14 @@ export function serializeTripDetail(
     organizer: {
       id: trip.organizer.id,
       userId: trip.organizer.userId,
-      displayName: trip.organizer.user?.name ?? trip.organizer.displayName,
+      // A channel organizer is shown by the channel name, not its system user.
+      displayName:
+        trip.organizer.kind === "channel"
+          ? trip.organizer.displayName
+          : (trip.organizer.user?.name ?? trip.organizer.displayName),
       isVerified: trip.organizer.isVerified,
+      kind: trip.organizer.kind,
+      contactUrl: trip.organizer.kind === "channel" ? trip.organizer.contactUrl : null,
     },
     participants:
       trip.participants?.map((participant) =>

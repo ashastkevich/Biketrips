@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { ParticipantStatus, TripDetail } from "@biketrips/domain";
+import { canRegisterOnSite, type ParticipantStatus, type TripDetail } from "@biketrips/domain";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
@@ -19,6 +19,7 @@ import { baseOpenGraph, noIndexMetadata } from "../../lib/site";
 import { DEFAULT_TRIP_TIME_ZONE } from "../../lib/trip-time";
 import { getTripEditHref, getTripHref } from "../../lib/trip-links";
 import { Alert, Button, CapacityIndicator, LinkButton } from "../../ui/components";
+import { ExternalRegistration } from "../../ui/external-registration";
 import { JoinSignInButton } from "../../ui/join-sign-in-button";
 import { OrganizerParticipants } from "../../ui/organizer-participants";
 import { TripDetailsCard } from "../../ui/trip-details-card";
@@ -95,9 +96,9 @@ function formatTripDate(startDateTime: string): string {
 function describeTrip(trip: TripDetail): string {
   const parts = [
     `Велопоездка ${formatTripDate(trip.startDateTime)}, ${trip.city}`,
-    `${trip.distanceKm} км`,
-    `сложность: ${difficultyLabels[trip.difficulty].toLowerCase()}`,
   ];
+  if (trip.distanceKm !== null) parts.push(`${trip.distanceKm} км`);
+  if (trip.difficulty) parts.push(`сложность: ${difficultyLabels[trip.difficulty].toLowerCase()}`);
   if (trip.paceMin && trip.paceMax) {
     const pace = trip.paceMin === trip.paceMax ? `${trip.paceMin}` : `${trip.paceMin}–${trip.paceMax}`;
     parts.push(`темп ${pace} км/ч`);
@@ -317,6 +318,19 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
                         Отменить поездку
                       </Button>
                     </form>
+                  ) : null}
+                </>
+              ) : !canRegisterOnSite(trip) ? (
+                <>
+                  <ExternalRegistration trip={trip} />
+                  {currentUser?.role === "admin" ? (
+                    <LinkButton
+                      className={tripDetailsStyles.joinButton}
+                      href={getTripEditHref(trip, { returnTo: "/", scope: "feed" })}
+                      tone="secondary"
+                    >
+                      Редактировать поездку
+                    </LinkButton>
                   ) : null}
                 </>
               ) : (

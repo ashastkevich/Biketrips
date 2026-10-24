@@ -138,12 +138,14 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
   }
   if (trip.organizer.userId !== user.id && user.role !== "admin") redirect("/profile");
 
+  // Admins fill in imported trips while they wait in the moderation queue.
+  const isImported = trip.source !== "native";
   const canEdit =
     new Date(trip.startDateTime).getTime() > Date.now() &&
     trip.status !== "cancelled" &&
     trip.status !== "finished" &&
     trip.status !== "rejected" &&
-    trip.moderationStatus !== "pending_review" &&
+    (trip.moderationStatus !== "pending_review" || (isImported && user.role === "admin")) &&
     trip.moderationStatus !== "rejected";
   const cities = citiesResult.data.length > 0 ? citiesResult.data : fallbackCities;
   const city = cities.find((item) => item.id === trip.cityId);
@@ -180,13 +182,13 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
     startLocationName: trip.startLocationName,
     startLat: trip.startLat === null ? "" : String(trip.startLat),
     startLng: trip.startLng === null ? "" : String(trip.startLng),
-    distanceKm: String(trip.distanceKm),
+    distanceKm: trip.distanceKm === null ? "" : String(trip.distanceKm),
     averageSpeed: String(trip.paceMax ?? trip.paceMin ?? ""),
     paceMin: String(trip.paceMin ?? ""),
     paceMax: String(trip.paceMax ?? ""),
-    difficulty: trip.difficulty,
-    asphaltPercent: String(trip.asphaltPercent),
-    unpavedPercent: String(trip.unpavedPercent),
+    difficulty: trip.difficulty ?? "",
+    asphaltPercent: trip.asphaltPercent === null ? "" : String(trip.asphaltPercent),
+    unpavedPercent: trip.unpavedPercent === null ? "" : String(trip.unpavedPercent),
     unpavedSurfaceDetails: trip.unpavedSurfaceDetails,
     hasParticipantLimit: trip.capacity !== null,
     maxParticipants: String(trip.capacity ?? 12),
@@ -274,7 +276,12 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
           </Alert>
         ) : (
           <>
-            {isDraft ? (
+            {isImported ? (
+              <Alert title="Поездка импортирована из Telegram" tone="warning">
+                Проверьте данные по исходному посту. Пустые дистанция, сложность и покрытие
+                показываются участникам как «Не указано».
+              </Alert>
+            ) : isDraft ? (
               <Alert title="Поездка сохранена как черновик" tone="warning">
                 Её пока не видят другие участники. Внесите правки и отправьте поездку на
                 модерацию или сохраните черновик, чтобы вернуться к нему позже.
@@ -300,6 +307,7 @@ export default async function EditTripPage({ params, searchParams }: EditTripPag
               isRegistered
               mode="edit"
               persistDraft={false}
+              allowUnknownConditions={isImported}
             />
           </>
         )}

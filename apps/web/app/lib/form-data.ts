@@ -75,15 +75,23 @@ export function readOptionalFile(formData: FormData, name: string): File | undef
 
 export function readTripUpdateInput(formData: FormData): UpdateTripInput {
   const { organizerId: _organizerId, ...input } = readTripInput(formData);
-  return {
+  const update: UpdateTripInput = {
     ...input,
     maxParticipants:
       readString(formData, "hasParticipantLimit") === "true"
         ? input.maxParticipants
         : null,
   };
+  // Imported trips may keep these empty; the form then sends blank values ("Не указано").
+  if (readString(formData, "allowUnknownConditions") === "true") {
+    update.distanceKm = readOptionalNumber(formData, "distanceKm") ?? null;
+    update.difficulty = (readOptionalString(formData, "difficulty") as DifficultyLevel) ?? null;
+    update.asphaltPercent = readOptionalNumber(formData, "asphaltPercent") ?? null;
+    update.unpavedPercent = readOptionalNumber(formData, "unpavedPercent") ?? null;
+    update.maxParticipants = null;
+  }
+  return update;
 }
-
 
 export function readParticipantStatus(formData: FormData): ParticipantStatus {
   return readString(formData, "status") as ParticipantStatus;

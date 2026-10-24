@@ -5,7 +5,12 @@ import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundEx
 import { InjectRepository } from "@nestjs/typeorm";
 import sharp from "sharp";
 import { In, Not, Repository, type FindOptionsOrder, type FindOptionsRelations, type SelectQueryBuilder } from "typeorm";
-import { slugifyTripTitle, type TripStatus } from "@biketrips/domain";
+import {
+  slugifyTripTitle,
+  type DifficultyLevel,
+  type TripStatus,
+  type UnpavedSurfaceDetail,
+} from "@biketrips/domain";
 
 import { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
 import { TripUpdateEntity } from "../../infrastructure/database/entities/trip-update.entity.js";
@@ -26,10 +31,12 @@ const maxCoverImageBytes = 5_000_000;
 const coverImageWidth = 1600;
 // Trips have no end time, so it is estimated from distance and average pace
 // (20 km/h when unknown, as in the web filters) plus a buffer for stops.
+// Imported trips may have no distance; they are treated as a 30 km ride.
 const defaultPaceKmh = 20;
+const defaultDistanceKm = 30;
 const finishBufferHours = 2;
 const estimatedTripEndSql =
-  `start_at + ((distance_km::float8 / ((COALESCE(pace_min, ${defaultPaceKmh}) + ` +
+  `start_at + ((COALESCE(distance_km, ${defaultDistanceKm})::float8 / ((COALESCE(pace_min, ${defaultPaceKmh}) + ` +
   `COALESCE(pace_max, ${defaultPaceKmh})) / 2.0)) + ${finishBufferHours}) * interval '1 hour'`;
 // Everything a trip card shows: organizer, participants with contacts, waitlist, updates and route.
 const tripDetailRelations: FindOptionsRelations<TripEntity> = {
@@ -83,6 +90,51 @@ export interface TripActor {
   phone?: string;
   phoneVerified?: boolean;
 }
+
+/** What the Telegram importer extracted from a post, in trip entity terms. */
+export interface ImportedTripFields {
+  title: string;
+  description: string;
+  startAt: Date;
+  startLocationName: string;
+  startLat: number | null;
+  startLng: number | null;
+  distanceKm: number | null;
+  paceMin: number | null;
+  paceMax: number | null;
+  difficulty: DifficultyLevel | null;
+  asphaltPercent: number | null;
+  unpavedPercent: number | null;
+  unpavedSurfaceDetails: UnpavedSurfaceDetail[];
+  routeDescription: string | null;
+  equipmentRequirements: string | null;
+  rules: string | null;
+  sourceUrl: string;
+  externalRegistrationUrl: string;
+}
+
+export type ImportedTripUpdateResult = "updated" | "revision" | "unchanged" | "ignored";
+
+const importedFieldLabels: Partial<Record<keyof TripEntity, string>> = {
+  title: "название",
+  description: "описание",
+  startAt: "дата и время",
+  startLocationName: "место старта",
+  startLat: "координаты",
+  startLng: "координаты",
+  distanceKm: "дистанция",
+  paceMin: "темп",
+  paceMax: "темп",
+  difficulty: "сложность",
+  asphaltPercent: "покрытие",
+  unpavedPercent: "покрытие",
+  unpavedSurfaceDetails: "типы грунта",
+  routeDescription: "маршрут",
+  equipmentRequirements: "снаряжение",
+  rules: "правила",
+  sourceUrl: "ссылка на пост",
+  externalRegistrationUrl: "ссылка на запись",
+};
 
 const moderatedTextFields = [
   "title",
@@ -216,6 +268,8 @@ export class TripsService {
       .leftJoinAndSelect("participantUser.telegramAccounts", "participantTelegramAccounts")
       .leftJoinAndSelect("trip.routeFiles", "routeFiles")
       .where("trip.moderationStatus = :status", { status: "pending_review" })
+      // Imported announcements that were never reviewed are useless once the ride has started.
+      .andWhere("(trip.source = 'native' OR trip.startAt > :now)", { now: new Date() })
       .orderBy("trip.submittedForReviewAt", "ASC", "NULLS LAST")
       .getMany();
   }
@@ -378,7 +432,9 @@ export class TripsService {
     actor: TripActor,
   ): Promise<{ tripId: string; before: TripKeySnapshot }> {
     const trip = await this.getBySlugOrId(id);
-    if (trip.organizer.userId !== actor.id) {
+    // Imported trips belong to a channel; admins fix them up while reviewing.
+    const editsImportedTrip = trip.source !== "native" && actor.role === "admin";
+    if (trip.organizer.userId !== actor.id && !editsImportedTrip) {
       throw new ForbiddenException("Only the trip organizer can edit it");
     }
     if (
@@ -386,15 +442,16 @@ export class TripsService {
       trip.status === "cancelled" ||
       trip.status === "finished" ||
       trip.status === "rejected" ||
-      trip.moderationStatus === "pending_review" ||
+      (trip.moderationStatus === "pending_review" && !editsImportedTrip) ||
       trip.moderationStatus === "rejected"
     ) {
       throw new BadRequestException("Only an upcoming active trip can be edited");
     }
     if (dto.startAt !== undefined) this.validateStartAtInFuture(dto.startAt);
+    this.validateUnknownFields(trip, dto);
     this.validateSurfaceComposition(
-      dto.asphaltPercent ?? trip.asphaltPercent,
-      dto.unpavedPercent ?? trip.unpavedPercent
+      dto.asphaltPercent !== undefined ? dto.asphaltPercent : trip.asphaltPercent,
+      dto.unpavedPercent !== undefined ? dto.unpavedPercent : trip.unpavedPercent
     );
     const before = snapshotTripKeyFields(trip);
     const writableFields = this.mapUpdateFields(dto);
@@ -617,6 +674,8 @@ export class TripsService {
           await this.deleteCoverImage(trip.id);
         }
         Object.assign(trip, trip.pendingRevision);
+        // Revisions from the importer may carry a new start; jsonb keeps it as a string.
+        if (typeof trip.startAt === "string") trip.startAt = new Date(trip.startAt);
         await this.promotePendingCoverImage(trip);
         trip.pendingRevision = null;
         trip.pendingCoverStorageKey = null;
@@ -643,6 +702,142 @@ export class TripsService {
       await this.notifyAboutKeyChanges(moderatedTrip, before);
     }
     return moderatedTrip;
+  }
+
+  /**
+   * Creates a trip from a channel post. It goes straight to the moderation queue and
+   * never takes sign-ups on the site.
+   */
+  async createImported(
+    fields: ImportedTripFields,
+    target: { organizerId: string; cityId: string; moderationComment: string | null },
+  ): Promise<TripEntity> {
+    this.validateStartAtInFuture(fields.startAt.toISOString());
+    this.validateSurfaceComposition(fields.asphaltPercent, fields.unpavedPercent);
+    const trip = this.tripsRepository.create({
+      ...this.mapImportedFields(fields),
+      source: "telegram_import",
+      organizerId: target.organizerId,
+      cityId: target.cityId,
+      maxParticipants: null,
+      registrationMode: "automatic",
+      coverImage: null,
+      status: "pending_review",
+      moderationStatus: "pending_review",
+      moderationComment: target.moderationComment,
+      submittedForReviewAt: new Date(),
+      publicSlug: await this.createUniqueSlug(fields.title),
+    });
+    const savedTrip = await this.tripsRepository.save(trip);
+    return this.getBySlugOrId(savedTrip.id);
+  }
+
+  /**
+   * Applies an edited channel post. A trip still under review is updated in place;
+   * a published one gets the changes as a revision for the moderator.
+   */
+  async updateImported(
+    id: string,
+    fields: ImportedTripFields,
+    moderationComment: string | null,
+  ): Promise<ImportedTripUpdateResult> {
+    const trip = await this.getBySlugOrId(id);
+    if (
+      trip.startAt.getTime() <= Date.now() ||
+      fields.startAt.getTime() <= Date.now() ||
+      !["pending_review", "published"].includes(trip.status)
+    ) {
+      return "ignored";
+    }
+    const changed = this.onlyChangedFields(
+      trip,
+      this.mapImportedFields(fields),
+      trip.status === "published" ? trip.pendingRevision : null,
+    );
+    if (Object.keys(changed).length === 0) return "unchanged";
+    const changedLabels = [
+      ...new Set(
+        Object.keys(changed).map((field) => importedFieldLabels[field as keyof TripEntity] ?? field),
+      ),
+    ];
+    const comment = [`Изменено: ${changedLabels.join(", ")}.`, moderationComment]
+      .filter(Boolean)
+      .join("\n");
+
+    if (trip.status === "pending_review") {
+      if (changed.title !== undefined) {
+        trip.publicSlug = await this.createUniqueSlug(changed.title, trip.id);
+      }
+      Object.assign(trip, changed);
+      trip.moderationComment = comment;
+      await this.tripsRepository.save(trip);
+      return "updated";
+    }
+
+    trip.pendingRevision = {
+      ...(trip.pendingRevision ?? {}),
+      ...changed,
+      ...(changed.startAt ? { startAt: changed.startAt.toISOString() } : {}),
+    };
+    trip.moderationStatus = "pending_review";
+    trip.moderationComment = comment;
+    trip.submittedForReviewAt = new Date();
+    await this.tripsRepository.save(trip);
+    return "revision";
+  }
+
+  /** The channel cancelled the ride: cancel it right away, there are no sign-ups to lose. */
+  async cancelImported(id: string): Promise<boolean> {
+    const trip = await this.getBySlugOrId(id);
+    if (trip.startAt.getTime() <= Date.now() || !["pending_review", "published"].includes(trip.status)) {
+      return false;
+    }
+
+    const wasPublished = trip.status === "published";
+    trip.status = "cancelled";
+    if (!wasPublished) {
+      // Nobody has seen it yet, so it simply leaves the moderation queue.
+      trip.moderationStatus = "rejected";
+      trip.moderationComment = "Поездка отменена в канале до модерации";
+    }
+    const savedTrip = await this.tripsRepository.save(trip);
+    if (wasPublished) {
+      await this.tripUpdatesRepository.save(
+        this.tripUpdatesRepository.create({
+          tripId: savedTrip.id,
+          title: "Поездка отменена",
+          body: "Организатор отменил поездку в Telegram-канале.",
+        }),
+      );
+    }
+    return true;
+  }
+
+  async setImportedCoverImage(id: string, coverImage: UploadedCoverImage): Promise<void> {
+    await this.replaceCoverImage(id, coverImage);
+  }
+
+  private mapImportedFields(fields: ImportedTripFields): Partial<TripEntity> {
+    return {
+      title: fields.title,
+      description: fields.description,
+      startAt: fields.startAt,
+      startLocationName: fields.startLocationName,
+      startLat: fields.startLat === null ? null : fields.startLat.toFixed(6),
+      startLng: fields.startLng === null ? null : fields.startLng.toFixed(6),
+      distanceKm: fields.distanceKm === null ? null : fields.distanceKm.toFixed(1),
+      paceMin: fields.paceMin,
+      paceMax: fields.paceMax,
+      difficulty: fields.difficulty,
+      asphaltPercent: fields.asphaltPercent,
+      unpavedPercent: fields.unpavedPercent,
+      unpavedSurfaceDetails: fields.unpavedSurfaceDetails,
+      routeDescription: fields.routeDescription,
+      equipmentRequirements: fields.equipmentRequirements,
+      rules: fields.rules,
+      sourceUrl: fields.sourceUrl,
+      externalRegistrationUrl: fields.externalRegistrationUrl,
+    };
   }
 
   private mapWritableFields(dto: CreateTripDto): Partial<TripEntity> {
@@ -943,8 +1138,23 @@ export class TripsService {
     }
   }
 
-  private validateSurfaceComposition(asphaltPercent: number, unpavedPercent: number): void {
-    if (asphaltPercent + unpavedPercent !== 100) {
+  /** Only imported trips may keep distance, difficulty and surface as "Не указано". */
+  private validateUnknownFields(trip: TripEntity, dto: UpdateTripDto): void {
+    if (trip.source !== "native") return;
+    const clearsRequiredField = (
+      ["distanceKm", "difficulty", "asphaltPercent", "unpavedPercent"] as const
+    ).some((field) => dto[field] === null);
+    if (clearsRequiredField) {
+      throw new BadRequestException("Distance, difficulty and surface are required");
+    }
+  }
+
+  private validateSurfaceComposition(
+    asphaltPercent: number | null,
+    unpavedPercent: number | null
+  ): void {
+    if (asphaltPercent === null && unpavedPercent === null) return;
+    if (asphaltPercent === null || unpavedPercent === null || asphaltPercent + unpavedPercent !== 100) {
       throw new BadRequestException("Asphalt and unpaved percentages must add up to 100");
     }
   }
@@ -958,7 +1168,8 @@ export class TripsService {
     if (dto.startLocationName !== undefined) update.startLocationName = dto.startLocationName;
     if (dto.startLat !== undefined) update.startLat = String(dto.startLat);
     if (dto.startLng !== undefined) update.startLng = String(dto.startLng);
-    if (dto.distanceKm !== undefined) update.distanceKm = String(dto.distanceKm);
+    if (dto.distanceKm !== undefined)
+      update.distanceKm = dto.distanceKm === null ? null : String(dto.distanceKm);
     if (dto.paceMin !== undefined) update.paceMin = dto.paceMin;
     if (dto.paceMax !== undefined) update.paceMax = dto.paceMax;
     if (dto.difficulty !== undefined) update.difficulty = dto.difficulty;

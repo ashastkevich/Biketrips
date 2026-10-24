@@ -4,11 +4,12 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { MouseEvent } from "react";
-import type { ParticipantStatus, TripDetail } from "@biketrips/domain";
+import { canRegisterOnSite, type ParticipantStatus, type TripDetail } from "@biketrips/domain";
 
 import { countPendingRequests, formatPendingRequests } from "../lib/participant-groups";
 import { getTripEditHref, getTripHref } from "../lib/trip-links";
 import { Button, CapacityIndicator, CloseButton } from "./components";
+import { ExternalRegistration } from "./external-registration";
 import { JoinSignInButton } from "./join-sign-in-button";
 import { TripDetailsCard } from "./trip-details-card";
 import styles from "./trip-details.module.css";
@@ -306,6 +307,8 @@ export function TripDetailsModal({
                   ) : null}
                 </div>
               </>
+            ) : !canRegisterOnSite(trip) ? (
+              <ExternalRegistration trip={trip} />
             ) : (
               <>
                 <p className={styles.joinKicker}>
