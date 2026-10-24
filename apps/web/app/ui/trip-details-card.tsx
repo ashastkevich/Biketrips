@@ -38,6 +38,49 @@ function Fact({ icon, label, value }: { icon: string; label: string; value: stri
   );
 }
 
+function TelegramIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+      <path d="M20.7 3.6 2.9 10.5c-1.2.5-1.2 1.2-.2 1.5l4.6 1.4 1.8 5.4c.2.6.1.9.8.9.5 0 .7-.2 1-.5l2.2-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.5c.3-1.3-.5-1.9-1.9-1.6Zm-3.4 4-8.6 7.8-.3 3.4-1.5-4.6 10-6.3c.5-.3.9-.1.4.3Z" />
+    </svg>
+  );
+}
+
+/** Imported trips name the Telegram channel they came from, not an organizer on the site. */
+function TripSource({ trip }: { trip: TripDetail }) {
+  const channelUrl = trip.organizer.kind === "channel" ? trip.organizer.contactUrl : null;
+
+  return (
+    <div className={styles.source}>
+      <span className={styles.sourceIcon}>
+        <TelegramIcon />
+      </span>
+      <span>
+        <small>Источник · Telegram-канал</small>
+        <strong>
+          {channelUrl ? (
+            <a href={channelUrl} target="_blank" rel="noopener noreferrer">
+              {trip.organizer.displayName}
+            </a>
+          ) : (
+            trip.organizer.displayName
+          )}
+        </strong>
+      </span>
+      {trip.sourceUrl ? (
+        <a
+          className={styles.sourcePost}
+          href={trip.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Исходный пост ↗
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
 function joinClassNames(...values: Array<string | undefined>): string {
   return values.filter(Boolean).join(" ");
 }
@@ -184,18 +227,22 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
               </details>
             ) : null}
 
-            <Link className={styles.organizer} href={getOrganizerHref(trip.organizer.id)}>
-              <span className={styles.organizerAvatar} aria-hidden="true">
-                {trip.organizer.displayName.slice(0, 1)}
-              </span>
-              <span>
-                <small>Организатор</small>
-                <strong>
-                  {trip.organizer.displayName}
-                  {trip.organizer.isVerified ? <i title="Проверенный организатор">✓</i> : null}
-                </strong>
-              </span>
-            </Link>
+            {trip.source === "native" ? (
+              <Link className={styles.organizer} href={getOrganizerHref(trip.organizer.id)}>
+                <span className={styles.organizerAvatar} aria-hidden="true">
+                  {trip.organizer.displayName.slice(0, 1)}
+                </span>
+                <span>
+                  <small>Организатор</small>
+                  <strong>
+                    {trip.organizer.displayName}
+                    {trip.organizer.isVerified ? <i title="Проверенный организатор">✓</i> : null}
+                  </strong>
+                </span>
+              </Link>
+            ) : (
+              <TripSource trip={trip} />
+            )}
           </div>
 
           {aside}

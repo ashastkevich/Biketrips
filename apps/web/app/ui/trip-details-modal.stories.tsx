@@ -35,6 +35,26 @@ export const Unlimited: Story = {
   },
 };
 
+export const Imported: Story = {
+  name: "Импорт из Telegram",
+  args: {
+    trip: {
+      ...storyTrips[0]!,
+      source: "telegram_import",
+      sourceUrl: "https://t.me/example_rides/123",
+      externalRegistrationUrl: "https://t.me/example_organizer",
+      capacity: null,
+      organizer: {
+        ...storyTrips[0]!.organizer,
+        displayName: "Велопокатушки Москва",
+        isVerified: false,
+        kind: "channel",
+        contactUrl: "https://t.me/example_rides",
+      },
+    },
+  },
+};
+
 export const Waitlist: Story = {
   name: "Лист ожидания",
   args: { trip: storyTrips[1]!, coverImage: "/img/trip-cover-route.webp" },

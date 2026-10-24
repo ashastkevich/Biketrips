@@ -13,30 +13,25 @@ export function ExternalRegistration({ trip }: { trip: TripDetail }) {
       <p className={styles.joinKicker}>
         {trip.status === "cancelled" ? "Поездка отменена" : "Запись у организатора"}
       </p>
+      <div className={styles.importNotice}>
+        <strong>Анонс из Telegram</strong>
+        <p>
+          Поездка опубликована в канале{" "}
+          {channelUrl ? (
+            <a href={channelUrl} target="_blank" rel="noopener noreferrer">
+              {trip.organizer.displayName}
+            </a>
+          ) : (
+            trip.organizer.displayName
+          )}
+          , а не создана на сайте. Запись, вопросы и изменения — у организатора в канале.
+        </p>
+      </div>
       {registrationUrl && trip.status !== "cancelled" ? (
         <LinkButton className={styles.joinButton} href={registrationUrl} size="large">
           Записаться у организатора
         </LinkButton>
       ) : null}
-      <p className={styles.externalNote}>
-        Анонс из Telegram-канала{" "}
-        {channelUrl ? (
-          <a href={channelUrl} target="_blank" rel="noopener noreferrer">
-            {trip.organizer.displayName}
-          </a>
-        ) : (
-          trip.organizer.displayName
-        )}
-        . Вопросы и запись — у организатора.
-        {trip.sourceUrl ? (
-          <>
-            {" "}
-            <a href={trip.sourceUrl} target="_blank" rel="noopener noreferrer">
-              Исходный пост
-            </a>
-          </>
-        ) : null}
-      </p>
     </>
   );
 }
