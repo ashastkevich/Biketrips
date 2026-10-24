@@ -78,7 +78,7 @@ First classify the post:
 - multi_day_tour: a trip spanning several days, usually paid and with lodging.
 - cancellation: the post says a ride is cancelled ("отмена", crossed out). Still fill trip so we can match it to the ride.
 - not_cycling: hikes ("пешка", "поход"), walking tours, road trips by car or bus, running, board games, conferences, sales, track racing ads, park news and other non-ride content.
-- other: anything else (trip reports, channel announcements, adverts for paid tours).
+- other: anything else (races and competitions, trip reports, channel announcements, adverts for paid tours and shops).
 
 For single_trip, multi_day_tour and cancellation fill trip; otherwise set trip to null.
 
@@ -102,7 +102,7 @@ Rules for trip fields:
 - routeUrl: a link to the track or route map (Strava, Komoot, RideWithGPS, Yandex route), if any.
 - routeDescription, equipmentRequirements, rules: short Russian texts if the post has them.
 
-confidence reflects how sure you are about kind and the key fields (date, time, start, distance). Write kindReason and notes in Russian; use notes for ambiguities a moderator should check. Keep place names exactly as written in the post.`;
+confidence reflects how sure you are about kind and the key fields (date, time, start, distance). Write kindReason and notes in Russian; use notes only for real ambiguities a moderator should check (an unclear date, several distances, a guessed meeting point). Do not mention fields that the post simply does not state, such as price. Keep place names exactly as written in the post.`;
 
 export interface PostExtractionResult {
   extraction: PostExtraction | null;
