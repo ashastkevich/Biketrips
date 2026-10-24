@@ -66,15 +66,9 @@
   padding: 54px 48px 38px;
 }
 
-/* Imported posters: the whole image to the right of the title, on a blurred copy. */
+/* Imported posters: the whole image behind the title, on a blurred copy of itself. */
 .heroFit {
   min-height: 380px;
-  align-items: stretch;
-}
-
-.heroFit .heroCopy {
-  flex: 1 1 auto;
-  align-self: flex-end;
 }
 
 .heroBackdrop {
@@ -87,17 +81,8 @@
   transform: scale(1.15);
 }
 
-.heroPoster {
-  position: relative;
-  z-index: 1;
-  order: 1;
-  flex: 0 0 min(42%, 420px);
-  margin: 24px 24px 24px 0;
-}
-
-.heroPosterImage {
+.heroImageFit {
   object-fit: contain;
-  filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.35));
 }
 
 .eyebrow {
@@ -709,19 +694,7 @@
   }
 
   .heroFit {
-    flex-direction: column;
-  }
-
-  .heroPoster {
-    flex: none;
-    order: -1;
-    aspect-ratio: 4 / 3;
-    margin: 64px 22px 0;
-  }
-
-  .heroFit .heroCopy {
-    align-self: stretch;
-    padding-top: 22px;
+    min-height: 360px;
   }
 
   .heroCopy {
