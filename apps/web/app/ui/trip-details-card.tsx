@@ -70,8 +70,8 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
       hour: "2-digit",
       minute: "2-digit",
     }).format(new Date(trip.startDateTime));
-    // Imported posters are square or portrait: show them whole behind the title,
-    // on a blurred copy of themselves, instead of cropping them to the strip.
+    // Imported posters are square or portrait: show them whole next to the title,
+    // on a blurred copy of themselves, instead of cropping them behind it.
     const fitCover = Boolean(coverImage) && trip.source !== "native";
     const hasRouteConditions = Boolean(
       trip.routeDescription ||
@@ -92,19 +92,9 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
         {overlay}
 
         <div className={joinClassNames(styles.hero, fitCover ? styles.heroFit : undefined)}>
-          {coverImage && fitCover ? (
-            <Image
-              className={styles.heroBackdrop}
-              src={coverImage}
-              alt=""
-              aria-hidden="true"
-              fill
-              sizes={tripHeroImageSizes}
-            />
-          ) : null}
           {coverImage ? (
             <Image
-              className={joinClassNames(styles.heroImage, fitCover ? styles.heroImageFit : undefined)}
+              className={fitCover ? styles.heroBackdrop : styles.heroImage}
               src={coverImage}
               alt=""
               fill
@@ -115,6 +105,17 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
             />
           ) : null}
           <div className={styles.heroShade} />
+          {coverImage && fitCover ? (
+            <div className={styles.heroPoster}>
+              <Image
+                className={styles.heroPosterImage}
+                src={coverImage}
+                alt=""
+                fill
+                sizes={tripHeroImageSizes}
+              />
+            </div>
+          ) : null}
           <div className={styles.heroCopy}>
             <div className={styles.eyebrow}>
               <span>{trip.city}</span>
