@@ -1,6 +1,10 @@
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   transpilePackages: ["@biketrips/api-client", "@biketrips/domain"],
+  experimental: {
+    // Lets `next upgrade` agents limit automatic upgrades to security fixes.
+    agentUpgrade: "security",
+  },
   images: {
     // AVIF is noticeably smaller than WebP; browsers without it still get WebP.
     formats: ["image/avif", "image/webp"],
