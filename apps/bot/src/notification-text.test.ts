@@ -32,6 +32,21 @@ describe("notificationText", () => {
     expect(message.text).toContain("https://biketrips.ru/trips/lesnoy-marshrut");
   });
 
+  it("summarizes an import run for the moderators", () => {
+    const message = notificationText(
+      job("import_summary", { sourceHandle: "MskVelo", created: 3, updated: 1, cancelled: 0 }),
+      publicWebUrl,
+    );
+
+    expect(message.subject).toBe("Новые поездки из Telegram на модерации");
+    expect(message.text).toBe(
+      "Импорт из Telegram @MskVelo:\n" +
+        "• новые — 3 поездки, ждут проверки\n" +
+        "• изменены в канале — 1 поездка\n" +
+        "https://biketrips.ru/admin/moderation",
+    );
+  });
+
   it("includes start details in a cancellation", () => {
     const message = notificationText(
       job("trip_cancelled", {

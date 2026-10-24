@@ -12,6 +12,7 @@ export interface NotificationJob {
     | "trip_cancelled"
     | "participant_joined"
     | "moderation_submitted"
+    | "import_summary"
     | "trip_approved"
     | "trip_changes_requested"
     | "trip_rejected";
@@ -45,6 +46,20 @@ function formatStartAt(iso: string, timezone: string): string {
     minute: "2-digit",
     timeZone: timezone,
   }).format(new Date(iso));
+}
+
+function countField(payload: Record<string, unknown>, key: string): number {
+  const value = payload[key];
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function pluralizeTrips(count: number): string {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  if (lastTwo >= 11 && lastTwo <= 14) return `${count} поездок`;
+  if (last === 1) return `${count} поездка`;
+  if (last >= 2 && last <= 4) return `${count} поездки`;
+  return `${count} поездок`;
 }
 
 function formatKm(value: number): string {
@@ -156,6 +171,23 @@ export function notificationText(job: NotificationJob, publicWebUrl: string): No
         subject: "Новая поездка на модерации",
         text: `Новая поездка «${title}» ожидает проверки.\n${publicWebUrl}/admin/moderation`,
       };
+    case "import_summary": {
+      const source = stringField(job.payload, "sourceHandle");
+      const created = countField(job.payload, "created");
+      const updated = countField(job.payload, "updated");
+      const cancelled = countField(job.payload, "cancelled");
+      const lines = [
+        `Импорт из Telegram${source ? ` @${source}` : ""}:`,
+        created > 0 ? `• новые — ${pluralizeTrips(created)}, ждут проверки` : null,
+        updated > 0 ? `• изменены в канале — ${pluralizeTrips(updated)}` : null,
+        cancelled > 0 ? `• отменены в канале — ${pluralizeTrips(cancelled)}` : null,
+        `${publicWebUrl}/admin/moderation`,
+      ];
+      return {
+        subject: created > 0 ? "Новые поездки из Telegram на модерации" : "Изменения в импортированных поездках",
+        text: lines.filter(Boolean).join("\n"),
+      };
+    }
     case "trip_approved":
       return {
         subject: "Поездка одобрена",

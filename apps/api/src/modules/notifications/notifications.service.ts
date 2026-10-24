@@ -216,22 +216,53 @@ export class NotificationsService {
     });
   }
 
+  /** Admins hear about trips to review in Telegram, or by email when they have no Telegram. */
   async enqueueModerationSubmitted(trip: TripEntity): Promise<void> {
-    const admins = await this.usersRepository.find({ where: { role: "admin" } });
+    const admins = await this.findAdmins();
     await Promise.all(
-      admins.map((admin) =>
-        this.enqueueOnce({
-          channel: "telegram",
-          type: "moderation_submitted",
+      admins.flatMap((admin) =>
+        resolveChannels(admin, false).map((channel) =>
+          this.enqueueOnce({
+            channel,
+            type: "moderation_submitted",
+            recipientUserId: admin.id,
+            tripId: trip.id,
+            payload: {
+              title: trip.title,
+              publicSlug: trip.publicSlug,
+            },
+          }),
+        ),
+      ),
+    );
+  }
+
+  /** One message per import run that brought anything for the moderators to look at. */
+  async enqueueImportSummary(
+    sourceHandle: string,
+    result: { created: number; updated: number; cancelled: number },
+  ): Promise<void> {
+    if (result.created + result.updated + result.cancelled === 0) return;
+    const admins = await this.findAdmins();
+    const jobs = admins.flatMap((admin) =>
+      resolveChannels(admin, false).map((channel) =>
+        this.jobsRepository.create({
+          channel,
+          type: "import_summary",
           recipientUserId: admin.id,
-          tripId: trip.id,
-          payload: {
-            title: trip.title,
-            publicSlug: trip.publicSlug,
-          },
+          tripId: null,
+          payload: { sourceHandle, ...result },
         }),
       ),
     );
+    if (jobs.length > 0) await this.jobsRepository.save(jobs);
+  }
+
+  private findAdmins(): Promise<UserEntity[]> {
+    return this.usersRepository.find({
+      where: { role: "admin" },
+      relations: { telegramAccounts: true },
+    });
   }
 
   async enqueueModerationDecision(

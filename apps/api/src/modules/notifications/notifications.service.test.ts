@@ -14,6 +14,9 @@ const organizerUserId = "44444444-4444-4444-8444-444444444444";
 const telegramUserId = "22222222-2222-4222-8222-222222222222";
 const emailUserId = "33333333-3333-4333-8333-333333333333";
 const silentUserId = "55555555-5555-4555-8555-555555555555";
+const telegramAdminId = "66666666-6666-4666-8666-666666666666";
+const emailAdminId = "77777777-7777-4777-8777-777777777777";
+const silentAdminId = "88888888-8888-4888-8888-888888888888";
 const day = 24 * 60 * 60 * 1000;
 
 afterEach(() => {
@@ -126,6 +129,32 @@ describe("NotificationsService", () => {
     expect(context.jobs.map((job) => [job.type, job.recipientUserId, job.channel])).toEqual([
       ["trip_approved", organizerUserId, "telegram"],
       ["trip_approved", organizerUserId, "email"],
+    ]);
+  });
+
+  it("tells admins about trips to review by Telegram, or by email without Telegram", async () => {
+    const context = createContext();
+
+    await context.service.enqueueModerationSubmitted(createTrip());
+    await context.service.enqueueModerationSubmitted(createTrip());
+
+    expect(context.jobs.map((job) => [job.type, job.recipientUserId, job.channel])).toEqual([
+      ["moderation_submitted", telegramAdminId, "telegram"],
+      ["moderation_submitted", emailAdminId, "email"],
+    ]);
+  });
+
+  it("sends admins one summary per import run that brought something", async () => {
+    const context = createContext();
+
+    await context.service.enqueueImportSummary("MskVelo", { created: 0, updated: 0, cancelled: 0 });
+    await context.service.enqueueImportSummary("MskVelo", { created: 3, updated: 1, cancelled: 0 });
+
+    expect(
+      context.jobs.map((job) => [job.type, job.recipientUserId, job.channel, job.tripId, job.payload]),
+    ).toEqual([
+      ["import_summary", telegramAdminId, "telegram", null, { sourceHandle: "MskVelo", created: 3, updated: 1, cancelled: 0 }],
+      ["import_summary", emailAdminId, "email", null, { sourceHandle: "MskVelo", created: 3, updated: 1, cancelled: 0 }],
     ]);
   });
 
@@ -246,6 +275,9 @@ function createContext() {
     createUser({ id: telegramUserId, telegram: true, email: true }),
     createUser({ id: emailUserId, email: true }),
     createUser({ id: silentUserId }),
+    createUser({ id: telegramAdminId, telegram: true, email: true, role: "admin" }),
+    createUser({ id: emailAdminId, email: true, role: "admin" }),
+    createUser({ id: silentAdminId, role: "admin" }),
   ];
   const participants = [
     createParticipant(organizerUserId, "confirmed"),
@@ -277,7 +309,9 @@ function createContext() {
     }),
   };
   const usersRepository = {
-    find: vi.fn(async () => []),
+    find: vi.fn(async ({ where }: { where: { role?: string } }) =>
+      users.filter((user) => !where.role || user.role === where.role),
+    ),
     findOne: vi.fn(async ({ where }: { where: { id: string } }) =>
       users.find((user) => user.id === where.id) ?? null,
     ),
@@ -330,9 +364,15 @@ function createJob(input: Partial<NotificationJobEntity> = {}): NotificationJobE
   };
 }
 
-function createUser(input: { id: string; telegram?: boolean; email?: boolean }): UserEntity {
+function createUser(input: {
+  id: string;
+  telegram?: boolean;
+  email?: boolean;
+  role?: "user" | "admin";
+}): UserEntity {
   return {
     id: input.id,
+    role: input.role ?? "user",
     email: input.email ? `${input.id}@example.com` : null,
     emailVerifiedAt: input.email ? new Date() : null,
     telegramAccounts: input.telegram ? [{ telegramId: "100500" }] : [],

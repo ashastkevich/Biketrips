@@ -11,6 +11,7 @@ export type NotificationJobType =
   | "trip_cancelled"
   | "participant_joined"
   | "moderation_submitted"
+  | "import_summary"
   | "trip_approved"
   | "trip_changes_requested"
   | "trip_rejected";

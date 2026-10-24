@@ -5,6 +5,7 @@ import type { Repository } from "typeorm";
 
 import type { ImportSourceEntity } from "../../infrastructure/database/entities/import-source.entity.js";
 import type { ImportedPostEntity } from "../../infrastructure/database/entities/imported-post.entity.js";
+import type { NotificationsService } from "../notifications/notifications.service.js";
 import type { TripsService } from "../trips/trips.service.js";
 import type { TelegramChannelPost } from "./telegram-channel-preview.js";
 import type { TripImportGateway } from "./trip-import.gateway.js";
@@ -108,13 +109,15 @@ function setup(options: { existing?: Partial<ImportedPostEntity>; result?: PostE
     }),
     downloadImage: vi.fn().mockResolvedValue({ contentType: "image/jpeg", buffer: Buffer.from("jpg") }),
   };
+  const notificationsService = { enqueueImportSummary: vi.fn().mockResolvedValue(undefined) };
   const service = new TripImportsService(
     sourcesRepository as unknown as Repository<ImportSourceEntity>,
     postsRepository as unknown as Repository<ImportedPostEntity>,
     tripsService as unknown as TripsService,
     gateway as unknown as TripImportGateway,
+    notificationsService as unknown as NotificationsService,
   );
-  return { service, saved, tripsService, gateway, sourcesRepository };
+  return { service, saved, tripsService, gateway, sourcesRepository, notificationsService };
 }
 
 describe("TripImportsService", () => {
@@ -140,6 +143,17 @@ describe("TripImportsService", () => {
       expect.objectContaining({ mimetype: "image/jpeg" }),
     );
     expect(saved.at(-1)).toMatchObject({ status: "imported", tripId: "trip-1", kind: "single_trip" });
+  });
+
+  it("tells the moderators what a run brought", async () => {
+    const { service, notificationsService } = setup();
+
+    await service.runSource(source);
+
+    expect(notificationsService.enqueueImportSummary).toHaveBeenCalledWith(
+      "MskVelo",
+      expect.objectContaining({ created: 1, updated: 0, cancelled: 0 }),
+    );
   });
 
   it("skips posts that are not single rides or already took place", async () => {

@@ -7,6 +7,7 @@ import { Repository } from "typeorm";
 
 import { ImportSourceEntity } from "../../infrastructure/database/entities/import-source.entity.js";
 import { ImportedPostEntity } from "../../infrastructure/database/entities/imported-post.entity.js";
+import { NotificationsService } from "../notifications/notifications.service.js";
 import { TripsService, type ImportedTripFields } from "../trips/trips.service.js";
 import type { TelegramChannelPost } from "./telegram-channel-preview.js";
 import { TripImportGateway } from "./trip-import.gateway.js";
@@ -48,6 +49,8 @@ export class TripImportsService {
     private readonly tripsService: TripsService,
     @Inject(TripImportGateway)
     private readonly gateway: TripImportGateway,
+    @Inject(NotificationsService)
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async runEnabledSources(): Promise<ImportRunResult> {
@@ -81,6 +84,12 @@ export class TripImportsService {
     }
     source.lastRunAt = new Date();
     await this.sourcesRepository.save(source);
+    try {
+      await this.notificationsService.enqueueImportSummary(source.handle, result);
+    } catch (error) {
+      // The import itself succeeded; a missed summary only delays the moderators.
+      console.error(`[BikeTrips] Could not queue the import summary for @${source.handle}`, error);
+    }
     return result;
   }
 
