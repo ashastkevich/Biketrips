@@ -39,7 +39,6 @@ function createPost(input: Partial<TelegramChannelPost> = {}): TelegramChannelPo
 
 const trip: ExtractedTrip = {
   title: "Докатиста",
-  description: "Вечерняя катушка",
   startDate: "2099-10-21",
   startTime: "19:45",
   endDate: null,

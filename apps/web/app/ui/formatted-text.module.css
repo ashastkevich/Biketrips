@@ -1,0 +1,10 @@
+.text {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.text a {
+  color: var(--green-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

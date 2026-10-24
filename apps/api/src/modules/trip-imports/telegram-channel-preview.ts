@@ -102,8 +102,10 @@ function readBackgroundImageUrl(element: HTMLElement | null): string | null {
   return url ?? null;
 }
 
-// Keeps line breaks and link targets: announcements often hide the chat or
-// route link behind words like "тут" or "Маршрут".
+// Keeps the post as written: line breaks, emoji and named links. Links become
+// Markdown "[label](url)" so the site can render them; announcements often hide
+// the chat or route behind words like "тут" or "Маршрут". Hashtag search links
+// stay plain text.
 export function messageTextToPlainText(element: HTMLElement): string {
   const clone = parse(element.outerHTML);
 
@@ -113,7 +115,14 @@ export function messageTextToPlainText(element: HTMLElement): string {
     const isVisibleUrl =
       label.replace(/^https?:\/\//, "").replace(/\/$/, "") ===
       href.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    link.replaceWith(escapeHtml(isVisibleUrl || !href ? label : `${label} [${href}]`));
+    const isWebLink = /^https?:\/\//i.test(href);
+    link.replaceWith(
+      escapeHtml(
+        isVisibleUrl || !isWebLink || !label
+          ? label || href
+          : `[${label.replace(/[[\]]/g, "")}](${href.replace(/\(/g, "%28").replace(/\)/g, "%29")})`
+      )
+    );
   }
 
   const html = clone.innerHTML.replace(/<br\s*\/?>/gi, "\n");

@@ -31,7 +31,6 @@ const nullableNumber = z.number().nullable();
 
 export const extractedTripSchema = z.object({
   title: z.string(),
-  description: z.string(),
   startDate: nullableString,
   startTime: nullableString,
   endDate: nullableString,
@@ -70,7 +69,7 @@ export const postExtractionSchema = z.object({
 export type ExtractedTrip = z.infer<typeof extractedTripSchema>;
 export type PostExtraction = z.infer<typeof postExtractionSchema>;
 
-export const extractionSystemPrompt = `You turn Russian-language Telegram announcements of group bike rides into structured data for BikeTrips, a Moscow ride catalogue. Each request contains one channel post.
+export const extractionSystemPrompt = `You turn Russian-language Telegram announcements of group bike rides into structured data for BikeTrips, a Moscow ride catalogue. Each request contains one channel post. Links in the post appear as Markdown, [label](url). The site shows the post text itself as the trip description, so you only extract fields.
 
 First classify the post:
 - single_trip: an announcement of one ride (one day, one start). This is what we import.
@@ -85,14 +84,13 @@ For single_trip, multi_day_tour and cancellation fill trip; otherwise set trip t
 Rules for trip fields:
 - Use only what the post states or clearly implies. Leave a field null rather than invent it.
 - title: a short ride name in Russian without emojis or dates, e.g. "Красногорск — Звенигород".
-- description: the announcement text cleaned up for a website: keep the organizer's wording and every practical detail, drop emojis used as bullets, decorative symbols, channel boilerplate and repeated lines. Russian, plain text with line breaks.
 - startDate / endDate: YYYY-MM-DD. Posts rarely include the year: pick the nearest date on or after the post's publication date that matches the day, month and weekday. endDate only for multi-day trips.
-- startTime: HH:MM, Moscow time. When the post gives both a meeting time and a start time, use the meeting time and mention the start time in description.
-- startLocationName: the meeting point as written (station, exit, landmark). If there are several pickup points, use the first and keep the rest in description.
+- startTime: HH:MM, Moscow time. When the post gives both a meeting time and a start time, use the meeting time.
+- startLocationName: the meeting point as written (station, exit, landmark). If there are several pickup points, use the first.
 - startLat / startLng: only from coordinates in the text or in a map link (Yandex links put longitude first in "point=" and "ll=" parameters). Otherwise null.
 - distanceKm: the total distance; for "~35" or "±87" use the number. For "N км в одну сторону" use N and mention it in notes.
 - paceMinKmh / paceMaxKmh: average speed range in km/h ("ССД 15-20" means 15 and 20). One number: put it in both.
-- asphaltPercent / unpavedPercent: integers summing to 100 when the post gives the surface mix, even in playful wording ("смесь битумов 85%, такое себе 15%" means 85/15). If the parts add up to slightly more than 100, drop the smallest. "В основном асфальт" alone is not enough for numbers: leave null and describe it in description.
+- asphaltPercent / unpavedPercent: integers summing to 100 when the post gives the surface mix, even in playful wording ("смесь битумов 85%, такое себе 15%" means 85/15). If the parts add up to slightly more than 100, drop the smallest. "В основном асфальт" alone is not enough for numbers: leave null.
 - unpavedSurfaceDetails: only surfaces the post mentions (hardpack = укатанный грунт, gravel = гравий, crushed_stone = щебень, sand = песок, forest_trails = лесные тропы/трейлы, mud = грязь, concrete_slabs = бетонные плиты).
 - difficulty: beginner (short, easy, newcomers welcome), easy, medium (for regular riders, some climbs), hard (long distance, noticeable climbing), sport (high speed, fitness required). Set difficultyIsGuess to true when you infer it from distance and pace instead of the post naming it.
 - isPaid / priceText: whether participation costs money and the price as written.
@@ -246,7 +244,8 @@ export function buildTripDraft(post: TelegramChannelPost, trip: ExtractedTrip): 
 
   const draft: ImportedTripDraft = {
     title: trip.title,
-    description: trip.description,
+    // The post itself, with its line breaks, emoji and links, is the trip description.
+    description: post.text,
     startAt,
     endDate: trip.endDate,
     startLocationName: trip.startLocationName,

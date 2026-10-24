@@ -23,7 +23,6 @@ const post: TelegramChannelPost = {
 
 const trip: ExtractedTrip = {
   title: "Мещерский парк через Барвиху",
-  description: "Описание",
   startDate: "2026-10-17",
   startTime: "9:15",
   endDate: null,

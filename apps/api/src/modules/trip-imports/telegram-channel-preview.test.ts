@@ -17,7 +17,7 @@ describe("parseChannelPreviewPage", () => {
     const html = messageHtml(
       19590,
       `<i class="emoji"><b>🗓</b></i> Вт, 13.10 — 19:30<br/>Старт: <a href="https://yandex.ru/maps/?ll=37.5&amp;z=15">Белорусская</a><br/>` +
-        `Чат: <a href="https://t.me/gravelmtb">https://t.me/gravelmtb</a>&nbsp;&#33;`,
+        `Чат: <a href="https://t.me/gravelmtb">https://t.me/gravelmtb</a>&nbsp;&#33; <a href="?q=%23список">#список</a>`,
       `<a class="tgme_widget_message_photo_wrap" style="width:453px;background-image:url('https://cdn4.telesco.pe/file/abc.jpg')"></a><span class="tgme_widget_message_from_author">Ольга_SV</span>
        <a class="tgme_widget_message_forwarded_from_name" href="https://t.me/club/5">Клуб</a>`
     );
@@ -29,7 +29,7 @@ describe("parseChannelPreviewPage", () => {
         url: "https://t.me/MskVelo/19590",
         postedAt: "2026-10-11T17:31:37.000Z",
         edited: false,
-        text: "🗓 Вт, 13.10 — 19:30\nСтарт: Белорусская [https://yandex.ru/maps/?ll=37.5&z=15]\nЧат: https://t.me/gravelmtb !",
+        text: "🗓 Вт, 13.10 — 19:30\nСтарт: [Белорусская](https://yandex.ru/maps/?ll=37.5&z=15)\nЧат: https://t.me/gravelmtb ! #список",
         hasMedia: true,
         coverUrl: "https://cdn4.telesco.pe/file/abc.jpg",
         authorSignature: "Ольга_SV",

@@ -139,3 +139,7 @@
 .importNote {
   white-space: pre-wrap;
 }
+
+.facts dd p {
+  margin: 0;
+}

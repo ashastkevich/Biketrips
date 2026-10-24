@@ -293,7 +293,11 @@ function emptyResult(): ImportRunResult {
 /** The first line of a post without the link targets the preview parser appends. */
 function excerptOf(text: string): string {
   const firstLine = text.split("\n").find((line) => line.trim()) ?? "";
-  return firstLine.replace(/\s*\[(?:https?:\/\/|\?q=)[^\]]*\]/g, "").trim().slice(0, 120);
+  return firstLine
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\s*\[(?:https?:\/\/|\?q=)[^\]]*\]/g, "")
+    .trim()
+    .slice(0, 120);
 }
 
 function hashText(text: string): string {

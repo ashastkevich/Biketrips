@@ -12,6 +12,7 @@ import {
 } from "../../lib/labels";
 import { getTripEditHref } from "../../lib/trip-links";
 import { Alert, Button, LinkButton } from "../../ui/components";
+import { FormattedText } from "../../ui/formatted-text";
 import styles from "./moderation.module.css";
 
 export const metadata: Metadata = {
@@ -149,7 +150,9 @@ export default async function ModerationPage({ searchParams }: ModerationPagePro
                     ) : null}
                     <div>
                       <dt>Описание</dt>
-                      <dd>{trip.description}</dd>
+                      <dd>
+                        <FormattedText text={trip.description} />
+                      </dd>
                     </div>
                     <div>
                       <dt>Маршрут</dt>

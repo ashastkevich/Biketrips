@@ -14,6 +14,7 @@ import {
   updateParticipantStatus,
   updateTripStatus,
 } from "../../lib/api";
+import { formattedTextToPlain } from "../../lib/formatted-text";
 import { difficultyLabels } from "../../lib/labels";
 import { baseOpenGraph, noIndexMetadata } from "../../lib/site";
 import { DEFAULT_TRIP_TIME_ZONE } from "../../lib/trip-time";
@@ -106,7 +107,7 @@ function describeTrip(trip: TripDetail): string {
   if (trip.startLocationName) parts.push(`старт: ${trip.startLocationName}`);
 
   const summary = `${parts.join(", ")}.`;
-  const details = trip.description.replace(/\s+/g, " ").trim();
+  const details = formattedTextToPlain(trip.description).replace(/\s+/g, " ").trim();
   const text = details ? `${summary} ${details}` : summary;
 
   return text.length > 200 ? `${text.slice(0, 197).trimEnd()}…` : text;

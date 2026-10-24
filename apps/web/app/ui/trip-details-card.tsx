@@ -10,6 +10,7 @@ import {
   unpavedSurfaceDetailLabels,
 } from "../lib/labels";
 import { getOrganizerHref } from "../lib/organizer-links";
+import { FormattedText } from "./formatted-text";
 import { DEFAULT_TRIP_TIME_ZONE } from "../lib/trip-time";
 import { tripHeroImageSizes } from "./trip-hero-image";
 import { TripStartRoute } from "./trip-start-route";
@@ -130,7 +131,7 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
 
             <section className={styles.section}>
               <h3>О поездке</h3>
-              <p>{trip.description}</p>
+              <FormattedText text={trip.description} />
             </section>
 
             <TripStartRoute
