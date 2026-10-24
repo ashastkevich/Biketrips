@@ -55,6 +55,26 @@
   object-fit: cover;
 }
 
+/* Imported posters: the whole image on a blurred, darkened copy of itself. */
+.coverFit {
+  height: auto;
+  aspect-ratio: 4 / 3;
+}
+
+.coverFit .coverImage {
+  object-fit: contain;
+}
+
+.coverBackdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(16px) brightness(0.7);
+  transform: scale(1.15);
+}
+
 .coverShade {
   background: linear-gradient(180deg, transparent, rgba(5, 18, 11, 0.52));
 }

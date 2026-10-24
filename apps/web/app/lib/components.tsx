@@ -242,6 +242,7 @@ export function getTripCardProps(
     averageSpeed,
     maxParticipants: trip.capacity ?? undefined,
     coverImage: getTripImage(trip),
+    fitCover: trip.source !== "native",
     href: getTripHref(trip),
   };
 }

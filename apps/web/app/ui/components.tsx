@@ -230,6 +230,11 @@ export interface TripCardProps {
   averageSpeed: string | number;
   maxParticipants?: string | number;
   coverImage?: string;
+  /**
+   * Show the whole cover on a blurred copy of itself in a taller 4:3 frame instead of
+   * cropping it to the strip. Imported posters are square or portrait.
+   */
+  fitCover?: boolean;
   href?: string;
   onOpen?: () => void;
 }
@@ -244,6 +249,7 @@ export function TripCard({
   averageSpeed,
   maxParticipants,
   coverImage,
+  fitCover = false,
   href,
   onOpen,
 }: TripCardProps) {
@@ -284,7 +290,23 @@ export function TripCard({
         }
       } : undefined}
     >
-      <div className={classes(tripCardStyles.cover, !coverImage && tripCardStyles.coverFallback)}>
+      <div
+        className={classes(
+          tripCardStyles.cover,
+          !coverImage && tripCardStyles.coverFallback,
+          fitCover && coverImage && tripCardStyles.coverFit,
+        )}
+      >
+        {coverImage && fitCover ? (
+          <Image
+            className={tripCardStyles.coverBackdrop}
+            src={coverImage}
+            alt=""
+            aria-hidden="true"
+            fill
+            sizes="(max-width: 760px) 100vw, 360px"
+          />
+        ) : null}
         {coverImage ? (
           <Image
             className={tripCardStyles.coverImage}
