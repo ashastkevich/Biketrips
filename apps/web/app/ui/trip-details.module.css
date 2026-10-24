@@ -30,7 +30,7 @@
 
 .hero {
   position: relative;
-  min-height: 300px;
+  min-height: 380px;
   display: flex;
   align-items: flex-end;
   overflow: hidden;
@@ -68,7 +68,6 @@
 
 /* Imported posters: the whole image to the right of the title, on a blurred copy. */
 .heroFit {
-  min-height: 380px;
   align-items: stretch;
 }
 
@@ -705,7 +704,7 @@
   }
 
   .hero {
-    min-height: 270px;
+    min-height: 360px;
   }
 
   .heroFit {

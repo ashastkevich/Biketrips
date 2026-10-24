@@ -34,7 +34,7 @@
 
 .cover {
   position: relative;
-  height: 148px;
+  aspect-ratio: 4 / 3;
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
@@ -56,11 +56,6 @@
 }
 
 /* Imported posters: the whole image on a blurred, darkened copy of itself. */
-.coverFit {
-  height: auto;
-  aspect-ratio: 4 / 3;
-}
-
 .coverFit .coverImage {
   object-fit: contain;
 }

@@ -231,8 +231,8 @@ export interface TripCardProps {
   maxParticipants?: string | number;
   coverImage?: string;
   /**
-   * Show the whole cover on a blurred copy of itself in a taller 4:3 frame instead of
-   * cropping it to the strip. Imported posters are square or portrait.
+   * Show the whole cover on a blurred copy of itself instead of cropping it to the
+   * 4:3 frame. Imported posters are square or portrait.
    */
   fitCover?: boolean;
   href?: string;
