@@ -38,6 +38,18 @@ describe("parseChannelPreviewPage", () => {
     ]);
   });
 
+  it("keeps bold, italic and links but not emoji wrappers", () => {
+    const html = messageHtml(
+      19700,
+      `<i class="emoji" style="background-image:url('//telegram.org/img/emoji/40/E29AA0.png')"><b>⚠️</b></i> ` +
+        `<b>День 2:&nbsp;</b>спуск<br/><i>Приходи</i> к <b><a href="https://t.me/x">нам</a></b><b> </b>`
+    );
+
+    expect(parseChannelPreviewPage(html)[0]?.text).toBe(
+      "⚠️ <b>День 2: </b>спуск\n<i>Приходи</i> к <b>[нам](https://t.me/x)</b>"
+    );
+  });
+
   it("skips service messages without a date", () => {
     const html = `<div class="tgme_widget_message" data-post="MskVelo/1"><div class="tgme_widget_message_text">Канал создан</div></div>`;
 

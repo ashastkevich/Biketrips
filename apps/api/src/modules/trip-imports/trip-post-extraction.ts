@@ -69,7 +69,7 @@ export const postExtractionSchema = z.object({
 export type ExtractedTrip = z.infer<typeof extractedTripSchema>;
 export type PostExtraction = z.infer<typeof postExtractionSchema>;
 
-export const extractionSystemPrompt = `You turn Russian-language Telegram announcements of group bike rides into structured data for BikeTrips, a Moscow ride catalogue. Each request contains one channel post. Links in the post appear as Markdown, [label](url). The site shows the post text itself as the trip description, so you only extract fields.
+export const extractionSystemPrompt = `You turn Russian-language Telegram announcements of group bike rides into structured data for BikeTrips, a Moscow ride catalogue. Each request contains one channel post. Links in the post appear as Markdown, [label](url), and bold, italic, underlined and struck-through text as <b>, <i>, <u> and <s> tags; leave both out of the extracted values. The site shows the post text itself as the trip description, so you only extract fields.
 
 First classify the post:
 - single_trip: an announcement of one ride (one day, one start). This is what we import.

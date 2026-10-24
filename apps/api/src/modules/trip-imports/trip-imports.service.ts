@@ -295,6 +295,7 @@ function excerptOf(text: string): string {
   const firstLine = text.split("\n").find((line) => line.trim()) ?? "";
   return firstLine
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/<\/?[bius]>/g, "")
     .replace(/\s*\[(?:https?:\/\/|\?q=)[^\]]*\]/g, "")
     .trim()
     .slice(0, 120);

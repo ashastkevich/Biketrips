@@ -102,10 +102,12 @@ function readBackgroundImageUrl(element: HTMLElement | null): string | null {
   return url ?? null;
 }
 
-// Keeps the post as written: line breaks, emoji and named links. Links become
-// Markdown "[label](url)" so the site can render them; announcements often hide
-// the chat or route behind words like "тут" or "Маршрут". Hashtag search links
-// stay plain text.
+// Keeps the post as written: line breaks, emoji, named links and bold/italic/
+// underline/strikethrough. Links become Markdown "[label](url)" so the site can
+// render them; announcements often hide the chat or route behind words like
+// "тут" or "Маршрут". Hashtag search links stay plain text. Formatting is kept
+// as the literal tags <b>, <i>, <u> and <s>, which the site renders and nothing
+// else.
 export function messageTextToPlainText(element: HTMLElement): string {
   const clone = parse(element.outerHTML);
 
@@ -125,12 +127,51 @@ export function messageTextToPlainText(element: HTMLElement): string {
     );
   }
 
-  const html = clone.innerHTML.replace(/<br\s*\/?>/gi, "\n");
-  return parse(html)
-    .text.replace(/\u00a0/g, " ")
+  const html = clone.innerHTML
+    .replace(/<br\s*\/?>/gi, "\n")
+    // Emoji come wrapped in <i class="emoji"><b>…</b></i>; that is not formatting.
+    .replace(/<i class="emoji"[^>]*>\s*<b>([^<]*)<\/b>\s*<\/i>/gi, "$1")
+    .replace(/<tg-emoji[^>]*>([\s\S]*?)<\/tg-emoji>/gi, "$1")
+    // Formatting tags survive text extraction as private-use placeholders.
+    .replace(/<(\/?)(b|strong|i|em|u|s|del|strike)>/gi, (_, closing: string, tag: string) =>
+      formattingPlaceholder(closing === "/", formattingTags[tag.toLowerCase()] ?? "b")
+    );
+
+  return restoreFormatting(parse(html).text)
+    .replace(/\u00a0/g, " ")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+const formattingTags: Record<string, "b" | "i" | "u" | "s"> = {
+  b: "b",
+  strong: "b",
+  i: "i",
+  em: "i",
+  u: "u",
+  s: "s",
+  del: "s",
+  strike: "s",
+};
+const placeholderTags = ["b", "i", "u", "s"] as const;
+
+function formattingPlaceholder(closing: boolean, tag: (typeof placeholderTags)[number]): string {
+  return String.fromCharCode(0xe000 + placeholderTags.indexOf(tag) * 2 + (closing ? 1 : 0));
+}
+
+function restoreFormatting(text: string): string {
+  let result = text.replace(/[\ue000-\ue007]/g, (placeholder) => {
+    const code = placeholder.charCodeAt(0) - 0xe000;
+    const tag = placeholderTags[Math.floor(code / 2)];
+    return code % 2 === 0 ? `<${tag}>` : `</${tag}>`;
+  });
+  // Formatting around nothing but spaces carries no meaning.
+  for (let previous = ""; previous !== result; ) {
+    previous = result;
+    result = result.replace(/<([bius])>(\s*)<\/\1>/g, "$2");
+  }
+  return result;
 }
 
 // Attribute values come back still entity-encoded, so "&" is left as is.
