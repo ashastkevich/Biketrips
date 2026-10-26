@@ -17,9 +17,18 @@ export class OrganizerEntity {
   @Column({ name: "contact_url", type: "text", nullable: true })
   contactUrl!: string | null;
 
-  // "channel" organizers stand for a Telegram channel that imported trips come from.
+  // "channel" organizers stand for a Telegram channel that imported trips come from;
+  // "club" ones for a club an imported post names.
   @Column({ type: "text", default: "person" })
-  kind!: "person" | "channel";
+  kind!: "person" | "channel" | "club";
+
+  /** Lowercase, without "@". Set on profiles the importer creates from a post's leader. */
+  @Column({ name: "telegram_username", type: "text", nullable: true })
+  telegramUsername!: string | null;
+
+  /** False while the importer's profile still belongs to a placeholder user. */
+  @Column({ name: "is_claimed", type: "boolean", default: true })
+  isClaimed!: boolean;
 
   @Column({ name: "is_verified", type: "boolean", default: false })
   isVerified!: boolean;

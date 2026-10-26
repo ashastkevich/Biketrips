@@ -1,5 +1,6 @@
 import type { TripSummary } from "@biketrips/domain";
 
+import type { OrganizerEntity } from "../../infrastructure/database/entities/organizer.entity.js";
 import type { TripEntity } from "../../infrastructure/database/entities/trip.entity.js";
 import type { TripParticipantEntity } from "../../infrastructure/database/entities/trip-participant.entity.js";
 import { normalizeRouteFileName } from "./route-file-names.js";
@@ -89,6 +90,21 @@ export function serializeTripSummary(
   return summary;
 }
 
+function serializeTripOrganizer(organizer: OrganizerEntity) {
+  return {
+    id: organizer.id,
+    userId: organizer.userId,
+    // Channels and clubs are shown by their own name, not their system user.
+    displayName:
+      organizer.kind === "person"
+        ? (organizer.user?.name ?? organizer.displayName)
+        : organizer.displayName,
+    isVerified: organizer.isVerified,
+    kind: organizer.kind,
+    contactUrl: organizer.kind === "channel" ? organizer.contactUrl : null,
+  };
+}
+
 export function serializeTripDetail(
   trip: TripEntity,
   options: {
@@ -110,18 +126,8 @@ export function serializeTripDetail(
     routeGpxFileName: routeGpxFile ? normalizeRouteFileName(routeGpxFile.originalName) : null,
     routeGpxDownloadUrl: routeGpxFile ? `/trips/${trip.id}/route-file` : null,
     registrationMode: trip.registrationMode,
-    organizer: {
-      id: trip.organizer.id,
-      userId: trip.organizer.userId,
-      // A channel organizer is shown by the channel name, not its system user.
-      displayName:
-        trip.organizer.kind === "channel"
-          ? trip.organizer.displayName
-          : (trip.organizer.user?.name ?? trip.organizer.displayName),
-      isVerified: trip.organizer.isVerified,
-      kind: trip.organizer.kind,
-      contactUrl: trip.organizer.kind === "channel" ? trip.organizer.contactUrl : null,
-    },
+    organizer: serializeTripOrganizer(trip.organizer),
+    importedOrganizer: trip.importedOrganizer ? serializeTripOrganizer(trip.importedOrganizer) : null,
     participants:
       trip.participants?.map((participant) =>
         serializeTripParticipant(

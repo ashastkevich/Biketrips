@@ -43,6 +43,7 @@ const trip: ExtractedTrip = {
   minAge: null,
   clubName: "МТБ Красногорск, СЗАО",
   leaderUsernames: ["@Kasolles"],
+  leaderName: null,
   registrationUrl: null,
   routeUrl: null,
   routeDescription: null,

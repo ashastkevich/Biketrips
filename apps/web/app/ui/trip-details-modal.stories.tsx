@@ -51,6 +51,14 @@ export const Imported: Story = {
         kind: "channel",
         contactUrl: "https://t.me/example_rides",
       },
+      importedOrganizer: {
+        id: "demo-leader-1",
+        userId: "demo-leader-user-1",
+        displayName: "Андрей",
+        isVerified: false,
+        kind: "person",
+        contactUrl: null,
+      },
     },
   },
 };

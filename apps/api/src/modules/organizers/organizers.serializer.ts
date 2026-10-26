@@ -22,13 +22,14 @@ export function serializeOrganizerProfile(
     id: organizer.id,
     userId: organizer.userId,
     displayName:
-      organizer.kind === "channel"
-        ? organizer.displayName
-        : (organizer.user?.name ?? organizer.displayName),
-    avatarUrl: organizer.kind === "channel" ? null : (organizer.user?.avatarUrl ?? null),
-    city: organizer.kind === "channel" ? null : (organizer.user?.city?.name ?? null),
+      organizer.kind === "person"
+        ? (organizer.user?.name ?? organizer.displayName)
+        : organizer.displayName,
+    avatarUrl: organizer.kind === "person" ? (organizer.user?.avatarUrl ?? null) : null,
+    city: organizer.kind === "person" ? (organizer.user?.city?.name ?? null) : null,
     bio: organizer.bio,
     isVerified: organizer.isVerified,
+    isClaimable: !organizer.isClaimed && organizer.telegramUsername !== null,
     organizingSince: organizer.createdAt.toISOString(),
     completedTripsCount: trips.completedTripsCount,
     upcomingTrips: trips.upcomingTrips.map((trip) => serializeTripSummary(trip)),

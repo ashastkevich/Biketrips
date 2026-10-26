@@ -489,6 +489,23 @@
   font-style: normal;
 }
 
+.organizerUnknown .organizerAvatar {
+  color: var(--muted);
+  background: var(--soft);
+}
+
+/* Imported trips: who leads the ride, then the channel it came from. */
+.importedPeople {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.importedPeople .organizer,
+.importedPeople .source {
+  margin-top: 0;
+}
+
 .source {
   display: flex;
   flex-wrap: wrap;

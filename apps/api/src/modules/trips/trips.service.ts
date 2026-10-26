@@ -42,6 +42,7 @@ const estimatedTripEndSql =
 const tripDetailRelations: FindOptionsRelations<TripEntity> = {
   city: true,
   organizer: { user: true },
+  importedOrganizer: { user: true },
   participants: { user: { telegramAccounts: true } },
   waitlistEntries: { user: true },
   updates: true,
@@ -710,7 +711,12 @@ export class TripsService {
    */
   async createImported(
     fields: ImportedTripFields,
-    target: { organizerId: string; cityId: string; moderationComment: string | null },
+    target: {
+      organizerId: string;
+      importedOrganizerId: string | null;
+      cityId: string;
+      moderationComment: string | null;
+    },
   ): Promise<TripEntity> {
     this.validateStartAtInFuture(fields.startAt.toISOString());
     this.validateSurfaceComposition(fields.asphaltPercent, fields.unpavedPercent);
@@ -718,6 +724,7 @@ export class TripsService {
       ...this.mapImportedFields(fields),
       source: "telegram_import",
       organizerId: target.organizerId,
+      importedOrganizerId: target.importedOrganizerId,
       cityId: target.cityId,
       maxParticipants: null,
       registrationMode: "automatic",

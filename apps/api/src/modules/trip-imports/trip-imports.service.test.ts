@@ -6,6 +6,7 @@ import type { Repository } from "typeorm";
 import type { ImportSourceEntity } from "../../infrastructure/database/entities/import-source.entity.js";
 import type { ImportedPostEntity } from "../../infrastructure/database/entities/imported-post.entity.js";
 import type { NotificationsService } from "../notifications/notifications.service.js";
+import type { ImportedOrganizersService } from "../organizers/imported-organizers.service.js";
 import type { TripsService } from "../trips/trips.service.js";
 import type { TelegramChannelPost } from "./telegram-channel-preview.js";
 import type { TripImportGateway } from "./trip-import.gateway.js";
@@ -60,6 +61,7 @@ const trip: ExtractedTrip = {
   minAge: 18,
   clubName: "Vel Chill",
   leaderUsernames: ["AndreyEP"],
+  leaderName: null,
   registrationUrl: "https://t.me/AndreyEP",
   routeUrl: null,
   routeDescription: null,
@@ -110,14 +112,16 @@ function setup(options: { existing?: Partial<ImportedPostEntity>; result?: PostE
     downloadImage: vi.fn().mockResolvedValue({ contentType: "image/jpeg", buffer: Buffer.from("jpg") }),
   };
   const notificationsService = { enqueueImportSummary: vi.fn().mockResolvedValue(undefined) };
+  const importedOrganizers = { resolve: vi.fn().mockResolvedValue("leader-organizer") };
   const service = new TripImportsService(
     sourcesRepository as unknown as Repository<ImportSourceEntity>,
     postsRepository as unknown as Repository<ImportedPostEntity>,
     tripsService as unknown as TripsService,
     gateway as unknown as TripImportGateway,
     notificationsService as unknown as NotificationsService,
+    importedOrganizers as unknown as ImportedOrganizersService,
   );
-  return { service, saved, tripsService, gateway, sourcesRepository, notificationsService };
+  return { service, saved, tripsService, gateway, sourcesRepository, notificationsService, importedOrganizers };
 }
 
 describe("TripImportsService", () => {
@@ -136,7 +140,11 @@ describe("TripImportsService", () => {
       externalRegistrationUrl: "https://t.me/AndreyEP",
       sourceUrl: "https://t.me/MskVelo/19663",
     });
-    expect(target).toMatchObject({ organizerId: "organizer-1", cityId: "city-1" });
+    expect(target).toMatchObject({
+      organizerId: "organizer-1",
+      importedOrganizerId: "leader-organizer",
+      cityId: "city-1",
+    });
     expect(target.moderationComment).toContain("Не указано: дистанция, сложность, покрытие.");
     expect(tripsService.setImportedCoverImage).toHaveBeenCalledWith(
       "trip-1",

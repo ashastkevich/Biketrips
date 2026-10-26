@@ -452,12 +452,16 @@ function createTrip(): TripEntity {
     moderatedAt: new Date("2099-08-01T08:00:00.000Z"),
     moderatedByUserId: null,
     publicSlug: "forest-route",
+    importedOrganizer: null,
+    importedOrganizerId: null,
     organizer: {
       id: "organizer-1",
       displayName: "Organizer",
       bio: null,
       contactUrl: null,
       kind: "person",
+      telegramUsername: null,
+      isClaimed: true,
       isVerified: false,
       userId: "user-1",
       user: {

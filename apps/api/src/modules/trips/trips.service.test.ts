@@ -386,6 +386,7 @@ describe("TripsService", () => {
 
     const trip = await context.service.createImported(createImportedFields(), {
       organizerId,
+      importedOrganizerId: null,
       cityId,
       moderationComment: "Импорт из @MskVelo",
     });
@@ -1061,6 +1062,8 @@ function createTrip(input: Partial<TestTrip> = {}): TestTrip {
     publicSlug: "lesnoy-marshrut",
     organizer,
     organizerId: organizer.id,
+    importedOrganizer: null,
+    importedOrganizerId: null,
     city: createCity(),
     cityId,
     participants: [],
@@ -1087,6 +1090,8 @@ function createOrganizer(input: Partial<TestOrganizer> = {}): TestOrganizer {
     bio: null,
     contactUrl: null,
     kind: "person",
+    telegramUsername: null,
+    isClaimed: true,
     isVerified: false,
     userId: actorId,
     user: createUser(),

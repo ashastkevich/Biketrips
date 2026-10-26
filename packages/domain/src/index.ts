@@ -196,8 +196,11 @@ export interface TripOrganizer {
   userId: string;
   displayName: string;
   isVerified: boolean;
-  /** "channel" is the Telegram channel imported trips came from; contactUrl links to it. */
-  kind: "person" | "channel";
+  /**
+   * "channel" is the Telegram channel imported trips came from; contactUrl links to it.
+   * "club" is a club an imported post names as the organizer.
+   */
+  kind: "person" | "channel" | "club";
   contactUrl: string | null;
 }
 
@@ -215,6 +218,11 @@ export interface OrganizerProfile {
   city: string | null;
   bio: string | null;
   isVerified: boolean;
+  /**
+   * Created by the importer from a post's Telegram username; its owner takes it over
+   * by signing in with that Telegram account.
+   */
+  isClaimable: boolean;
   organizingSince: string;
   completedTripsCount: number;
   upcomingTrips: TripSummary[];
@@ -228,6 +236,11 @@ export interface UpdateOrganizerProfileInput {
 
 export interface TripDetail extends TripSummary {
   description: string;
+  /**
+   * Who leads an imported ride, as named in the post; null when the post does not say.
+   * The trip's own organizer stays the channel it was imported from.
+   */
+  importedOrganizer: TripOrganizer | null;
   startLat: number | null;
   startLng: number | null;
   paceMin: number | null;

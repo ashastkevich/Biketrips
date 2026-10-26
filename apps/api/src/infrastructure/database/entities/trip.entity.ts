@@ -133,6 +133,15 @@ export class TripEntity {
   @Column({ name: "organizer_id", type: "uuid" })
   organizerId!: string;
 
+  // Imported trips stay owned by the source channel above; this is who the post says
+  // leads the ride. Riders see it, but only admins edit imported trips.
+  @ManyToOne(() => OrganizerEntity, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "imported_organizer_id" })
+  importedOrganizer!: Relation<OrganizerEntity | null>;
+
+  @Column({ name: "imported_organizer_id", type: "uuid", nullable: true })
+  importedOrganizerId!: string | null;
+
   @ManyToOne(() => CityEntity, (city) => city.trips, { nullable: false })
   @JoinColumn({ name: "city_id" })
   city!: Relation<CityEntity>;

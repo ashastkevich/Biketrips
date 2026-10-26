@@ -35,6 +35,7 @@ import { AddEmailCodeRequestIp1738900000000 } from "./migrations/1738900000000-A
 import { AddNotificationJobAttempts1739000000000 } from "./migrations/1739000000000-AddNotificationJobAttempts.js";
 import { DropTripBikeTypeAndDropPolicy1739100000000 } from "./migrations/1739100000000-DropTripBikeTypeAndDropPolicy.js";
 import { AddTelegramTripImport1739200000000 } from "./migrations/1739200000000-AddTelegramTripImport.js";
+import { AddImportedTripOrganizers1739300000000 } from "./migrations/1739300000000-AddImportedTripOrganizers.js";
 
 export const appDataSource = new DataSource({
   type: "postgres",
@@ -75,6 +76,7 @@ export const appDataSource = new DataSource({
     AddNotificationJobAttempts1739000000000,
     DropTripBikeTypeAndDropPolicy1739100000000,
     AddTelegramTripImport1739200000000,
+    AddImportedTripOrganizers1739300000000,
   ],
   synchronize: false,
 });

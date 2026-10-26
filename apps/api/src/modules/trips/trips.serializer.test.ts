@@ -185,6 +185,8 @@ function createTrip(input: Partial<TripEntity> = {}): TripEntity {
     publicSlug: "forest-route",
     organizer: createOrganizer(),
     organizerId: "organizer-1",
+    importedOrganizer: null,
+    importedOrganizerId: null,
     city: {
       id: "city-1",
       name: "Москва",
@@ -219,6 +221,8 @@ function createOrganizer(input: Partial<OrganizerEntity> = {}): OrganizerEntity 
     bio: null,
     contactUrl: null,
     kind: "person",
+    telegramUsername: null,
+    isClaimed: true,
     isVerified: true,
     userId: "organizer-user",
     user: createUser({ id: "organizer-user", name: "Organizer" }),

@@ -51,6 +51,7 @@ export const extractedTripSchema = z.object({
   minAge: nullableNumber,
   clubName: nullableString,
   leaderUsernames: z.array(z.string()),
+  leaderName: nullableString,
   registrationUrl: nullableString,
   routeUrl: nullableString,
   routeDescription: nullableString,
@@ -95,7 +96,8 @@ Rules for trip fields:
 - difficulty: beginner (short, easy, newcomers welcome), easy, medium (for regular riders, some climbs), hard (long distance, noticeable climbing), sport (high speed, fitness required). Set difficultyIsGuess to true when you infer it from distance and pace instead of the post naming it.
 - isPaid / priceText: whether participation costs money and the price as written.
 - minAge: e.g. 18 for "18+".
-- clubName: the club or organizing team; leaderUsernames: Telegram usernames of leaders or organizers without "@".
+- clubName: the club or organizing team the post names as organizing the ride. When the post is the channel's own announcement ("мы едем", "наш клуб") and names no other organizer, use the channel name from the Channel line. Null when the post does not say who organizes.
+- leaderUsernames: Telegram usernames of leaders or organizers without "@", the main leader first. leaderName: that first leader's name as the post writes it next to the username ("Андрей" in "ведёт Андрей @andrey_ep"); null when only the username is given.
 - registrationUrl: the link where people sign up or ask questions (chat, contact, form). Null when the post only says to sign up in the comments.
 - routeUrl: a link to the track or route map (Strava, Komoot, RideWithGPS, Yandex route), if any.
 - routeDescription, equipmentRequirements, rules: short Russian texts if the post has them.
@@ -180,6 +182,7 @@ export interface ImportedTripDraft {
   routeUrl: string | null;
   clubName: string | null;
   leaderUsernames: string[];
+  leaderName: string | null;
   isPaid: boolean;
   priceText: string | null;
 }
@@ -267,6 +270,7 @@ export function buildTripDraft(post: TelegramChannelPost, trip: ExtractedTrip): 
     routeUrl: trip.routeUrl,
     clubName: trip.clubName,
     leaderUsernames: trip.leaderUsernames.map((username) => username.replace(/^@/, "")),
+    leaderName: trip.leaderName,
     isPaid: trip.isPaid,
     priceText: trip.priceText,
   };

@@ -5,7 +5,9 @@ import {
   ConflictException,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
+  Optional,
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -18,6 +20,7 @@ import { EmailAuthCodeEntity } from "../../infrastructure/database/entities/emai
 import { TelegramAccountEntity } from "../../infrastructure/database/entities/telegram-account.entity.js";
 import { TelegramLoginNonceEntity } from "../../infrastructure/database/entities/telegram-login-nonce.entity.js";
 import { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
+import { ImportedOrganizersService } from "../organizers/imported-organizers.service.js";
 
 export type TokenPayload = {
   sub: string;
@@ -112,6 +115,9 @@ export class AuthService {
     private readonly telegramLoginNoncesRepository?: Repository<TelegramLoginNonceEntity>,
     @InjectRepository(UserEntity)
     private readonly usersRepository?: Repository<UserEntity>,
+    @Optional()
+    @Inject(ImportedOrganizersService)
+    private readonly importedOrganizers?: ImportedOrganizersService,
   ) {}
 
   issueToken(payload: TokenPayload): { accessToken: string; tokenType: "Bearer" } {
@@ -435,6 +441,8 @@ export class AuthService {
     account.user = user;
     account.userId = user.id;
     await this.telegramAccountsRepository.save(account);
+    // Telegram vouches for the username, so a profile the importer made for it is theirs.
+    await this.importedOrganizers?.claim(user.id, username);
 
     nonce.status = "confirmed";
     nonce.confirmedUserId = user.id;

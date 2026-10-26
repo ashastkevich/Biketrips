@@ -38,6 +38,7 @@ export const storyTrips: TripDetail[] = [
     equipmentRequirements: "Шлем, запасная камера, свет передний и задний.",
     rules: "Едем группой, ждем на развилках, без резких перестроений.",
     registrationMode: "automatic",
+    importedOrganizer: null,
     organizer: {
       id: "demo-organizer-1",
       userId: "demo-user-1",
@@ -111,6 +112,7 @@ export const storyTrips: TripDetail[] = [
     equipmentRequirements: "Исправный велосипед, вода, перекус, свет.",
     rules: "No-drop формат: никто не остается один.",
     registrationMode: "manual",
+    importedOrganizer: null,
     organizer: {
       id: "demo-organizer-2",
       userId: "demo-user-2",
@@ -167,6 +169,7 @@ export const storyTrips: TripDetail[] = [
     equipmentRequirements: "Шоссейный велосипед, шлем, запас воды.",
     rules: "Drop-формат, участники должны уверенно ехать в группе.",
     registrationMode: "manual",
+    importedOrganizer: null,
     organizer: {
       id: "demo-organizer-1",
       userId: "demo-user-1",
@@ -195,6 +198,7 @@ export function toTripSummary(trip: TripDetail): TripSummary {
     rules: _rules,
     registrationMode: _registrationMode,
     organizer: _organizer,
+    importedOrganizer: _importedOrganizer,
     participants: _participants,
     waitlist: _waitlist,
     updates: _updates,

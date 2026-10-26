@@ -6,6 +6,7 @@ import { EmailAuthCodeEntity } from "../../infrastructure/database/entities/emai
 import { TelegramAccountEntity } from "../../infrastructure/database/entities/telegram-account.entity.js";
 import { TelegramLoginNonceEntity } from "../../infrastructure/database/entities/telegram-login-nonce.entity.js";
 import { UserEntity } from "../../infrastructure/database/entities/user.entity.js";
+import { OrganizersModule } from "../organizers/organizers.module.js";
 import { AuthController } from "./auth.controller.js";
 import { AuthService } from "./auth.service.js";
 import { JwtStrategy } from "./jwt.strategy.js";
@@ -15,6 +16,7 @@ import { JwtAuthGuard, OptionalJwtAuthGuard } from "./jwt-auth.guard.js";
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: "jwt" }),
+    OrganizersModule,
     TypeOrmModule.forFeature([
       EmailAuthCodeEntity,
       TelegramAccountEntity,

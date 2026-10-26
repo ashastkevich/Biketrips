@@ -1,7 +1,7 @@
 import { forwardRef, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import type { TripDetail } from "@biketrips/domain";
+import type { TripDetail, TripOrganizer } from "@biketrips/domain";
 
 import {
   difficultyLabels,
@@ -46,7 +46,36 @@ function TelegramIcon() {
   );
 }
 
-/** Imported trips name the Telegram channel they came from, not an organizer on the site. */
+function OrganizerLink({ organizer }: { organizer: TripOrganizer }) {
+  return (
+    <Link className={styles.organizer} href={getOrganizerHref(organizer.id)}>
+      <span className={styles.organizerAvatar} aria-hidden="true">
+        {organizer.displayName.replace(/^@/, "").slice(0, 1)}
+      </span>
+      <span>
+        <small>Организатор</small>
+        <strong>
+          {organizer.displayName}
+          {organizer.isVerified ? <i title="Проверенный организатор">✓</i> : null}
+        </strong>
+      </span>
+    </Link>
+  );
+}
+
+function UnknownOrganizer() {
+  return (
+    <div className={joinClassNames(styles.organizer, styles.organizerUnknown)}>
+      <span className={styles.organizerAvatar} aria-hidden="true">?</span>
+      <span>
+        <small>Организатор</small>
+        <strong>Не указано</strong>
+      </span>
+    </div>
+  );
+}
+
+/** The Telegram channel an imported trip came from, next to whoever its post names as organizer. */
 function TripSource({ trip }: { trip: TripDetail }) {
   const channelUrl = trip.organizer.kind === "channel" ? trip.organizer.contactUrl : null;
 
@@ -228,20 +257,16 @@ export const TripDetailsCard = forwardRef<HTMLElement, TripDetailsCardProps>(
             ) : null}
 
             {trip.source === "native" ? (
-              <Link className={styles.organizer} href={getOrganizerHref(trip.organizer.id)}>
-                <span className={styles.organizerAvatar} aria-hidden="true">
-                  {trip.organizer.displayName.slice(0, 1)}
-                </span>
-                <span>
-                  <small>Организатор</small>
-                  <strong>
-                    {trip.organizer.displayName}
-                    {trip.organizer.isVerified ? <i title="Проверенный организатор">✓</i> : null}
-                  </strong>
-                </span>
-              </Link>
+              <OrganizerLink organizer={trip.organizer} />
             ) : (
-              <TripSource trip={trip} />
+              <div className={styles.importedPeople}>
+                {trip.importedOrganizer ? (
+                  <OrganizerLink organizer={trip.importedOrganizer} />
+                ) : (
+                  <UnknownOrganizer />
+                )}
+                <TripSource trip={trip} />
+              </div>
             )}
           </div>
 

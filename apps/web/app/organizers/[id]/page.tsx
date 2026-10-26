@@ -85,6 +85,18 @@ export default async function OrganizerPage({ params }: OrganizerPageProps) {
           </div>
         </header>
 
+        {profile.isClaimable ? (
+          <section className={styles.claim}>
+            <p>
+              Профиль создан автоматически по анонсам поездок в Telegram. Если это вы, войдите
+              через Telegram — профиль и поездки перейдут в ваш аккаунт.
+            </p>
+            <Link className={styles.claimLink} href="/auth/telegram?returnTo=/profile">
+              Войти через Telegram
+            </Link>
+          </section>
+        ) : null}
+
         <dl className={styles.stats}>
           <div>
             <dt>Предстоящих поездок</dt>

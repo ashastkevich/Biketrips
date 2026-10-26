@@ -13,12 +13,20 @@ describe("OrganizersService", () => {
 
     await service.listPublicTrips("organizer-1", now);
 
+    // Their own trips, and imported ones whose post names them.
+    const own = { source: "native", organizerId: "organizer-1" };
+    const named = { source: "telegram_import", importedOrganizerId: "organizer-1" };
     const pastWhere = [
-      { organizerId: "organizer-1", status: "finished", moderationStatus: "approved" },
-      { organizerId: "organizer-1", status: "published", startAt: LessThan(now) },
+      { ...own, status: "finished", moderationStatus: "approved" },
+      { ...named, status: "finished", moderationStatus: "approved" },
+      { ...own, status: "published", startAt: LessThan(now) },
+      { ...named, status: "published", startAt: LessThan(now) },
     ];
     expect(tripsRepository.find).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      where: { organizerId: "organizer-1", status: "published", startAt: MoreThanOrEqual(now) },
+      where: [
+        { ...own, status: "published", startAt: MoreThanOrEqual(now) },
+        { ...named, status: "published", startAt: MoreThanOrEqual(now) },
+      ],
     }));
     expect(tripsRepository.find).toHaveBeenNthCalledWith(2, expect.objectContaining({
       where: pastWhere,

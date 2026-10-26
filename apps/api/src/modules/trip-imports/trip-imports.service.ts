@@ -8,6 +8,7 @@ import { Repository } from "typeorm";
 import { ImportSourceEntity } from "../../infrastructure/database/entities/import-source.entity.js";
 import { ImportedPostEntity } from "../../infrastructure/database/entities/imported-post.entity.js";
 import { NotificationsService } from "../notifications/notifications.service.js";
+import { ImportedOrganizersService } from "../organizers/imported-organizers.service.js";
 import { TripsService, type ImportedTripFields } from "../trips/trips.service.js";
 import type { TelegramChannelPost } from "./telegram-channel-preview.js";
 import { TripImportGateway } from "./trip-import.gateway.js";
@@ -51,6 +52,8 @@ export class TripImportsService {
     private readonly gateway: TripImportGateway,
     @Inject(NotificationsService)
     private readonly notificationsService: NotificationsService,
+    @Inject(ImportedOrganizersService)
+    private readonly importedOrganizers: ImportedOrganizersService,
   ) {}
 
   async runEnabledSources(): Promise<ImportRunResult> {
@@ -209,6 +212,7 @@ export class TripImportsService {
 
     const trip = await this.tripsService.createImported(fields, {
       organizerId: source.organizerId,
+      importedOrganizerId: await this.importedOrganizers.resolve(source, extraction.trip),
       cityId: source.cityId,
       moderationComment: buildModerationNote(source, extraction, check),
     });

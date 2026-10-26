@@ -34,14 +34,20 @@ export class OrganizersService {
 
   /** Only trips anyone may see: published upcoming ones and approved ones that already took place. */
   async listPublicTrips(organizerId: string, now = new Date()): Promise<OrganizerProfileTrips> {
+    // Trips they created, plus imported ones whose post names them. A channel's own
+    // imports are not its trips unless the post says the channel organizes them.
+    const byOrganizer = (where: FindOptionsWhere<TripEntity>): FindOptionsWhere<TripEntity>[] => [
+      { ...where, source: "native", organizerId },
+      { ...where, source: "telegram_import", importedOrganizerId: organizerId },
+    ];
     const pastWhere: FindOptionsWhere<TripEntity>[] = [
-      { organizerId, status: "finished", moderationStatus: "approved" },
+      ...byOrganizer({ status: "finished", moderationStatus: "approved" }),
       // Published trips stay published until the auto-finish job catches up with them.
-      { organizerId, status: "published", startAt: LessThan(now) },
+      ...byOrganizer({ status: "published", startAt: LessThan(now) }),
     ];
     const [upcomingTrips, pastTrips, completedTripsCount] = await Promise.all([
       this.tripsRepository.find({
-        where: { organizerId, status: "published", startAt: MoreThanOrEqual(now) },
+        where: byOrganizer({ status: "published", startAt: MoreThanOrEqual(now) }),
         relations: { city: true, participants: true },
         order: { startAt: "ASC" },
       }),
