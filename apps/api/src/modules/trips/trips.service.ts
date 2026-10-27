@@ -264,6 +264,8 @@ export class TripsService {
       .leftJoinAndSelect("trip.city", "city")
       .leftJoinAndSelect("trip.organizer", "organizer")
       .leftJoinAndSelect("organizer.user", "organizerUser")
+      .leftJoinAndSelect("trip.importedOrganizer", "importedOrganizer")
+      .leftJoinAndSelect("importedOrganizer.user", "importedOrganizerUser")
       .leftJoinAndSelect("trip.participants", "participants")
       .leftJoinAndSelect("participants.user", "participantUser")
       .leftJoinAndSelect("participantUser.telegramAccounts", "participantTelegramAccounts")

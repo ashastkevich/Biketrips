@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import type { TripDetail } from "@biketrips/domain";
+import Link from "next/link";
 import { noIndexMetadata } from "../../lib/site";
 import { notFound, redirect } from "next/navigation";
 
@@ -10,6 +12,7 @@ import {
   formatDistance,
   formatSurfaceComposition,
 } from "../../lib/labels";
+import { getOrganizerHref } from "../../lib/organizer-links";
 import { getTripEditHref } from "../../lib/trip-links";
 import { Alert, Button, LinkButton } from "../../ui/components";
 import { FormattedText } from "../../ui/formatted-text";
@@ -25,6 +28,7 @@ async function moderationAction(formData: FormData) {
   const tripId = formData.get("tripId");
   const decision = formData.get("decision");
   const comment = formData.get("comment");
+  const imported = formData.get("imported") === "1";
   if (
     typeof tripId !== "string" ||
     (decision !== "approve" && decision !== "request_changes" && decision !== "reject")
@@ -38,7 +42,54 @@ async function moderationAction(formData: FormData) {
     const message = error instanceof Error ? error.message : "Не удалось сохранить решение";
     redirect(`/admin/moderation?error=${encodeURIComponent(message)}`);
   }
-  redirect("/admin/moderation?saved=1");
+  redirect(`/admin/moderation?saved=${imported ? "imported" : "1"}`);
+}
+
+/** Who the post names as the organizer: a link to their profile, or "Не указано". */
+function ImportedOrganizer({ trip }: { trip: TripDetail }) {
+  const organizer = trip.importedOrganizer;
+  if (!organizer) return <>Не указано</>;
+  return (
+    <>
+      <Link href={getOrganizerHref(organizer.id)} target="_blank">
+        {organizer.displayName}
+      </Link>
+      {organizer.kind === "club" ? " · клуб" : null}
+      {organizer.kind === "channel" ? " · канал-источник" : null}
+      {organizer.telegramUsername ? (
+        <>
+          {" · "}
+          <a href={`https://t.me/${organizer.telegramUsername}`} target="_blank" rel="noopener noreferrer">
+            @{organizer.telegramUsername}
+          </a>
+        </>
+      ) : null}
+    </>
+  );
+}
+
+/** The Telegram channel an imported trip came from and the post itself. */
+function ImportSource({ trip }: { trip: TripDetail }) {
+  const channelUrl = trip.organizer.kind === "channel" ? trip.organizer.contactUrl : null;
+  return (
+    <>
+      {channelUrl ? (
+        <a href={channelUrl} target="_blank" rel="noopener noreferrer">
+          {trip.organizer.displayName}
+        </a>
+      ) : (
+        trip.organizer.displayName
+      )}
+      {trip.sourceUrl ? (
+        <>
+          {" · "}
+          <a href={trip.sourceUrl} target="_blank" rel="noopener noreferrer">
+            исходный пост
+          </a>
+        </>
+      ) : null}
+    </>
+  );
 }
 
 interface ModerationPageProps {
@@ -77,6 +128,11 @@ export default async function ModerationPage({ searchParams }: ModerationPagePro
             Организатор получит уведомление.
           </Alert>
         ) : null}
+        {query.saved === "imported" ? (
+          <Alert title="Решение сохранено" tone="success">
+            Поездка импортирована из Telegram, поэтому организатору уведомление не отправляется.
+          </Alert>
+        ) : null}
         {error ? (
           <Alert title="Не удалось обработать поездку" tone="danger">
             {error}
@@ -93,7 +149,8 @@ export default async function ModerationPage({ searchParams }: ModerationPagePro
             <section className={styles.empty}>Новых поездок на модерации пока нет.</section>
           ) : (
             result.data.map((trip) => {
-              // Imported trips have no organizer to send them back to: the admin fixes them up.
+              // Imported trips belong to their source channel, not to the organizer the post
+              // names, so there is nobody to send them back to: the admin fixes them up.
               const isImported = trip.source !== "native";
               return (
                 <article className={styles.card} key={trip.id}>
@@ -103,7 +160,16 @@ export default async function ModerationPage({ searchParams }: ModerationPagePro
                         {trip.city} · {formatDateTime(trip.startDateTime)}
                       </p>
                       <h2>{trip.title}</h2>
-                      <span>Организатор: {trip.organizer.displayName}</span>
+                      <span>
+                        Организатор:{" "}
+                        {isImported ? (
+                          (trip.importedOrganizer?.displayName ?? "не указан")
+                        ) : (
+                          <Link href={getOrganizerHref(trip.organizer.id)} target="_blank">
+                            {trip.organizer.displayName}
+                          </Link>
+                        )}
+                      </span>
                     </div>
                     <span>
                       {isImported ? "Импорт · " : ""}
@@ -126,6 +192,22 @@ export default async function ModerationPage({ searchParams }: ModerationPagePro
                   ) : null}
 
                   <dl className={styles.facts}>
+                    {isImported ? (
+                      <>
+                        <div>
+                          <dt>Организатор</dt>
+                          <dd>
+                            <ImportedOrganizer trip={trip} />
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Источник · Telegram-канал</dt>
+                          <dd>
+                            <ImportSource trip={trip} />
+                          </dd>
+                        </div>
+                      </>
+                    ) : null}
                     <div>
                       <dt>Место старта</dt>
                       <dd>{trip.startLocationName}</dd>
@@ -190,6 +272,7 @@ export default async function ModerationPage({ searchParams }: ModerationPagePro
                   <div className={styles.actions}>
                     <form action={moderationAction}>
                       <input name="tripId" type="hidden" value={trip.id} />
+                      <input name="imported" type="hidden" value={isImported ? "1" : "0"} />
                       <input name="decision" type="hidden" value="approve" />
                       <Button type="submit">Опубликовать</Button>
                     </form>
@@ -203,6 +286,7 @@ export default async function ModerationPage({ searchParams }: ModerationPagePro
                     ) : null}
                     <form action={moderationAction} className={styles.commentAction}>
                       <input name="tripId" type="hidden" value={trip.id} />
+                      <input name="imported" type="hidden" value={isImported ? "1" : "0"} />
                       <textarea
                         name="comment"
                         required

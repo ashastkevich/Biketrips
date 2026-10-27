@@ -202,6 +202,8 @@ export interface TripOrganizer {
    */
   kind: "person" | "channel" | "club";
   contactUrl: string | null;
+  /** The Telegram username an imported post gave; only in the admin moderation queue. */
+  telegramUsername?: string | null;
 }
 
 export const organizerBioMaxLength = 500;

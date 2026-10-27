@@ -42,6 +42,7 @@ export class AdminController {
       serializeTripDetail(trip, {
         includePendingRevision: true,
         participantContacts: { all: true },
+        includeOrganizerTelegram: true,
       }),
     );
   }

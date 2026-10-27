@@ -80,6 +80,13 @@
   white-space: pre-wrap;
 }
 
+.facts dd a,
+.cardHeader span a {
+  color: var(--green-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* The whole cover at its natural size, so the moderator sees exactly what was uploaded. */
 .cover {
   display: block;

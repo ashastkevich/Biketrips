@@ -90,7 +90,7 @@ export function serializeTripSummary(
   return summary;
 }
 
-function serializeTripOrganizer(organizer: OrganizerEntity) {
+function serializeTripOrganizer(organizer: OrganizerEntity, includeTelegramUsername = false) {
   return {
     id: organizer.id,
     userId: organizer.userId,
@@ -102,6 +102,7 @@ function serializeTripOrganizer(organizer: OrganizerEntity) {
     isVerified: organizer.isVerified,
     kind: organizer.kind,
     contactUrl: organizer.kind === "channel" ? organizer.contactUrl : null,
+    ...(includeTelegramUsername ? { telegramUsername: organizer.telegramUsername } : {}),
   };
 }
 
@@ -110,6 +111,8 @@ export function serializeTripDetail(
   options: {
     includePendingRevision?: boolean;
     participantContacts?: ParticipantContactsAccess;
+    /** Moderators check the imported organizer against the post's username. */
+    includeOrganizerTelegram?: boolean;
   } = {},
 ) {
   const routeGpxFile = trip.routeFiles?.[0] ?? null;
@@ -127,7 +130,9 @@ export function serializeTripDetail(
     routeGpxDownloadUrl: routeGpxFile ? `/trips/${trip.id}/route-file` : null,
     registrationMode: trip.registrationMode,
     organizer: serializeTripOrganizer(trip.organizer),
-    importedOrganizer: trip.importedOrganizer ? serializeTripOrganizer(trip.importedOrganizer) : null,
+    importedOrganizer: trip.importedOrganizer
+      ? serializeTripOrganizer(trip.importedOrganizer, options.includeOrganizerTelegram)
+      : null,
     participants:
       trip.participants?.map((participant) =>
         serializeTripParticipant(
