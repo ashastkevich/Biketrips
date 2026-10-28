@@ -13,6 +13,8 @@ import { legalLinks } from "./legal/legal-documents";
 import { LinkButton } from "./ui/components";
 import { ScrollToHash } from "./ui/scroll-to-hash";
 import { baseOpenGraph, DEFAULT_DESCRIPTION, SITE_NAME } from "./lib/site";
+import { getHomeJsonLd } from "./lib/structured-data";
+import { JsonLd } from "./ui/json-ld";
 import styles from "./home.module.css";
 
 export const metadata: Metadata = {
@@ -90,6 +92,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       </section>
 
       <main>
+        <JsonLd data={getHomeJsonLd()} />
         <div className={`page ${styles.section} ${styles.searchSection}`} id="rides">
       <ScrollToHash id="rides" />
       <FindTripSection

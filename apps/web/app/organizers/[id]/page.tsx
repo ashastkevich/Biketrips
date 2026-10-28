@@ -14,7 +14,9 @@ import {
 } from "../../lib/organizer-links";
 import { getParticipantInitials } from "../../lib/participant-groups";
 import { baseOpenGraph, noIndexMetadata } from "../../lib/site";
+import { getOrganizerJsonLd } from "../../lib/structured-data";
 import { Badge, TripCard } from "../../ui/components";
+import { JsonLd } from "../../ui/json-ld";
 import styles from "./organizer.module.css";
 
 interface OrganizerPageProps {
@@ -60,6 +62,7 @@ export default async function OrganizerPage({ params }: OrganizerPageProps) {
       <AppTopbar />
 
       <main className={`shell app-content-shell ${styles.page}`}>
+        {hasPublicTrips(profile) ? <JsonLd data={getOrganizerJsonLd(profile)} /> : null}
         <header className={styles.hero}>
           {profile.avatarUrl ? (
             // Telegram avatars live on an external host that next/image is not configured for.

@@ -17,10 +17,12 @@ import {
 import { formattedTextToPlain } from "../../lib/formatted-text";
 import { difficultyLabels } from "../../lib/labels";
 import { baseOpenGraph, getSocialImage, noIndexMetadata } from "../../lib/site";
+import { getTripJsonLd } from "../../lib/structured-data";
 import { DEFAULT_TRIP_TIME_ZONE } from "../../lib/trip-time";
 import { getTripEditHref, getTripHref } from "../../lib/trip-links";
 import { Alert, Button, CapacityIndicator, LinkButton } from "../../ui/components";
 import { ExternalRegistration } from "../../ui/external-registration";
+import { JsonLd } from "../../ui/json-ld";
 import { JoinSignInButton } from "../../ui/join-sign-in-button";
 import { OrganizerParticipants } from "../../ui/organizer-participants";
 import { TripDetailsCard } from "../../ui/trip-details-card";
@@ -86,6 +88,11 @@ function isIndexableTrip(trip: TripDetail): boolean {
   return trip.moderationStatus === "approved" && indexableStatuses.has(trip.status);
 }
 
+function getTripSocialImage(trip: TripDetail) {
+  // The API hides covers of trips that are no longer published, so those get the site-wide image.
+  return getSocialImage(trip.status === "published" ? getTripCardProps(trip).coverImage : null, trip.title);
+}
+
 function formatTripDate(startDateTime: string): string {
   return new Date(startDateTime).toLocaleDateString("ru-RU", {
     timeZone: DEFAULT_TRIP_TIME_ZONE,
@@ -124,11 +131,7 @@ export async function generateMetadata({ params }: TripPageProps): Promise<Metad
   const title = `${trip.title} — ${trip.city}, ${formatTripDate(trip.startDateTime)}`;
   const description = describeTrip(trip);
   const canonical = getTripHref(trip);
-  // The API hides covers of trips that are no longer published, so those get the site-wide image.
-  const image = getSocialImage(
-    trip.status === "published" ? getTripCardProps(trip).coverImage : null,
-    trip.title,
-  );
+  const image = getTripSocialImage(trip);
 
   return {
     title,
@@ -249,6 +252,9 @@ export default async function TripPage({ params, searchParams }: TripPageProps) 
       <AppTopbar />
 
       <main className="shell app-content-shell detail-shell">
+        {isIndexableTrip(trip) ? (
+          <JsonLd data={getTripJsonLd(trip, { description: describeTrip(trip), image: getTripSocialImage(trip) })} />
+        ) : null}
         <DataNotice source={result.source} error={result.error} />
         {hasFlag(query.joined) && myParticipation ? (
           <Alert title={joinedTitles[myParticipation.status]} tone="success">
