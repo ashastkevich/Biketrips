@@ -29,6 +29,8 @@ import { normalizeRouteFileName } from "./route-file-names.js";
 const maxRouteGpxBytes = 1_000_000;
 const maxCoverImageBytes = 5_000_000;
 const coverImageWidth = 1600;
+// Link previews (Telegram, VK, WhatsApp) don't all render WebP, so og:image gets a JPEG copy.
+const previewImageWidth = 1200;
 // Trips have no end time, so it is estimated from distance and average pace
 // (20 km/h when unknown, as in the web filters) plus a buffer for stops.
 // Imported trips may have no distance; they are treated as a 30 km ride.
@@ -83,6 +85,8 @@ export interface CoverImageDownload {
   contentType: string;
   content: Buffer;
 }
+
+export type CoverImageFormat = "jpeg";
 
 export interface TripActor {
   id: string;
@@ -902,7 +906,11 @@ export class TripsService {
     }
   }
 
-  async getCoverImageForDownload(id: string, actor: TripActor | null = null): Promise<CoverImageDownload> {
+  async getCoverImageForDownload(
+    id: string,
+    actor: TripActor | null = null,
+    format?: CoverImageFormat,
+  ): Promise<CoverImageDownload> {
     // Only the organizer is needed for the visibility check; skip the full trip card joins.
     const trip = await this.tripsRepository.findOne({
       where: isTripUuid(id) ? { id } : { publicSlug: id },
@@ -923,14 +931,18 @@ export class TripsService {
     }
 
     const storageKey = await this.getStoredCoverImageKey(trip.id);
+    let content: Buffer;
     try {
-      return {
-        contentType: this.getCoverImageContentType(storageKey),
-        content: await readFile(this.getCoverImagePath(storageKey)),
-      };
+      content = await readFile(this.getCoverImagePath(storageKey));
     } catch {
       throw new NotFoundException("Cover image not found");
     }
+
+    if (format === "jpeg") {
+      return { contentType: "image/jpeg", content: await this.convertCoverImageToJpeg(content) };
+    }
+
+    return { contentType: this.getCoverImageContentType(storageKey), content };
   }
 
   async getPendingCoverImageForDownload(id: string, actor: TripActor): Promise<CoverImageDownload> {
@@ -1091,6 +1103,18 @@ export class TripsService {
         .toBuffer();
     } catch {
       throw new BadRequestException("Cover image could not be processed");
+    }
+  }
+
+  private async convertCoverImageToJpeg(content: Buffer): Promise<Buffer> {
+    try {
+      return await sharp(content)
+        .resize({ width: previewImageWidth, withoutEnlargement: true })
+        .flatten({ background: "#ffffff" })
+        .jpeg({ quality: 82, mozjpeg: true })
+        .toBuffer();
+    } catch {
+      throw new NotFoundException("Cover image not found");
     }
   }
 

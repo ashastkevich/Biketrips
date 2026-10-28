@@ -227,6 +227,22 @@ describe("TripsController", () => {
     expect(response.headers["Cache-Control"]).toBe("public, max-age=31536000, immutable");
   });
 
+  it("passes only the supported preview format to the service", async () => {
+    const context = createTripsController();
+    context.tripsService.getCoverImageForDownload.mockResolvedValue({
+      contentType: "image/jpeg",
+      content: Buffer.from("cover"),
+    });
+
+    await context.controller.downloadCoverImage(tripId, createHeaderResponse(), undefined, "1", "jpeg");
+    await context.controller.downloadCoverImage(tripId, createHeaderResponse(), undefined, "1", "gif");
+
+    expect(context.tripsService.getCoverImageForDownload.mock.calls).toEqual([
+      [tripId, null, "jpeg"],
+      [tripId, null, undefined],
+    ]);
+  });
+
   it("creates a trip with files from a multipart payload", async () => {
     const context = createTripsController();
     const trip = createTrip();

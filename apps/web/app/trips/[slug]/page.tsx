@@ -16,7 +16,7 @@ import {
 } from "../../lib/api";
 import { formattedTextToPlain } from "../../lib/formatted-text";
 import { difficultyLabels } from "../../lib/labels";
-import { baseOpenGraph, noIndexMetadata } from "../../lib/site";
+import { baseOpenGraph, getSocialImage, noIndexMetadata } from "../../lib/site";
 import { DEFAULT_TRIP_TIME_ZONE } from "../../lib/trip-time";
 import { getTripEditHref, getTripHref } from "../../lib/trip-links";
 import { Alert, Button, CapacityIndicator, LinkButton } from "../../ui/components";
@@ -124,12 +124,17 @@ export async function generateMetadata({ params }: TripPageProps): Promise<Metad
   const title = `${trip.title} — ${trip.city}, ${formatTripDate(trip.startDateTime)}`;
   const description = describeTrip(trip);
   const canonical = getTripHref(trip);
+  // The API hides covers of trips that are no longer published, so those get the site-wide image.
+  const image = getSocialImage(
+    trip.status === "published" ? getTripCardProps(trip).coverImage : null,
+    trip.title,
+  );
 
   return {
     title,
     description,
     alternates: { canonical },
-    openGraph: { ...baseOpenGraph, type: "article", url: canonical, title, description },
+    openGraph: { ...baseOpenGraph, type: "article", url: canonical, title, description, images: image },
     ...(isIndexableTrip(trip) ? {} : noIndexMetadata),
   };
 }

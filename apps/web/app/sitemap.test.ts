@@ -31,5 +31,6 @@ describe("robots", () => {
 
     expect(result.sitemap).toBe("https://biketrips.ru/sitemap.xml");
     expect(rules?.disallow).toEqual(expect.arrayContaining(["/api/", "/profile", "/trips/*/edit"]));
+    expect(rules?.allow).toEqual(expect.arrayContaining(["/", "/api/trips/*/cover-image"]));
   });
 });

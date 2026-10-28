@@ -2,6 +2,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { BadRequestException, ForbiddenException, NotFoundException } from "@nestjs/common";
+import sharp from "sharp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CityEntity } from "../../infrastructure/database/entities/city.entity.js";
@@ -802,6 +803,29 @@ describe("TripsService", () => {
     });
   });
 
+  it("converts an uploaded cover image to JPEG for link previews", async () => {
+    const context = createTripsService({
+      trips: [createTrip({ coverImage: `/trips/${tripId}/cover-image?v=123` })],
+      organizers: [createOrganizer()],
+      users: [createUser()],
+    });
+    const cover = await sharp({
+      create: { width: 1600, height: 900, channels: 3, background: "#53613c" },
+    })
+      .webp()
+      .toBuffer();
+    await writeStorageFile(coverImagesDirectory, `${tripId}/123-cover.webp`, cover);
+
+    const download = await context.service.getCoverImageForDownload(tripId, null, "jpeg");
+
+    expect(download.contentType).toBe("image/jpeg");
+    await expect(sharp(download.content).metadata()).resolves.toMatchObject({
+      format: "jpeg",
+      width: 1200,
+      height: 675,
+    });
+  });
+
   it("removes stored route files when updating with removeRouteFile", async () => {
     const storageKey = `${tripId}/old-route.gpx`;
     const context = createTripsService({
@@ -1162,7 +1186,7 @@ function createRouteFile(input: Partial<TestRouteFile> = {}): TestRouteFile {
   };
 }
 
-async function writeStorageFile(rootDirectory: string, storageKey: string, content: string) {
+async function writeStorageFile(rootDirectory: string, storageKey: string, content: string | Buffer) {
   const filePath = path.join(rootDirectory, storageKey);
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, content);

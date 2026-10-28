@@ -149,8 +149,13 @@ export class TripsController {
     @Res({ passthrough: true }) response: HeaderResponse,
     @Req() request?: { user?: { id: string; role: "user" | "admin" } },
     @Query("v") version?: string,
+    @Query("format") format?: string,
   ) {
-    const coverImage = await this.tripsService.getCoverImageForDownload(id, request?.user ?? null);
+    const coverImage = await this.tripsService.getCoverImageForDownload(
+      id,
+      request?.user ?? null,
+      format === "jpeg" ? "jpeg" : undefined,
+    );
     response.setHeader("Content-Type", coverImage.contentType);
     // Cover URLs carry the upload version (?v=), so a versioned response never changes.
     response.setHeader(

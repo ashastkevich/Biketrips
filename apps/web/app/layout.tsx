@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { CookieNotice } from "./cookie-notice";
 import { fontVariables } from "./fonts";
-import { baseOpenGraph, DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "./lib/site";
+import { baseOpenGraph, baseTwitter, DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "./lib/site";
 import "./styles.css";
 
 export const metadata: Metadata = {
@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   description: DEFAULT_DESCRIPTION,
   applicationName: SITE_NAME,
   openGraph: baseOpenGraph,
+  twitter: baseTwitter,
   icons: {
     icon: "/icon.svg",
   },
