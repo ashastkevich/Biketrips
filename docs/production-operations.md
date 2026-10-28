@@ -97,6 +97,30 @@ HTTPS is enabled through Let's Encrypt/certbot for `biketrips.ru` and
 `/etc/letsencrypt/live/biketrips.ru/` and certbot's system timer handles
 automatic renewal.
 
+### Telegram link previews do not work
+
+Telegram cannot fetch biketrips.ru pages, so links pasted into Telegram show no
+preview (title, description or image). Checked on 2026-10-28: while a fresh
+link (`/trips/...?tg=2`) was sent in Telegram, `tcpdump` on production saw no
+inbound connections from Telegram ranges and nginx logged no request for that
+URL. The requests are dropped before they reach the server (the same blocking
+that forces the bot through the gateway), and the wg0 routing is not involved.
+The pages themselves are fine: `og:image` tags and JPEG covers
+(`/api/trips/<id>/cover-image?format=jpeg`) load for outside checkers such as
+opengraph.xyz, and VK/WhatsApp/search engines are expected to work.
+
+Deferred options if Telegram previews become important:
+
+- GeoDNS: resolve biketrips.ru to the foreign gateway for non-Russian
+  resolvers and reverse-proxy those requests to production over wg0. Needs a
+  DNS provider with geo answers, nginx and a certificate on the gateway, and
+  makes the gateway a point of failure for all foreign visitors (Googlebot too).
+- For messages our own bot sends, attach the cover as a photo instead of
+  relying on a link preview. This does not help links pasted by users.
+
+Note: `TelegramBot (like TwitterBot)` lines in the nginx log may be manual
+checks with that user agent; real Telegram requests never arrived.
+
 ## Production services
 
 Production runs on one virtual machine:
