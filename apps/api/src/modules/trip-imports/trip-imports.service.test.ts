@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { describe, expect, it, vi } from "vitest";
-import type { Repository } from "typeorm";
+import type { DataSource, Repository } from "typeorm";
 
 import type { ImportSourceEntity } from "../../infrastructure/database/entities/import-source.entity.js";
 import type { ImportedPostEntity } from "../../infrastructure/database/entities/imported-post.entity.js";
@@ -80,7 +80,7 @@ function extraction(input: Partial<PostExtraction> = {}): PostExtraction {
   };
 }
 
-function setup(options: { existing?: Partial<ImportedPostEntity>; result?: PostExtraction | null } = {}) {
+function setup(options: { existing?: Partial<ImportedPostEntity>; result?: PostExtraction | null; lockHeld?: boolean } = {}) {
   const saved: ImportedPostEntity[] = [];
   const postsRepository = {
     findOne: vi.fn().mockResolvedValue(options.existing ?? null),
@@ -97,6 +97,7 @@ function setup(options: { existing?: Partial<ImportedPostEntity>; result?: PostE
   };
   const tripsService = {
     createImported: vi.fn().mockResolvedValue({ id: "trip-1" }),
+    findImportedBySourceUrl: vi.fn().mockResolvedValue(null),
     updateImported: vi.fn().mockResolvedValue("revision"),
     cancelImported: vi.fn().mockResolvedValue(true),
     setImportedCoverImage: vi.fn().mockResolvedValue(undefined),
@@ -113,6 +114,12 @@ function setup(options: { existing?: Partial<ImportedPostEntity>; result?: PostE
   };
   const notificationsService = { enqueueImportSummary: vi.fn().mockResolvedValue(undefined) };
   const importedOrganizers = { resolve: vi.fn().mockResolvedValue("leader-organizer") };
+  const lockRunner = {
+    connect: vi.fn().mockResolvedValue(undefined),
+    query: vi.fn().mockResolvedValue([{ locked: options.lockHeld ?? true }]),
+    release: vi.fn().mockResolvedValue(undefined),
+  };
+  const dataSource = { createQueryRunner: vi.fn().mockReturnValue(lockRunner) };
   const service = new TripImportsService(
     sourcesRepository as unknown as Repository<ImportSourceEntity>,
     postsRepository as unknown as Repository<ImportedPostEntity>,
@@ -120,8 +127,9 @@ function setup(options: { existing?: Partial<ImportedPostEntity>; result?: PostE
     gateway as unknown as TripImportGateway,
     notificationsService as unknown as NotificationsService,
     importedOrganizers as unknown as ImportedOrganizersService,
+    dataSource as unknown as DataSource,
   );
-  return { service, saved, tripsService, gateway, sourcesRepository, notificationsService, importedOrganizers };
+  return { service, saved, tripsService, gateway, sourcesRepository, notificationsService, importedOrganizers, lockRunner };
 }
 
 describe("TripImportsService", () => {
@@ -220,5 +228,41 @@ describe("TripImportsService", () => {
     expect(sourcesRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({ lastError: null, lastRunAt: expect.any(Date) }),
     );
+  });
+
+  it("skips the run while another import holds the source lock", async () => {
+    const { service, gateway } = setup({ lockHeld: false });
+
+    await expect(service.runSource(source)).resolves.toEqual({
+      created: 0,
+      updated: 0,
+      cancelled: 0,
+      skipped: 0,
+      unchanged: 0,
+      errors: 0,
+    });
+    expect(gateway.fetchPosts).not.toHaveBeenCalled();
+  });
+
+  it("adopts the existing trip instead of creating a duplicate for one post", async () => {
+    const { service, saved, tripsService } = setup();
+    tripsService.findImportedBySourceUrl.mockResolvedValueOnce({ id: "trip-1" });
+
+    await expect(service.runSource(source)).resolves.toMatchObject({ created: 0, unchanged: 1 });
+    expect(tripsService.createImported).not.toHaveBeenCalled();
+    expect(saved.at(-1)).toMatchObject({ status: "imported", tripId: "trip-1" });
+  });
+
+  it("adopts the winner trip when a concurrent run beats the insert", async () => {
+    const { service, saved, tripsService } = setup();
+    tripsService.createImported.mockRejectedValueOnce(
+      Object.assign(new Error("duplicate key"), { code: "23505" }),
+    );
+    tripsService.findImportedBySourceUrl
+      .mockResolvedValueOnce(null) // pre-check before the create attempt
+      .mockResolvedValueOnce({ id: "trip-1" }); // lookup after the unique violation
+
+    await expect(service.runSource(source)).resolves.toMatchObject({ created: 0, unchanged: 1 });
+    expect(saved.at(-1)).toMatchObject({ status: "imported", tripId: "trip-1" });
   });
 });

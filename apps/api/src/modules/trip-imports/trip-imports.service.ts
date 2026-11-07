@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
+import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 import type { ImportRunResult, ImportSourceSummary } from "@biketrips/domain";
-import { Repository } from "typeorm";
+import { DataSource, Repository } from "typeorm";
 
 import { ImportSourceEntity } from "../../infrastructure/database/entities/import-source.entity.js";
 import { ImportedPostEntity } from "../../infrastructure/database/entities/imported-post.entity.js";
@@ -54,6 +54,8 @@ export class TripImportsService {
     private readonly notificationsService: NotificationsService,
     @Inject(ImportedOrganizersService)
     private readonly importedOrganizers: ImportedOrganizersService,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   async runEnabledSources(): Promise<ImportRunResult> {
@@ -73,6 +75,23 @@ export class TripImportsService {
   }
 
   async runSource(source: ImportSourceEntity): Promise<ImportRunResult> {
+    // Two runs of the same source race and create duplicate trips: both read the
+    // post record before either saves it. A Postgres advisory lock covers every
+    // entry point (scheduler, admin button, a second API process), unlike an
+    // in-memory flag. The lock lives on this query runner's connection.
+    const lockRunner = this.dataSource.createQueryRunner();
+    await lockRunner.connect();
+    const lockKey = `trip-import:${source.id}`;
+    const [{ locked }] = (await lockRunner.query(
+      `SELECT pg_try_advisory_lock(hashtext($1)) AS locked`,
+      [lockKey]
+    )) as [{ locked: boolean }];
+    if (!locked) {
+      await lockRunner.release();
+      console.warn(`[BikeTrips] Import from @${source.handle} is already running, skipping`);
+      return emptyResult();
+    }
+
     const result = emptyResult();
     try {
       const posts = await this.gateway.fetchPosts(source.handle, postsPerRun);
@@ -92,6 +111,9 @@ export class TripImportsService {
     } catch (error) {
       // The import itself succeeded; a missed summary only delays the moderators.
       console.error(`[BikeTrips] Could not queue the import summary for @${source.handle}`, error);
+    } finally {
+      await lockRunner.query(`SELECT pg_advisory_unlock(hashtext($1))`, [lockKey]);
+      await lockRunner.release();
     }
     return result;
   }
@@ -210,12 +232,31 @@ export class TripImportsService {
       return this.finish(record, textHash, { status: "skipped", skipReason: "Поездка уже прошла" });
     }
 
-    const trip = await this.tripsService.createImported(fields, {
-      organizerId: source.organizerId,
-      importedOrganizerId: await this.importedOrganizers.resolve(source, extraction.trip),
-      cityId: source.cityId,
-      moderationComment: buildModerationNote(source, extraction, check),
-    });
+    // A post must never produce two trips. The advisory lock in runSource covers the
+    // common race; this lookup plus the unique index on trips.source_url are the
+    // backstop for anything it misses (e.g. a post record that lost its tripId).
+    const existingTrip = await this.tripsService.findImportedBySourceUrl(fields.sourceUrl);
+    if (existingTrip) {
+      record.tripId = existingTrip.id;
+      return this.finish(record, textHash, { status: "imported", skipReason: null }, "unchanged");
+    }
+
+    let trip;
+    try {
+      trip = await this.tripsService.createImported(fields, {
+        organizerId: source.organizerId,
+        importedOrganizerId: await this.importedOrganizers.resolve(source, extraction.trip),
+        cityId: source.cityId,
+        moderationComment: buildModerationNote(source, extraction, check),
+      });
+    } catch (error) {
+      // Lost a race against another run anyway: adopt the trip it created.
+      if (!isUniqueViolation(error)) throw error;
+      const winner = await this.tripsService.findImportedBySourceUrl(fields.sourceUrl);
+      if (!winner) throw error;
+      record.tripId = winner.id;
+      return this.finish(record, textHash, { status: "imported", skipReason: null }, "unchanged");
+    }
     await this.attachCover(trip.id, post.coverUrl);
     record.tripId = trip.id;
     return this.finish(record, textHash, { status: "imported", skipReason: null }, "created");
@@ -320,6 +361,16 @@ function hashText(text: string): string {
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/** Postgres unique_violation, e.g. from the trips.source_url backstop index. */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "23505"
+  );
 }
 
 export function toImportedTripFields({ draft, missingRequired }: DraftCheck): ImportedTripFields | null {

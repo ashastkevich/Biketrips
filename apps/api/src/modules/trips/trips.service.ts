@@ -711,6 +711,11 @@ export class TripsService {
     return moderatedTrip;
   }
 
+  /** Finds an imported trip by its channel post link; used to stop duplicate imports. */
+  async findImportedBySourceUrl(sourceUrl: string): Promise<TripEntity | null> {
+    return this.tripsRepository.findOne({ where: { source: "telegram_import", sourceUrl } });
+  }
+
   /**
    * Creates a trip from a channel post. It goes straight to the moderation queue and
    * never takes sign-ups on the site.
