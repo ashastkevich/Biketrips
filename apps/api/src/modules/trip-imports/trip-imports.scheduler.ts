@@ -5,13 +5,17 @@ import {
   type OnApplicationShutdown,
 } from "@nestjs/common";
 
+import { resolveExtractionProvider } from "./trip-post-extraction.js";
 import { TripImportsService } from "./trip-imports.service.js";
 
 const defaultIntervalMinutes = 120;
 
-/** Import runs only where it is switched on and an Anthropic API key is configured. */
+/** Import runs only where it is switched on and the active provider's API key is configured. */
 export function isTripImportEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.TRIP_IMPORT_ENABLED === "true" && Boolean(env.ANTHROPIC_API_KEY);
+  if (env.TRIP_IMPORT_ENABLED !== "true") return false;
+  return resolveExtractionProvider(env) === "qwen"
+    ? Boolean(env.DASHSCOPE_API_KEY)
+    : Boolean(env.ANTHROPIC_API_KEY);
 }
 
 export function readTripImportIntervalMs(env: NodeJS.ProcessEnv = process.env): number {

@@ -3,12 +3,24 @@ import { Injectable } from "@nestjs/common";
 
 import { fetchChannelPosts, type TelegramChannelPost } from "./telegram-channel-preview.js";
 import {
-  defaultExtractionModel,
   extractTripFromPost,
+  resolveExtractionModel,
+  resolveExtractionProvider,
+  type ExtractionProvider,
   type PostExtractionResult,
 } from "./trip-post-extraction.js";
 
 const maxCoverBytes = 5_000_000;
+
+/** Both providers speak the Anthropic Messages API; Qwen just needs Alibaba's base URL. */
+export function createExtractionClient(provider: ExtractionProvider): Anthropic {
+  if (provider !== "qwen") return new Anthropic();
+  const apiKey = process.env.DASHSCOPE_API_KEY;
+  const baseURL = process.env.QWEN_BASE_URL;
+  if (!apiKey || !baseURL)
+    throw new Error("DASHSCOPE_API_KEY and QWEN_BASE_URL must be set when TRIP_IMPORT_PROVIDER=qwen");
+  return new Anthropic({ apiKey, baseURL });
+}
 
 export interface DownloadedImage {
   contentType: string;
@@ -25,16 +37,17 @@ export abstract class TripImportGateway {
 @Injectable()
 export class TelegramClaudeImportGateway extends TripImportGateway {
   private client: Anthropic | null = null;
-  private readonly model = process.env.TRIP_IMPORT_MODEL || defaultExtractionModel;
+  private readonly provider: ExtractionProvider = resolveExtractionProvider();
+  private readonly model = resolveExtractionModel();
 
   fetchPosts(handle: string, limit: number): Promise<TelegramChannelPost[]> {
     return fetchChannelPosts(handle, { limit });
   }
 
   extract(post: TelegramChannelPost): Promise<PostExtractionResult> {
-    // Created on first use so the API starts without ANTHROPIC_API_KEY when import is off.
-    this.client ??= new Anthropic();
-    return extractTripFromPost(this.client, post, this.model);
+    // Created on first use so the API starts without the provider key when import is off.
+    this.client ??= createExtractionClient(this.provider);
+    return extractTripFromPost(this.client, post, { model: this.model, provider: this.provider });
   }
 
   async downloadImage(url: string): Promise<DownloadedImage | null> {

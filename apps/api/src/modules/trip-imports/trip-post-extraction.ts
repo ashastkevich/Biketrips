@@ -11,7 +11,26 @@ import { z } from "zod";
 import type { TelegramChannelPost } from "./telegram-channel-preview.js";
 
 // Haiku handled the @MskVelo validation run well and costs a fraction of a cent per post.
-export const defaultExtractionModel = "claude-haiku-5-5";
+// Qwen3.8 Flash matched Haiku's quality on the 10-post benchmark at ~4x lower cost
+// (see storage/import-reports/qwen-benchmark-*.json) and is called through Alibaba's
+// Anthropic-compatible endpoint, so the schema and prompt stay identical.
+export const extractionProviders = ["anthropic", "qwen"] as const;
+export type ExtractionProvider = (typeof extractionProviders)[number];
+
+export const defaultExtractionModels: Record<ExtractionProvider, string> = {
+  anthropic: "claude-haiku-5-5",
+  qwen: "qwen3.8-flash",
+};
+
+export function resolveExtractionProvider(
+  env: NodeJS.ProcessEnv = process.env
+): ExtractionProvider {
+  return env.TRIP_IMPORT_PROVIDER === "qwen" ? "qwen" : "anthropic";
+}
+
+export function resolveExtractionModel(env: NodeJS.ProcessEnv = process.env): string {
+  return env.TRIP_IMPORT_MODEL || defaultExtractionModels[resolveExtractionProvider(env)];
+}
 
 // Moscow has no DST, so channel times can be pinned to a fixed offset.
 const moscowOffset = "+03:00";
@@ -96,8 +115,8 @@ Rules for trip fields:
 - difficulty: beginner (short, easy, newcomers welcome), easy, medium (for regular riders, some climbs), hard (long distance, noticeable climbing), sport (high speed, fitness required). Set difficultyIsGuess to true when you infer it from distance and pace instead of the post naming it.
 - isPaid / priceText: whether participation costs money and the price as written.
 - minAge: e.g. 18 for "18+".
-- clubName: the club or organizing team the post names as organizing the ride. When the post is the channel's own announcement ("мы едем", "наш клуб") and names no other organizer, use the channel name from the Channel line. Null when the post does not say who organizes.
-- leaderUsernames: Telegram usernames of leaders or organizers without "@", the main leader first. leaderName: that first leader's name as the post writes it next to the username ("Андрей" in "ведёт Андрей @andrey_ep"); null when only the username is given.
+- clubName: the club or organizing team the post names as organizing the ride. When the post is the channel's own announcement ("мы едем", "наш клуб") and names no other organizer, use the channel name from the Channel line — but only when the post also names no leaders or contacts (see leaderUsernames): if any person is named, leave clubName null so that person becomes the organizer. Null when the post does not say who organizes.
+- leaderUsernames: Telegram usernames of leaders or organizers without "@", the main leader first. When the post names no leader but gives a contact for questions or sign-up ("связь", "вопросы", "запись", "координатор"), that contact is the organizer: put their username first. leaderName: that first leader's name as the post writes it next to the username ("Андрей" in "ведёт Андрей @andrey_ep"); null when only the username is given.
 - registrationUrl: the link where people sign up or ask questions (chat, contact, form). Null when the post only says to sign up in the comments.
 - routeUrl: a link to the track or route map (Strava, Komoot, RideWithGPS, Yandex route), if any.
 - routeDescription, equipmentRequirements, rules: short Russian texts if the post has them.
@@ -111,10 +130,25 @@ export interface PostExtractionResult {
   model: string;
 }
 
+export interface ExtractTripOptions {
+  model: string;
+  provider: ExtractionProvider;
+}
+
 export async function extractTripFromPost(
   client: Anthropic,
   post: TelegramChannelPost,
-  model = defaultExtractionModel
+  options: ExtractTripOptions
+): Promise<PostExtractionResult> {
+  return options.provider === "qwen"
+    ? extractWithQwen(client, post, options.model)
+    : extractWithAnthropic(client, post, options.model);
+}
+
+async function extractWithAnthropic(
+  client: Anthropic,
+  post: TelegramChannelPost,
+  model: string
 ): Promise<PostExtractionResult> {
   // Haiku has no server-side refusal fallback; a refused post is recorded as an error.
   const response = await client.messages.parse({
@@ -130,6 +164,61 @@ export async function extractTripFromPost(
     stopReason: response.stop_reason,
     usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens },
     model: response.model,
+  };
+}
+
+// Alibaba's Anthropic-compatible endpoint documents output_config.format for
+// qwen3.8 models, but the SDK does not type it, so the body goes through a cast.
+// Strict mode matched the benchmark expectations; "medium" effort beat "low" and
+// disabled thinking on classification edge cases.
+const qwenJsonSchema = z.toJSONSchema(postExtractionSchema);
+
+type RawMessageCreate = (body: Record<string, unknown>) => Promise<Anthropic.Message>;
+
+async function extractWithQwen(
+  client: Anthropic,
+  post: TelegramChannelPost,
+  model: string
+): Promise<PostExtractionResult> {
+  const createRaw = client.messages.create.bind(client.messages) as unknown as RawMessageCreate;
+  const message = await createRaw({
+    model,
+    max_tokens: 8000,
+    system: [
+      { type: "text", text: extractionSystemPrompt, cache_control: { type: "ephemeral" } },
+    ],
+    messages: [{ role: "user", content: formatPostForPrompt(post) }],
+    output_config: {
+      effort: "medium",
+      format: { type: "json_schema", schema: qwenJsonSchema },
+    },
+  });
+
+  // Qwen returns a thinking block before the text block; the JSON lives in text.
+  const textBlock = message.content.find((block) => block.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    return {
+      extraction: null,
+      stopReason: message.stop_reason,
+      usage: {
+        inputTokens: message.usage.input_tokens,
+        outputTokens: message.usage.output_tokens,
+      },
+      model: message.model,
+    };
+  }
+
+  // Strict schema mode makes this a safety net rather than the main guarantee;
+  // an invalid payload throws and the import records the post as an error.
+  const extraction = postExtractionSchema.parse(JSON.parse(textBlock.text));
+  return {
+    extraction,
+    stopReason: message.stop_reason,
+    usage: {
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+    },
+    model: message.model,
   };
 }
 

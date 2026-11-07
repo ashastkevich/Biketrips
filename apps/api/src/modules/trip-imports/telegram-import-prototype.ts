@@ -14,10 +14,12 @@ import Anthropic from "@anthropic-ai/sdk";
 
 import { renderReport, type ReportEntry } from "./import-report.js";
 import { fetchChannelPosts } from "./telegram-channel-preview.js";
+import { createExtractionClient } from "./trip-import.gateway.js";
 import {
   buildTripDraft,
-  defaultExtractionModel,
   extractTripFromPost,
+  resolveExtractionModel,
+  resolveExtractionProvider,
 } from "./trip-post-extraction.js";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -32,7 +34,7 @@ const { values: args } = parseArgs({
   options: {
     channel: { type: "string", default: "MskVelo" },
     limit: { type: "string", default: "30" },
-    model: { type: "string", default: process.env.TRIP_IMPORT_MODEL || defaultExtractionModel },
+    model: { type: "string", default: resolveExtractionModel() },
     concurrency: { type: "string", default: "4" },
     out: { type: "string", default: "storage/import-reports" },
   },
@@ -44,14 +46,15 @@ const concurrency = Number(args.concurrency);
 
 console.log(`Fetching up to ${limit} posts from https://t.me/s/${channel} ...`);
 const posts = await fetchChannelPosts(channel, { limit });
-console.log(`Got ${posts.length} posts, extracting with ${args.model} ...`);
+const provider = resolveExtractionProvider();
+console.log(`Got ${posts.length} posts, extracting with ${args.model} via ${provider} ...`);
 
-const client = new Anthropic();
+const client = createExtractionClient(provider);
 const entries = await mapWithConcurrency(posts, concurrency, async (post): Promise<ReportEntry> => {
   if (!post.text) return { post, result: null, error: "Пост без текста", draft: null };
 
   try {
-    const result = await extractTripFromPost(client, post, args.model);
+    const result = await extractTripFromPost(client, post, { model: args.model, provider });
     const trip = result.extraction?.trip;
     console.log(`  ${post.url}: ${result.extraction?.kind ?? result.stopReason}`);
     return { post, result, error: null, draft: trip ? buildTripDraft(post, trip) : null };
