@@ -37,7 +37,7 @@ const unknownFieldLabels: Record<string, string> = {
   asphaltPercent: "покрытие",
 };
 
-type PostOutcome = keyof ImportRunResult;
+type PostOutcome = Exclude<keyof ImportRunResult, "alreadyRunning">;
 
 @Injectable()
 export class TripImportsService {
@@ -89,7 +89,7 @@ export class TripImportsService {
     if (!locked) {
       await lockRunner.release();
       console.warn(`[BikeTrips] Import from @${source.handle} is already running, skipping`);
-      return emptyResult();
+      return { ...emptyResult(), alreadyRunning: true };
     }
 
     const result = emptyResult();

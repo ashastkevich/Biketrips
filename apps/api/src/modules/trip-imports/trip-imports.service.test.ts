@@ -240,6 +240,7 @@ describe("TripImportsService", () => {
       skipped: 0,
       unchanged: 0,
       errors: 0,
+      alreadyRunning: true,
     });
     expect(gateway.fetchPosts).not.toHaveBeenCalled();
   });

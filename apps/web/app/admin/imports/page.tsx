@@ -29,12 +29,14 @@ async function runImportAction(formData: FormData) {
   let destination: string;
   try {
     const result = await runImport(sourceId);
-    destination = `/admin/imports?${new URLSearchParams({
-      created: String(result.created),
-      updated: String(result.updated),
-      cancelled: String(result.cancelled),
-      errors: String(result.errors),
-    })}`;
+    destination = result.alreadyRunning
+      ? "/admin/imports?alreadyRunning=1"
+      : `/admin/imports?${new URLSearchParams({
+          created: String(result.created),
+          updated: String(result.updated),
+          cancelled: String(result.cancelled),
+          errors: String(result.errors),
+        })}`;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось запустить импорт";
     destination = `/admin/imports?error=${encodeURIComponent(message)}`;
@@ -60,6 +62,7 @@ export default async function ImportsPage({ searchParams }: ImportsPageProps) {
   };
   const error = read("error");
   const created = read("created");
+  const alreadyRunning = read("alreadyRunning");
 
   return (
     <>
@@ -79,6 +82,12 @@ export default async function ImportsPage({ searchParams }: ImportsPageProps) {
           <Alert title="Импорт завершён" tone="success">
             Новых поездок: {created}, обновлено: {read("updated")}, отменено: {read("cancelled")},
             ошибок: {read("errors")}. Новые поездки ждут проверки в очереди модерации.
+          </Alert>
+        ) : null}
+        {alreadyRunning ? (
+          <Alert title="Импорт уже выполняется" tone="warning">
+            По этому источнику прямо сейчас идёт другой прогон — дождитесь его окончания.
+            Новые поездки появятся в очереди модерации.
           </Alert>
         ) : null}
         {error ? <Alert title="Импорт не удался" tone="danger">{error}</Alert> : null}

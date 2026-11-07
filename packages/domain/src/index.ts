@@ -348,4 +348,6 @@ export interface ImportRunResult {
   skipped: number;
   unchanged: number;
   errors: number;
+  /** The run was skipped because another run of the same source is in progress. */
+  alreadyRunning?: boolean;
 }
