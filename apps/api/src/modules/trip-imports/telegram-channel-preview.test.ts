@@ -38,6 +38,19 @@ describe("parseChannelPreviewPage", () => {
     ]);
   });
 
+  it("uses the video thumbnail as the cover when the post has no photo", () => {
+    const html = messageHtml(
+      19591,
+      "Видео с маршрута",
+      `<a class="tgme_widget_message_video_player"><i class="tgme_widget_message_video_thumb" style="background-image:url('https://cdn4.telesco.pe/file/video-preview.jpg')"></i><video src="https://cdn4.telesco.pe/file/ride.mp4"></video></a>`
+    );
+
+    expect(parseChannelPreviewPage(html)[0]).toMatchObject({
+      hasMedia: true,
+      coverUrl: "https://cdn4.telesco.pe/file/video-preview.jpg",
+    });
+  });
+
   it("keeps bold, italic and links but not emoji wrappers", () => {
     const html = messageHtml(
       19700,
